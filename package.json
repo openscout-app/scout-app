@@ -1,0 +1,15 @@
+{
+  "name": "scout-app",
+  "private": true,
+  "license": "LicenseRef-PolyForm-Shield-1.0.0",
+  "type": "module",
+  "engines": { "bun": ">=1.4.4" },
+  "workspaces": ["packages/web/client"],
+  "scripts": {
+    "start": "bun install --frozen-lockfile --ignore-scripts && bun scripts/preview.ts",
+    "check": "tsc --noEmit && tsc -p packages/web/client/tsconfig.json --noEmit",
+    "test": "bun test packages scripts"
+  },
+  "dependencies": { "@openscout/scout": "0.5.4" },
+  "devDependencies": { "@types/bun": "^1.3.0", "typescript": "5.9.3" }
+}

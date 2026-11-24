@@ -1,0 +1,952 @@
+import {
+  formatScoutVoiceIssue,
+  voiceIssueHostOffline,
+  voiceIssueMicrophone,
+  voiceIssueNoInputDevice,
+  voiceIssueSpeechRecognition,
+  type ScoutVoiceIssue,
+  type ScoutVoiceIssueAction,
+  type ScoutVoiceIssueCode,
+} from "./voice-issues.ts";
+
+export {
+  formatScoutVoiceIssue,
+  type ScoutVoiceIssue,
+  type ScoutVoiceIssueAction,
+  type ScoutVoiceIssueCode,
+};
+
+export type ScoutVoiceConnectionState = "unknown" | "probing" | "connected" | "unavailable";
+export type ScoutVoiceSessionState = "starting" | "recording" | "processing" | "done" | "cancelled" | "error";
+
+export type ScoutVoiceLiveFinal = {
+  sessionId: string;
+  text: string;
+  durationMs: number;
+};
+
+export type ScoutVoiceLiveHandle = {
+  readonly sessionId: string | null;
+  result: Promise<ScoutVoiceLiveFinal>;
+  stop: () => Promise<void>;
+  cancel: () => Promise<void>;
+};
+
+export type ScoutVoiceLiveCallbacks = {
+  onState?: (state: ScoutVoiceSessionState) => void;
+  onPartial?: (text: string) => void;
+  onFinal?: (final: ScoutVoiceLiveFinal) => void;
+  /**
+   * Optional live mic energy 0–1 while recording. Only available when the
+   * capture path exposes a MediaStream (browser). Used to drive speech-
+   * representative waveforms instead of decorative loops.
+   */
+  onLevel?: (level: number) => void;
+};
+
+export type ScoutVoiceLiveOptions = {
+  surface?: string;
+};
+
+export type ScoutVoiceLaunchOptions = {
+  source?: string;
+  returnTo?: string;
+  context?: ScoutVoiceLaunchContext;
+};
+
+export type ScoutVoiceLaunchContext = {
+  requesterName?: string;
+  productName?: string;
+  headline?: string;
+  body?: string;
+  actionLabel?: string;
+  logo?: {
+    url?: string;
+    path?: string;
+    symbolName?: string;
+  };
+};
+
+export type ScoutVoiceCaptureMode = "native" | "browser";
+
+export type ScoutVoicePreference = "auto" | "parakeet" | "apple";
+
+export type ScoutVoiceInputDevice = {
+  id: string;
+  name: string;
+  isDefault: boolean;
+};
+
+export type ScoutVoicePermissionStatus = {
+  kind: "microphone" | "speechRecognition";
+  status: string;
+  granted: boolean;
+  canRequest: boolean;
+};
+
+export type ScoutVoiceSettings = {
+  preference: ScoutVoicePreference;
+  inputDeviceId: string | null;
+  inputDeviceName: string | null;
+  modelReady?: boolean;
+  modelInstalled?: boolean;
+  permissions?: ScoutVoicePermissionStatus[];
+};
+
+/**
+ * ## Scout voice dictation API (web client)
+ *
+ * Mic engagement uses the Scout voice host (Scout Menu). The browser never captures audio.
+ *
+ * | Call | Route | Purpose |
+ * | --- | --- | --- |
+ * | `engageScoutVoiceDictation()` | `POST /api/voice/engage` | **Mic tap entry point.** Checks host, mic, input device; optionally requests permissions. |
+ * | `ScoutVoiceClient.startLive()` | `POST /api/voice/session` | Starts native dictation after engage succeeds. |
+ * | `requestScoutVoicePermissions()` | `POST /api/voice/permissions/request` | Ask Scout Menu to show the macOS permission dialog. |
+ * | `openScoutVoicePrivacySettings()` | `POST /api/voice/permissions/open` | Open Privacy & Security → Microphone or Speech Recognition on Scout Menu. |
+ * | `fetchScoutVoiceSettings()` | `GET /api/voice/settings` | Read engine, devices, and permission snapshot from the host. |
+ */
+
+export type ScoutVoiceEngageResult = {
+  ready: boolean;
+  issue: ScoutVoiceIssue | null;
+  warnings: ScoutVoiceIssue[];
+  settings: ScoutVoiceSettings;
+  devices: ScoutVoiceInputDevice[];
+  inputDevice: { id: string; name: string } | null;
+  hostOnline: boolean;
+};
+
+export type ScoutVoiceEngageOptions = {
+  surface?: string;
+  /** Ask Scout Menu to show the macOS permission dialog when allowed. */
+  requestPermissions?: boolean;
+};
+
+
+export async function executeScoutVoiceIssueAction(action: ScoutVoiceIssueAction): Promise<void> {
+  switch (action) {
+    case "request_microphone":
+      await requestScoutVoicePermissions("microphone");
+      return;
+    case "request_speech":
+      await requestScoutVoicePermissions("speechRecognition");
+      return;
+    case "open_microphone_settings":
+      await openScoutVoicePrivacySettings("microphone");
+      return;
+    case "open_speech_settings":
+      await openScoutVoicePrivacySettings("speechRecognition");
+      return;
+    case "launch_host":
+      await getSharedScoutVoiceClient().launch({ source: "openscout" });
+      return;
+    case "open_voice_settings":
+    case "none":
+      return;
+  }
+}
+
+/** Primary mic-engagement call. Run before `startLive()`. */
+export async function engageScoutVoiceDictation(
+  options: ScoutVoiceEngageOptions = {},
+): Promise<ScoutVoiceEngageResult> {
+  const response = await fetch("/api/voice/engage", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(options),
+  });
+  if (response.status === 404) {
+    return engageScoutVoiceDictationFallback(options);
+  }
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    throw new Error(parseScoutVoiceError(raw, response.status));
+  }
+  return await response.json() as ScoutVoiceEngageResult;
+}
+
+/** Client-side engage when the web server has not picked up `/api/voice/engage` yet. */
+async function engageScoutVoiceDictationFallback(
+  options: ScoutVoiceEngageOptions = {},
+): Promise<ScoutVoiceEngageResult> {
+  const snapshot = await fetchScoutVoiceSettings();
+  const settings = snapshot.settings;
+  const devices = snapshot.devices;
+  const hostOnline = devices.length > 0 || (settings.permissions?.length ?? 0) > 0;
+  const mic = settings.permissions?.find((entry) => entry.kind === "microphone") ?? null;
+  const speech = settings.permissions?.find((entry) => entry.kind === "speechRecognition") ?? null;
+  const inputDevice = resolveScoutVoiceInputDevice(settings, devices);
+
+  if (options.requestPermissions) {
+    if (mic && !mic.granted && mic.status !== "restricted") {
+      await requestScoutVoicePermissions("microphone").catch(() => undefined);
+    } else if ((mic?.granted ?? false) && speech && !speech.granted && speech.status !== "restricted") {
+      await requestScoutVoicePermissions("speechRecognition").catch(() => undefined);
+    }
+  }
+
+  if (!hostOnline) {
+    return {
+      ready: false,
+      // This fallback only runs when the server has no /api/voice/engage, so
+      // it cannot read the registry's age — it reports the plain offline case
+      // and leaves the reconnecting distinction to the server path.
+      issue: voiceIssueHostOffline(),
+      warnings: [],
+      settings,
+      devices,
+      inputDevice: null,
+      hostOnline: false,
+    };
+  }
+
+  const micIssue = voiceIssueMicrophone(mic);
+  if (micIssue) {
+    return {
+      ready: false,
+      issue: micIssue,
+      warnings: [],
+      settings,
+      devices,
+      inputDevice,
+      hostOnline,
+    };
+  }
+
+  if (!inputDevice) {
+    return {
+      ready: false,
+      issue: voiceIssueNoInputDevice(),
+      warnings: [],
+      settings,
+      devices,
+      inputDevice: null,
+      hostOnline,
+    };
+  }
+
+  const speechIssue = voiceIssueSpeechRecognition(speech);
+  return {
+    ready: true,
+    issue: null,
+    warnings: speechIssue ? [speechIssue] : [],
+    settings,
+    devices,
+    inputDevice,
+    hostOnline,
+  };
+}
+
+function resolveScoutVoiceInputDevice(
+  settings: ScoutVoiceSettings,
+  devices: ScoutVoiceInputDevice[],
+): { id: string; name: string } | null {
+  if (devices.length === 0) return null;
+  const selected = settings.inputDeviceId
+    ? devices.find((device) => device.id === settings.inputDeviceId)
+    : null;
+  const fallback = devices.find((device) => device.isDefault) ?? devices[0] ?? null;
+  const device = selected ?? fallback;
+  return device ? { id: device.id, name: device.name } : null;
+}
+
+
+
+function friendlySessionError(message: string, code: string | null): string {
+  switch (code) {
+    case "microphone_permission":
+      return "Microphone access is off for Scout Menu. Tap the mic to retry; Scout will open macOS Microphone settings.";
+    case "empty_transcript":
+      return "No speech was detected. Check your microphone input in Settings → Voice.";
+    default:
+      return message;
+  }
+}
+
+const SCOUT_VOICE_RESULT_TIMEOUT_MS = 60_000;
+const SCOUT_VOICE_PROBE_TIMEOUT_MS = 3_000;
+const SCOUT_VOICE_PROBE_OK_CACHE_MS = 20_000;
+const SCOUT_VOICE_PROBE_FAIL_CACHE_MS = 8_000;
+const SCOUT_VOICE_PROBE_STALE_MS = 45_000;
+
+type ScoutVoiceHealthBody = {
+  ok?: boolean;
+  detail?: string;
+  error?: string;
+  capture?: ScoutVoiceCaptureMode;
+  microphoneGranted?: boolean;
+  microphoneCanRequest?: boolean;
+  inputDevice?: { id?: string; name?: string } | null;
+  host?: { hostId?: string } | null;
+};
+
+export type ScoutVoiceProbeSnapshot = {
+  ok: boolean;
+  reason: string | null;
+  captureMode: ScoutVoiceCaptureMode | null;
+  hostReachable: boolean;
+  microphoneGranted: boolean | null;
+  microphoneCanRequest: boolean | null;
+  inputDeviceName: string | null;
+  probedAt: number;
+};
+
+let sharedVoiceClient: ScoutVoiceClient | null = null;
+let inflightVoiceProbe: Promise<boolean> | null = null;
+let lastVoiceProbe: ScoutVoiceProbeSnapshot | null = null;
+let autoVoiceProbeInstalled = false;
+const voiceProbeListeners = new Set<(snapshot: ScoutVoiceProbeSnapshot) => void>();
+
+export function shouldAutoProbeScoutVoice(): boolean {
+  if (typeof window === "undefined") return false;
+  return typeof fetch === "function";
+}
+
+export function getSharedScoutVoiceClient(): ScoutVoiceClient {
+  if (!sharedVoiceClient) {
+    sharedVoiceClient = new ScoutVoiceClient();
+  }
+  return sharedVoiceClient;
+}
+
+export function subscribeScoutVoiceProbe(
+  listener: (snapshot: ScoutVoiceProbeSnapshot) => void,
+): () => void {
+  voiceProbeListeners.add(listener);
+  if (lastVoiceProbe) listener(lastVoiceProbe);
+  return () => {
+    voiceProbeListeners.delete(listener);
+  };
+}
+
+export function ensureScoutVoiceAutoProbe(): void {
+  if (autoVoiceProbeInstalled || !shouldAutoProbeScoutVoice()) return;
+  autoVoiceProbeInstalled = true;
+
+  const client = getSharedScoutVoiceClient();
+  void client.probe();
+
+  const maybeRefresh = () => {
+    void client.probeIfStale();
+  };
+  window.addEventListener("focus", maybeRefresh);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") maybeRefresh();
+  });
+}
+
+function notifyVoiceProbeListeners(snapshot: ScoutVoiceProbeSnapshot): void {
+  for (const listener of voiceProbeListeners) listener(snapshot);
+}
+
+function voiceProbeCacheFresh(snapshot: ScoutVoiceProbeSnapshot, now = Date.now()): boolean {
+  const ttl = snapshot.ok ? SCOUT_VOICE_PROBE_OK_CACHE_MS : SCOUT_VOICE_PROBE_FAIL_CACHE_MS;
+  return now - snapshot.probedAt < ttl;
+}
+
+export class ScoutVoiceClient {
+  private state: ScoutVoiceConnectionState = "unknown";
+  private unavailableReason: string | null = null;
+  private captureMode: ScoutVoiceCaptureMode | null = null;
+  private hostReachable = false;
+  private microphoneGranted: boolean | null = null;
+  private microphoneCanRequest: boolean | null = null;
+  private inputDeviceName: string | null = null;
+
+  get connectionState(): ScoutVoiceConnectionState {
+    return this.state;
+  }
+
+  get lastUnavailableReason(): string | null {
+    return this.unavailableReason;
+  }
+
+  get preferredCaptureMode(): ScoutVoiceCaptureMode | null {
+    return this.captureMode;
+  }
+
+  get isVoiceHostReachable(): boolean {
+    return this.hostReachable;
+  }
+
+  get activeInputDeviceName(): string | null {
+    return this.inputDeviceName;
+  }
+
+  get isMicrophoneGranted(): boolean | null {
+    return this.microphoneGranted;
+  }
+
+  get canRequestMicrophone(): boolean {
+    return this.hostReachable
+      && this.microphoneGranted === false
+      && this.microphoneCanRequest === true;
+  }
+
+  /** Mic was explicitly denied — fix in Privacy & Security → Microphone. */
+  get isMicrophoneHardDenied(): boolean {
+    return this.hostReachable
+      && this.microphoneGranted === false
+      && this.microphoneCanRequest === false;
+  }
+
+  /** @deprecated Use isMicrophoneHardDenied or canRequestMicrophone. */
+  get isMicrophoneDenied(): boolean {
+    return this.isMicrophoneHardDenied;
+  }
+
+  async probeIfStale(): Promise<boolean> {
+    const now = Date.now();
+    if (lastVoiceProbe && voiceProbeCacheFresh(lastVoiceProbe, now)) {
+      this.applyProbeSnapshot(lastVoiceProbe);
+      return lastVoiceProbe.ok;
+    }
+    if (lastVoiceProbe && lastVoiceProbe.ok && now - lastVoiceProbe.probedAt < SCOUT_VOICE_PROBE_STALE_MS) {
+      this.applyProbeSnapshot(lastVoiceProbe);
+      return true;
+    }
+    if (lastVoiceProbe && !lastVoiceProbe.ok) {
+      return this.probe({ force: true });
+    }
+    return this.probe();
+  }
+
+  async probe(options: { force?: boolean; timeoutMs?: number } | number = {}): Promise<boolean> {
+    const normalized = typeof options === "number"
+      ? { timeoutMs: options }
+      : options;
+    const force = normalized.force ?? false;
+    const timeoutMs = normalized.timeoutMs ?? SCOUT_VOICE_PROBE_TIMEOUT_MS;
+    const now = Date.now();
+
+    if (!force && lastVoiceProbe && voiceProbeCacheFresh(lastVoiceProbe, now)) {
+      this.applyProbeSnapshot(lastVoiceProbe);
+      return lastVoiceProbe.ok;
+    }
+
+    if (inflightVoiceProbe) {
+      return inflightVoiceProbe;
+    }
+
+    this.state = "probing";
+    inflightVoiceProbe = this.fetchProbe(timeoutMs)
+      .finally(() => {
+        inflightVoiceProbe = null;
+      });
+
+    return inflightVoiceProbe;
+  }
+
+  private async fetchProbe(timeoutMs: number): Promise<boolean> {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch("/api/voice/health?quiet=1", { signal: controller.signal });
+      const body = await response.json().catch(() => ({})) as ScoutVoiceHealthBody;
+      const hostReachable = Boolean(body.host?.hostId);
+      const microphoneGranted = typeof body.microphoneGranted === "boolean"
+        ? body.microphoneGranted
+        : null;
+      const microphoneCanRequest = typeof body.microphoneCanRequest === "boolean"
+        ? body.microphoneCanRequest
+        : null;
+      const inputDeviceName = typeof body.inputDevice?.name === "string" && body.inputDevice.name.trim()
+        ? body.inputDevice.name.trim()
+        : null;
+      const captureMode = body.capture === "browser" ? "browser" : "native";
+      const ok = response.ok && body.ok === true;
+      const reason = ok
+        ? null
+        : body.detail ?? body.error ?? (hostReachable
+          ? "Scout voice is not ready."
+          : "Scout voice service is unavailable.");
+
+      const snapshot: ScoutVoiceProbeSnapshot = {
+        ok,
+        reason,
+        captureMode: ok ? captureMode : null,
+        hostReachable,
+        microphoneGranted,
+        microphoneCanRequest,
+        inputDeviceName,
+        probedAt: Date.now(),
+      };
+      lastVoiceProbe = snapshot;
+      this.applyProbeSnapshot(snapshot);
+      notifyVoiceProbeListeners(snapshot);
+      return ok;
+    } catch (error) {
+      const reason = error instanceof Error && error.name === "AbortError"
+        ? "Scout voice service did not respond."
+        : "Scout voice service is unavailable.";
+      const snapshot: ScoutVoiceProbeSnapshot = {
+        ok: false,
+        reason,
+        captureMode: null,
+        hostReachable: false,
+        microphoneGranted: null,
+        microphoneCanRequest: null,
+        inputDeviceName: null,
+        probedAt: Date.now(),
+      };
+      lastVoiceProbe = snapshot;
+      this.applyProbeSnapshot(snapshot);
+      notifyVoiceProbeListeners(snapshot);
+      return false;
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  private applyProbeSnapshot(snapshot: ScoutVoiceProbeSnapshot): void {
+    this.hostReachable = snapshot.hostReachable;
+    this.microphoneGranted = snapshot.microphoneGranted;
+    this.microphoneCanRequest = snapshot.microphoneCanRequest;
+    this.inputDeviceName = snapshot.inputDeviceName;
+    if (snapshot.ok) {
+      this.unavailableReason = null;
+      this.captureMode = snapshot.captureMode;
+      this.state = "connected";
+      return;
+    }
+    this.unavailableReason = snapshot.reason;
+    this.captureMode = null;
+    this.state = "unavailable";
+  }
+
+  async launch(_options: ScoutVoiceLaunchOptions = {}): Promise<void> {
+    // LaunchServices opens the registered Scout helper/app. Launching voice
+    // must not mint a services/restart/all link or restart the web registry.
+    window.location.href = "scout://open";
+  }
+
+  async startLive(
+    callbacks: ScoutVoiceLiveCallbacks = {},
+    options: ScoutVoiceLiveOptions = {},
+  ): Promise<ScoutVoiceLiveHandle> {
+    if (this.captureMode !== "browser") {
+      return await startNativeScoutVoiceLive(callbacks, options);
+    }
+    return await startBrowserScoutVoiceLive(callbacks);
+  }
+}
+
+async function startNativeScoutVoiceLive(
+  callbacks: ScoutVoiceLiveCallbacks = {},
+  options: ScoutVoiceLiveOptions = {},
+): Promise<ScoutVoiceLiveHandle> {
+  callbacks.onState?.("starting");
+
+  const startResponse = await fetch("/api/voice/session", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      clientId: "openscout-web",
+      surface: options.surface?.trim() || "chat-composer",
+    }),
+  });
+  if (!startResponse.ok) {
+    const raw = await startResponse.text().catch(() => "");
+    throw new Error(parseScoutVoiceError(raw, startResponse.status));
+  }
+
+  const started = await startResponse.json() as { sessionId?: string };
+  const sessionId = started.sessionId?.trim();
+  if (!sessionId) {
+    throw new Error("Scout voice did not return a session id.");
+  }
+
+  let finalized = false;
+  let resolveResult!: (final: ScoutVoiceLiveFinal) => void;
+  let rejectResult!: (error: Error) => void;
+  const result = new Promise<ScoutVoiceLiveFinal>((resolve, reject) => {
+    resolveResult = resolve;
+    rejectResult = reject;
+  });
+  let resultTimeout: number | null = null;
+  const armResultTimeout = () => {
+    if (resultTimeout) window.clearTimeout(resultTimeout);
+    resultTimeout = window.setTimeout(() => {
+      settleError(new Error("Scout voice transcription timed out. Try again or check voice settings."));
+    }, SCOUT_VOICE_RESULT_TIMEOUT_MS);
+  };
+  const clearResultTimeout = () => {
+    if (!resultTimeout) return;
+    window.clearTimeout(resultTimeout);
+    resultTimeout = null;
+  };
+
+  const settleError = (error: Error, state: ScoutVoiceSessionState = "error") => {
+    if (finalized) return;
+    finalized = true;
+    clearResultTimeout();
+    eventSource.close();
+    callbacks.onState?.(state);
+    rejectResult(error);
+  };
+
+  const settleFinal = (final: ScoutVoiceLiveFinal) => {
+    if (finalized) return;
+    finalized = true;
+    clearResultTimeout();
+    eventSource.close();
+    callbacks.onFinal?.(final);
+    callbacks.onState?.("done");
+    resolveResult(final);
+  };
+
+  const eventSource = new EventSource(`/api/voice/session/${encodeURIComponent(sessionId)}/events`);
+  const onNamedEvent = (eventName: "session.state" | "session.partial" | "session.final" | "session.error" | "session.cancelled") => {
+    return (event: MessageEvent<string>) => {
+      if (finalized) return;
+      let payload: Record<string, unknown> = {};
+      try {
+        payload = JSON.parse(event.data) as Record<string, unknown>;
+      } catch {
+        return;
+      }
+
+      if (eventName === "session.partial") {
+        const text = typeof payload.text === "string" ? payload.text : "";
+        callbacks.onPartial?.(text);
+        return;
+      }
+
+      if (eventName === "session.state") {
+        const state = normalizeScoutVoiceSessionState(payload.state);
+        if (state) {
+          callbacks.onState?.(state);
+          if (state === "processing") armResultTimeout();
+        }
+        return;
+      }
+
+      if (eventName === "session.final") {
+        settleFinal({
+          sessionId,
+          text: typeof payload.text === "string" ? payload.text.trim() : "",
+          durationMs: Number(payload.durationMs ?? 0),
+        });
+        return;
+      }
+
+      if (eventName === "session.cancelled") {
+        settleError(cancelledVoiceError(), "cancelled");
+        return;
+      }
+
+      if (eventName === "session.error") {
+        const message = typeof payload.message === "string"
+          ? payload.message
+          : "Scout voice session failed.";
+        const code = typeof payload.code === "string" ? payload.code : null;
+        settleError(new Error(friendlySessionError(message, code)));
+      }
+    };
+  };
+
+  eventSource.addEventListener("session.started", () => {
+    callbacks.onState?.("starting");
+  });
+  eventSource.addEventListener("session.state", onNamedEvent("session.state"));
+  eventSource.addEventListener("session.partial", onNamedEvent("session.partial"));
+  eventSource.addEventListener("session.final", onNamedEvent("session.final"));
+  eventSource.addEventListener("session.cancelled", onNamedEvent("session.cancelled"));
+  eventSource.addEventListener("session.error", onNamedEvent("session.error"));
+  eventSource.onerror = () => {
+    if (finalized) return;
+    settleError(new Error("Scout voice event stream disconnected."));
+  };
+
+  return {
+    get sessionId() {
+      return sessionId;
+    },
+    result,
+    stop: async () => {
+      callbacks.onState?.("processing");
+      armResultTimeout();
+      const response = await fetch(`/api/voice/session/${encodeURIComponent(sessionId)}/stop`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const raw = await response.text().catch(() => "");
+        throw new Error(parseScoutVoiceError(raw, response.status));
+      }
+    },
+    cancel: async () => {
+      finalized = true;
+      clearResultTimeout();
+      eventSource.close();
+      const response = await fetch(`/api/voice/session/${encodeURIComponent(sessionId)}/cancel`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const raw = await response.text().catch(() => "");
+        throw new Error(parseScoutVoiceError(raw, response.status));
+      }
+      callbacks.onState?.("cancelled");
+      rejectResult(cancelledVoiceError());
+    },
+  };
+}
+
+async function startBrowserScoutVoiceLive(
+  callbacks: ScoutVoiceLiveCallbacks = {},
+): Promise<ScoutVoiceLiveHandle> {
+  if (typeof MediaRecorder === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    throw new Error("Scout voice capture is unavailable in this browser.");
+  }
+
+  // Lazy import keeps the voice client light for non-composer call sites.
+  const { startStreamLevelMeter } = await import("./voice-levels.ts");
+
+  const sessionId = createSessionId();
+  const chunks: Blob[] = [];
+  let stream: MediaStream | null = null;
+  let recorder: MediaRecorder | null = null;
+  let levelMeter: { stop: () => void } | null = null;
+  let cancelled = false;
+  let finalized = false;
+
+  let resolveResult!: (final: ScoutVoiceLiveFinal) => void;
+  let rejectResult!: (error: Error) => void;
+  const result = new Promise<ScoutVoiceLiveFinal>((resolve, reject) => {
+    resolveResult = resolve;
+    rejectResult = reject;
+  });
+
+  const stopTracks = () => {
+    levelMeter?.stop();
+    levelMeter = null;
+    for (const track of stream?.getTracks() ?? []) {
+      track.stop();
+    }
+    stream = null;
+  };
+
+  const settleError = (error: Error, state: ScoutVoiceSessionState = "error") => {
+    if (finalized) return;
+    finalized = true;
+    stopTracks();
+    callbacks.onState?.(state);
+    rejectResult(error);
+  };
+
+  const finalizeRecording = async () => {
+    if (finalized) return;
+    stopTracks();
+    if (cancelled) {
+      settleError(cancelledVoiceError(), "cancelled");
+      return;
+    }
+    callbacks.onState?.("processing");
+    const mimeType = recorder?.mimeType || preferredRecordingMimeType() || "application/octet-stream";
+    const audio = new Blob(chunks, { type: mimeType });
+    if (audio.size === 0) {
+      settleError(new Error("No voice audio was captured."));
+      return;
+    }
+    try {
+      const final = await transcribeScoutVoiceAudio(audio, { sessionId });
+      if (finalized) return;
+      finalized = true;
+      callbacks.onFinal?.(final);
+      callbacks.onState?.("done");
+      resolveResult(final);
+    } catch (error) {
+      settleError(error instanceof Error ? error : new Error(String(error)));
+    }
+  };
+
+  try {
+    callbacks.onState?.("starting");
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (callbacks.onLevel) {
+      levelMeter = startStreamLevelMeter(stream, callbacks.onLevel);
+    }
+    const mimeType = preferredRecordingMimeType();
+    recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    recorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size > 0) chunks.push(event.data);
+    });
+    recorder.addEventListener("error", () => {
+      settleError(new Error("Scout voice recorder failed."));
+    });
+    recorder.addEventListener("stop", () => {
+      void finalizeRecording();
+    }, { once: true });
+    recorder.start();
+    callbacks.onPartial?.("");
+    callbacks.onState?.("recording");
+  } catch (error) {
+    const startError = error instanceof Error ? error : new Error(String(error));
+    settleError(startError);
+    void result.catch(() => undefined);
+    throw startError;
+  }
+
+  return {
+    get sessionId() {
+      return sessionId;
+    },
+    result,
+    stop: async () => {
+      if (!recorder || recorder.state === "inactive") return;
+      recorder.stop();
+    },
+    cancel: async () => {
+      cancelled = true;
+      if (recorder && recorder.state !== "inactive") {
+        recorder.stop();
+        return;
+      }
+      settleError(cancelledVoiceError(), "cancelled");
+    },
+  };
+}
+
+function normalizeScoutVoiceSessionState(value: unknown): ScoutVoiceSessionState | null {
+  if (value === "starting" || value === "recording" || value === "processing" || value === "done" || value === "cancelled" || value === "error") {
+    return value;
+  }
+  return null;
+}
+
+function parseScoutVoiceError(raw: string, status: number): string {
+  try {
+    const parsed = JSON.parse(raw) as { error?: string };
+    return parsed.error ?? `Scout voice returned HTTP ${status}`;
+  } catch {
+    return raw || `Scout voice returned HTTP ${status}`;
+  }
+}
+async function transcribeScoutVoiceAudio(
+  audio: Blob,
+  input: { sessionId: string },
+): Promise<ScoutVoiceLiveFinal> {
+  const form = new FormData();
+  const format = audioFormatForMimeType(audio.type);
+  form.append("audio", audio, `audio.${extensionForMimeType(audio.type)}`);
+  form.append("sessionId", input.sessionId);
+  if (format) form.append("format", format);
+
+  const response = await fetch("/api/voice/transcribe", {
+    method: "POST",
+    body: form,
+  });
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    try {
+      const parsed = JSON.parse(raw) as { error?: string };
+      throw new Error(parsed.error ?? `Scout voice returned HTTP ${response.status}`);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(raw || `Scout voice returned HTTP ${response.status}`);
+      }
+      throw error;
+    }
+  }
+  const result = await response.json() as { text?: string; durationMs?: number };
+  return {
+    sessionId: input.sessionId,
+    text: result.text?.trim() ?? "",
+    durationMs: Number(result.durationMs ?? 0),
+  };
+}
+
+function cancelledVoiceError(): Error {
+  const error = new Error("Voice recording was cancelled.");
+  error.name = "AbortError";
+  return error;
+}
+
+function preferredRecordingMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") {
+    return undefined;
+  }
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/ogg;codecs=opus",
+    "audio/mp4",
+    "audio/webm",
+    "audio/wav",
+  ];
+  return candidates.find((candidate) => {
+    try {
+      return MediaRecorder.isTypeSupported(candidate);
+    } catch {
+      return false;
+    }
+  });
+}
+
+function audioFormatForMimeType(mimeType: string): string | undefined {
+  const normalized = mimeType.toLowerCase();
+  if (normalized.includes("mp3") || normalized.includes("mpeg")) return "mp3";
+  if (normalized.includes("wav")) return "wav";
+  if (normalized.includes("aac") || normalized.includes("mp4")) return "aac";
+  if (normalized.includes("opus") || normalized.includes("ogg") || normalized.includes("webm")) return "opus";
+  return undefined;
+}
+
+function extensionForMimeType(mimeType: string): string {
+  const normalized = mimeType.toLowerCase();
+  if (normalized.includes("webm")) return "webm";
+  if (normalized.includes("ogg") || normalized.includes("opus")) return "opus";
+  if (normalized.includes("mp4") || normalized.includes("aac")) return "m4a";
+  if (normalized.includes("wav")) return "wav";
+  if (normalized.includes("mp3") || normalized.includes("mpeg")) return "mp3";
+  return "audio";
+}
+
+function createSessionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `scout-voice:${crypto.randomUUID()}`;
+  }
+  return `scout-voice:${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`;
+}
+
+export async function fetchScoutVoiceSettings(): Promise<{
+  settings: ScoutVoiceSettings;
+  devices: ScoutVoiceInputDevice[];
+}> {
+  const response = await fetch("/api/voice/settings");
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    throw new Error(parseScoutVoiceError(raw, response.status));
+  }
+  return await response.json() as {
+    settings: ScoutVoiceSettings;
+    devices: ScoutVoiceInputDevice[];
+  };
+}
+
+export async function openScoutVoicePrivacySettings(
+  kind: "microphone" | "speechRecognition" = "microphone",
+): Promise<void> {
+  const response = await fetch("/api/voice/permissions/open", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ kind }),
+  });
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    throw new Error(parseScoutVoiceError(raw, response.status));
+  }
+}
+
+export async function requestScoutVoicePermissions(
+  kind: "microphone" | "speechRecognition" = "microphone",
+): Promise<void> {
+  const response = await fetch("/api/voice/permissions/request", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ kind }),
+  });
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    throw new Error(parseScoutVoiceError(raw, response.status));
+  }
+}

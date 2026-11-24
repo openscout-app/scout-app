@@ -1,0 +1,141 @@
+/* A post's actions. The primary move sits in an aligned column at the right;
+   the rest show on hover, on focus, or when a key opens one. The host grid
+   places `.pa-primary` and `.pa-strip`. Shared by the Feed and Home. */
+
+.pa-primary,
+.pa-strip {
+  --pa-ink: var(--scout-chrome-ink-strong);
+  --pa-soft: var(--scout-chrome-ink-soft);
+  --pa-faint: var(--scout-chrome-ink-faint);
+}
+
+.pa-primary { grid-area: primary; display: flex; justify-content: flex-end; align-items: flex-start; }
+
+.pa-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--pa-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pa-go:hover { border-color: var(--accent); color: var(--accent); }
+.pa-go[data-armed] { border-color: var(--accent); color: var(--accent); }
+.pa-go:disabled { opacity: 0.5; cursor: default; }
+
+.pa-strip { grid-area: strip; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+.pa-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  min-height: 20px;
+  visibility: hidden;
+}
+
+/* Shown on hover, on focus, with a panel open, and always on a touch screen. */
+:is(:hover, :focus-within, [data-focused]) > .pa-strip .pa-row,
+.pa-strip[data-open] .pa-row { visibility: visible; }
+@media (hover: none) { .pa-row { visibility: visible; } }
+
+.pa-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--pa-soft);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-decoration: none;
+  cursor: pointer;
+}
+.pa-act:hover,
+.pa-act[aria-expanded="true"] { color: var(--accent); }
+.pa-sep { width: 1px; height: 10px; background: var(--scout-line); }
+
+.pa-key {
+  padding: 0 4px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  color: var(--pa-faint);
+  font-family: var(--hud-font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  visibility: hidden;
+}
+:is(:hover, :focus-within, [data-focused]) > :is(.pa-strip, .pa-primary) .pa-key,
+.pa-key--on { visibility: visible; }
+@media (hover: none) { .pa-key { display: none; } }
+
+.pa-panel { display: flex; align-items: center; gap: 8px; }
+.pa-panel--stack { flex-direction: column; align-items: stretch; }
+
+
+
+.pa-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.pa-choice {
+  padding: 2px 8px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--pa-soft);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.pa-choice:hover { color: var(--pa-ink); }
+.pa-choice[aria-checked="true"] { border-color: var(--accent); color: var(--accent); }
+
+.pa-hint,
+.pa-status { margin: 0; color: var(--pa-faint); font-size: var(--text-xs); }
+.pa-status[data-state="done"] { color: var(--pa-soft); }
+.pa-status[data-state="failed"] { color: var(--red); }
+
+.pa-answer { display: flex; flex-direction: column; gap: 4px; }
+.pa-asked { margin: 0; color: var(--pa-faint); font-size: var(--text-xs); }
+.pa-answerText { margin: 0; color: var(--pa-ink); font-size: var(--text-sm); line-height: 1.5; white-space: pre-wrap; }
+
+.pa-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 12px;
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--hud-bg);
+  color: var(--scout-chrome-ink-strong);
+  font-size: var(--text-sm);
+  transform: translateX(-50%);
+}
+.pa-toast[data-state="failed"] { color: var(--red); }
+.pa-toastAct {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The operator's latest move on a post (post-parts.tsx MoveLine), on the Feed and on Home's cards.
+   The move in the reader's ink, its time faint: what was last done, not a call to act. */
+.fd-you { margin: 0; color: var(--scout-chrome-ink-soft); font-size: var(--text-xs); line-height: 1.45; overflow-wrap: anywhere; }
+.fd-you .fd-youWords { color: var(--scout-chrome-ink-strong); }
+.fd-you .fd-faint { color: var(--scout-chrome-ink-faint); }

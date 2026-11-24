@@ -1,0 +1,92 @@
+/* The box for writing to an agent (ReplyBox.tsx). The mic and send are
+   circles; the box's radius is their radius plus the inset, so one line is a
+   pill and a taller box keeps the same concentric corners. Send is quiet
+   until there is something to send; then it fills in ink. The accent stays
+   with an ask and its Allow. */
+
+.rb {
+  --rb-button: 28px;
+  --rb-inset: 4px;
+  --rb-ink: var(--scout-chrome-ink-strong, var(--hud-ink));
+  --rb-soft: var(--scout-chrome-ink-soft, color-mix(in srgb, var(--hud-ink) 64%, transparent));
+  --rb-faint: var(--scout-chrome-ink-faint, color-mix(in srgb, var(--hud-ink) 50%, transparent));
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rb-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--rb-inset) var(--rb-inset) var(--rb-inset) 14px;
+  border: 1px solid var(--scout-line-strong);
+  border-radius: calc(var(--rb-button) / 2 + var(--rb-inset));
+  background: color-mix(in srgb, var(--hud-ink) 3%, transparent);
+  transition: border-color 120ms ease-out;
+}
+.rb-box:focus-within,
+.rb[data-listening] .rb-box { border-color: var(--scout-line-strong); }
+
+.rb-field {
+  flex: 1 1 160px;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 4px 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--rb-ink);
+  caret-color: var(--rb-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: 20px;
+  resize: none;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.rb-field::placeholder { color: var(--rb-faint); }
+
+.rb-tools { flex: none; display: flex; align-items: center; gap: 2px; margin-left: auto; }
+
+.rb-send {
+  display: grid;
+  place-items: center;
+  width: var(--rb-button);
+  height: var(--rb-button);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: color-mix(in srgb, var(--hud-ink) 28%, transparent);
+  cursor: default;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+.rb[data-ready] .rb-send { background: var(--rb-ink); color: var(--hud-bg); cursor: pointer; }
+.rb[data-ready] .rb-send:hover { background: color-mix(in srgb, var(--rb-ink) 86%, transparent); }
+.rb-send:focus-visible { outline: 1px solid color-mix(in srgb, var(--hud-ink) 40%, transparent); outline-offset: 2px; }
+
+/* The mic: send's size and shape, ghosted until hovered; a take in progress holds a wash. */
+.rb-mic.s-dictation-mic { width: var(--rb-button); height: var(--rb-button); border: 0; border-radius: 50%; background: none; color: var(--rb-faint); }
+.rb-mic.s-dictation-mic:not(:disabled):hover,
+.rb-mic.s-dictation-mic--recording { color: var(--rb-ink); background: color-mix(in srgb, var(--hud-ink) 7%, transparent); }
+.rb-mic svg { width: 14px; height: 14px; }
+
+/* A take in progress: a band across the top of the box draws the mic's levels, oldest to newest, beside the words
+   heard so far. The field and its draft stay below. */
+.rb-voice { flex-basis: 100%; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 0 0; }
+.rb-wave.s-msg-compose-wave { flex: none; display: flex; align-items: center; gap: 1px; width: 112px; height: 16px; padding: 0; color: var(--rb-ink); pointer-events: none; }
+.rb-wave .s-msg-compose-wave-bar { flex: 1 1 0; min-width: 1px; height: 100%; border-radius: var(--radius-xs); background: currentColor; transform-origin: center; transition: transform 40ms linear, opacity 80ms ease; }
+.rb-heard { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--rb-soft); font-size: var(--text-xs); }
+
+.rb-note { margin: 0; padding-left: 14px; color: var(--rb-faint); font-size: var(--text-xs); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-box, .rb-send { transition: none; }
+  .rb-wave .s-msg-compose-wave-bar { transition: none; }
+}

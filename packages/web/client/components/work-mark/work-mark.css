@@ -1,0 +1,33 @@
+/* WorkMark (WorkMark.tsx): a 4×4 dot matrix in the state's colour. Unlit
+   dots stay faintly drawn, so every state keeps the same footprint. No glow. */
+
+.wm {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  color: var(--wm-ink, currentColor);
+}
+.wm[data-state="working"] { --wm-ink: var(--hud-status-ok); }
+.wm[data-state="waiting"] { --wm-ink: var(--accent); }
+.wm[data-state="idle"] { --wm-off: 0.3; }
+
+.wm-dot { fill: currentColor; opacity: var(--wm-off, 0.2); }
+.wm-dot[data-lit] { opacity: 1; }
+
+/* Working: a lit dot runs round the ring, its tail fading behind it. Each dot
+   starts one twelfth of the loop after the one before it, and --wm-phase puts
+   every mark on the page in step. */
+.wm[data-state="working"] .wm-ring {
+  animation: wm-run var(--wm-period, 1600ms) linear infinite;
+  animation-delay: calc(var(--wm-phase, 0ms) - var(--wm-period, 1600ms) + var(--wm-i, 0) * var(--wm-period, 1600ms) / 12);
+}
+@keyframes wm-run {
+  0% { opacity: 1; }
+  30% { opacity: 0.2; }
+  100% { opacity: 0.2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wm[data-state="working"] .wm-ring { animation: none; }
+  .wm[data-state="working"] .wm-ring[data-held] { opacity: var(--wm-held, 1); }
+}
