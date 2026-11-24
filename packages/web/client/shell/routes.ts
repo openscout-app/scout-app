@@ -1,4 +1,4 @@
-import { SURFACE_CATALOG, type SurfaceId } from "./surface-catalog.ts";
+import { CONNECTED_TOOLS, SURFACE_CATALOG, type ConnectedToolId, type SurfaceId } from "./surface-catalog.ts";
 
 /**
  * `app`: the full shell with its rail. `embed`: one surface with no chrome,
@@ -12,7 +12,9 @@ export type ShellRoute =
   /** The recorded exchange behind a Feed item. */
   | { mode: "app"; surface: "feed"; view: "conversation"; conversationId: string; workId: string | null }
   /** A recorded harness session a standalone Feed item names. */
-  | { mode: "app"; surface: "feed"; view: "session"; sessionId: string };
+  | { mode: "app"; surface: "feed"; view: "session"; sessionId: string }
+  /** A connected tool's page, such as T3 Code. App mode only: a tool has no embed. */
+  | { mode: "app"; tool: ConnectedToolId; view: "tool" };
 
 function decoded(segment: string): string | null {
   try { return decodeURIComponent(segment); } catch { return null; }
@@ -26,6 +28,7 @@ export function resolveShellRoute(url: Pick<URL, "pathname" | "searchParams">): 
     if (path === surface.route) return { mode: "app", surface: surface.id, view: "surface" };
     if ("embed" in surface && path === surface.embed.path) return { mode: "embed", surface: surface.id, view: "surface" };
   }
+  for (const tool of CONNECTED_TOOLS) if (path === tool.route) return { mode: "app", tool: tool.id, view: "tool" };
   const record = /^\/(c|sessions)\/([^/]+)$/.exec(path);
   const id = record ? decoded(record[2]!) : null;
   if (!record || !id) return null;

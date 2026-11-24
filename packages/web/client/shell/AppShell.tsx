@@ -5,7 +5,7 @@ import { Glyph, ScoutMark, type GlyphName } from "./glyphs.tsx";
 import { navigateTo, onAppLinkClick } from "./navigation.ts";
 import type { ShellMode } from "./routes.ts";
 import { RuntimeContext, runtimeStatusLabel, unknownRuntime, useRuntime, useRuntimeStatus, type RuntimeInfo } from "./runtime.ts";
-import type { SurfaceId } from "./surface-catalog.ts";
+import { CONNECTED_TOOLS, type ConnectedToolDescriptor, type ShellPageId, type SurfaceId } from "./surface-catalog.ts";
 import { SCOUT_SURFACES, type ScoutSurface } from "./surfaces.tsx";
 import { useSystemTheme, useThemePreference, type ThemePreference } from "./theme.ts";
 import "../surfaces/feed-embed-theme.css";
@@ -14,9 +14,11 @@ import "./app-shell.css";
 export type AppShellProps = {
   /** `app` draws the Scout frame; `embed` draws the surface alone, for a host with its own chrome. */
   mode: ShellMode;
-  /** The surface the page shows. */
-  active: SurfaceId;
+  /** The surface or connected tool the page shows. */
+  active: ShellPageId;
   surfaces?: readonly ScoutSurface[];
+  /** Separate apps the operator runs, listed under the surfaces. Pass `[]` to list none. */
+  tools?: readonly ConnectedToolDescriptor[];
   /** What the host says about its runtime. In app mode the shell also checks that it answers. */
   runtime?: RuntimeInfo;
   children: ReactNode;
@@ -72,7 +74,7 @@ function useNarrow(query = "(max-width: 900px)"): boolean {
   return narrow;
 }
 
-function AppFrame({ active, surfaces = SCOUT_SURFACES, runtime = unknownRuntime, children }: Omit<AppShellProps, "mode">) {
+function AppFrame({ active, surfaces = SCOUT_SURFACES, tools = CONNECTED_TOOLS, runtime = unknownRuntime, children }: Omit<AppShellProps, "mode">) {
   const { theme, preference, setPreference } = useThemePreference();
   const status = useRuntimeStatus(true);
   const value = useMemo(() => ({ info: runtime, status }), [runtime, status]);
@@ -84,7 +86,7 @@ function AppFrame({ active, surfaces = SCOUT_SURFACES, runtime = unknownRuntime,
     try { globalThis.localStorage?.setItem(SIDEBAR_KEY, next); } catch { /* this page only */ }
     setSidebar(next);
   };
-  const current = surfaces.find(s => s.id === active);
+  const current = surfaces.find(s => s.id === active) ?? tools.find(t => t.id === active);
 
   // Option-1 through Option-5 open a surface from anywhere outside a text field.
   useEffect(() => {
@@ -104,7 +106,7 @@ function AppFrame({ active, surfaces = SCOUT_SURFACES, runtime = unknownRuntime,
     <RuntimeContext.Provider value={value}>
       <div className="scout-feed-embed app" data-scout-theme={theme} data-sidebar={collapsed ? "collapsed" : "expanded"}>
         <a className="app-skip" href="#app-main">Skip to content</a>
-        <Sidebar active={active} surfaces={surfaces} preference={preference} onTheme={setPreference} />
+        <Sidebar active={active} surfaces={surfaces} tools={tools} preference={preference} onTheme={setPreference} />
         <header className="app-topRow">
           <button
             type="button"
@@ -126,9 +128,10 @@ function AppFrame({ active, surfaces = SCOUT_SURFACES, runtime = unknownRuntime,
   );
 }
 
-function Sidebar({ active, surfaces, preference, onTheme }: {
-  active: SurfaceId;
+function Sidebar({ active, surfaces, tools, preference, onTheme }: {
+  active: ShellPageId;
   surfaces: readonly ScoutSurface[];
+  tools: readonly ConnectedToolDescriptor[];
   preference: ThemePreference;
   onTheme: (preference: ThemePreference) => void;
 }) {
@@ -181,6 +184,28 @@ function Sidebar({ active, surfaces, preference, onTheme }: {
           <div className="app-group">
             <p className="app-groupLabel" id="app-next-caption">Arriving next</p>
             <ul className="app-surfaces" aria-labelledby="app-next-caption">{planned.map(row)}</ul>
+          </div>
+        ) : null}
+        {tools.length ? (
+          <div className="app-group">
+            <p className="app-groupLabel" id="app-tools-caption">Connected tools</p>
+            <ul className="app-surfaces" aria-labelledby="app-tools-caption">
+              {tools.map(tool => (
+                <li key={tool.id}>
+                  <a
+                    className="app-surface"
+                    href={tool.route}
+                    data-kind="tool"
+                    aria-current={tool.id === active ? "page" : undefined}
+                    title={`${tool.label} · ${tool.project.name} · ${tool.project.license}`}
+                    onClick={onAppLinkClick}
+                  >
+                    <Glyph name="tool" />
+                    <span className="app-navLabel">{tool.label}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         ) : null}
       </div>

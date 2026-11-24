@@ -11,6 +11,7 @@ import { RecordedChat, RecordedSession } from "./records.tsx";
 import { resolveShellRoute, type ShellRoute } from "./routes.ts";
 import { unknownRuntime, type RuntimeInfo } from "./runtime.ts";
 import { SCOUT_SURFACES, surfaceById, type ScoutSurface } from "./surfaces.tsx";
+import { T3CodeSurface } from "./T3CodeSurface.tsx";
 
 /** An embed leaves its document: a native host takes the route, a browser loads it. */
 const embedNavigate = (route: Route) => routeEmbeddedNavigation(route, dest => location.assign(routePath(dest)));
@@ -30,9 +31,11 @@ function useTitle(title: string | null) {
  * The whole Scout App for one URL: `/` and each surface route in the app
  * shell, `/embed/<surface>` chrome-free.
  */
-export function ScoutApp({ url: initial, runtime = unknownRuntime, capabilities, surfaces = SCOUT_SURFACES }: {
+export function ScoutApp({ url: initial, runtime = unknownRuntime, capabilities, surfaces = SCOUT_SURFACES, t3codeUrl = null }: {
   url: URL;
   runtime?: RuntimeInfo;
+  /** The operator's T3 Code loopback origin, display-only. The host's `/api/t3code` says whether it answers. */
+  t3codeUrl?: string | null;
   /** Feed settings for every surface on the page. The preview passes `readOnly: true`. */
   capabilities?: Partial<FeedCapabilities>;
   surfaces?: readonly ScoutSurface[];
@@ -44,8 +47,8 @@ export function ScoutApp({ url: initial, runtime = unknownRuntime, capabilities,
       {route?.mode === "embed" ? (
         <EmbedSurface surface={surfaceById(route.surface, surfaces)} url={url} runtime={runtime} />
       ) : (
-        <AppShell mode="app" active={route?.surface ?? "feed"} surfaces={surfaces} runtime={runtime}>
-          <AppContent route={route} url={url} surfaces={surfaces} />
+        <AppShell mode="app" active={route?.view === "tool" ? route.tool : route?.surface ?? "feed"} surfaces={surfaces} runtime={runtime}>
+          <AppContent route={route} url={url} surfaces={surfaces} t3codeUrl={t3codeUrl} />
         </AppShell>
       )}
     </FeedCapabilitiesProvider>
@@ -61,14 +64,21 @@ function EmbedSurface({ surface, url, runtime }: { surface: ScoutSurface; url: U
   );
 }
 
-function AppContent({ route, url, surfaces }: { route: ShellRoute | null; url: URL; surfaces: readonly ScoutSurface[] }) {
-  const surface = route ? surfaceById(route.surface, surfaces) : null;
+function AppContent({ route, url, surfaces, t3codeUrl }: {
+  route: ShellRoute | null;
+  url: URL;
+  surfaces: readonly ScoutSurface[];
+  t3codeUrl: string | null;
+}) {
+  const surface = route && route.view !== "tool" ? surfaceById(route.surface, surfaces) : null;
   const title = !route ? "Not found · Scout App"
+    : route.view === "tool" ? "T3 Code · Scout App"
     : route.view === "conversation" ? "Chat · Scout App"
     : route.view === "session" ? "Session · Scout App"
     : surface?.Component ? null : `${surface!.label} · Scout App`;
   useTitle(title);
 
+  if (route?.view === "tool") return <T3CodeSurface configuredUrl={t3codeUrl} />;
   if (!route || !surface) return <NotFound />;
   if (route.view === "conversation") return <RecordedChat id={route.conversationId} workId={route.workId} />;
   if (route.view === "session") return <RecordedSession id={route.sessionId} />;

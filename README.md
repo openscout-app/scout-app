@@ -77,6 +77,24 @@ The app reads the runtime you named. It does not start, restart or stop it. The 
 
 Use the printed loopback URL. Do not expose it through a tunnel or reverse proxy: local records can contain private messages and media. To choose another web port, set `SCOUT_PREVIEW_PORT` (`0` picks a free port).
 
+## Connected tools: T3 Code
+
+[T3 Code](https://github.com/pingdotgg/t3code) is a separate, MIT-licensed app for working with coding agents, made by the `pingdotgg/t3code` project. Scout App does not bundle, fork or restyle it. It lists T3 Code under **Connected tools** in the sidebar, below the five surfaces, and opens your own local T3 Code server at `/t3code`.
+
+```sh
+SCOUT_T3CODE_URL=http://127.0.0.1:3773 bun run start
+```
+
+Use the address your T3 Code server prints. Only `http://127.0.0.1:<port>`, `http://localhost:<port>` and `http://[::1]:<port>` are accepted, with no credentials, query or path. If `SCOUT_T3CODE_URL` is not set, the app takes the first loopback address in `OPENSCOUT_T3_CONNECTIONS` and ignores the rest of that entry, including `tokenEnv`. No token is read, forwarded or written into the page.
+
+The T3 Code page has a strip with the name, whether the server answers, its address, **Open in T3 Code ↗** and the `pingdotgg/t3code · MIT` credit. Below it:
+
+- If T3 Code answers and allows framing, it fills the page, as is.
+- If T3 Code answers but its `X-Frame-Options` or `frame-ancestors` header forbids framing, the page says so and offers **Open T3 Code in browser ↗**. It does not work around the header.
+- If no address is set, or nothing answers there, the page explains what T3 Code is and how to connect it.
+
+The host checks this with one request to the T3 Code front page, from `GET /api/t3code`. It sends no cookies or credentials. `/embed/feed` is not affected.
+
 ## Embed one surface
 
 A host that has its own chrome mounts a single surface. The client workspace package `scout-preview-feed-client` exports the shell and the Feed:

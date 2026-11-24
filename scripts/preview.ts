@@ -4,10 +4,13 @@ import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
+import { t3CodeOriginFromEnv } from "../packages/web/client/shell/t3code.ts";
 import { servePreview } from "./preview-host.ts";
 
 const port = Number(process.env.SCOUT_PREVIEW_PORT ?? 4173);
 if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("Invalid SCOUT_PREVIEW_PORT");
+// Read before anything starts. Only the loopback origin is kept: never a token or the name of one.
+const t3code = t3CodeOriginFromEnv(process.env);
 let temp: string | undefined;
 let child: ChildProcess | undefined;
 let host: Awaited<ReturnType<typeof servePreview>> | undefined;
@@ -75,9 +78,10 @@ try {
     owned.once("exit", () => { if (!closing) { console.error("Preview runtime stopped."); void stop(1); } });
     brokerUrl = `http://127.0.0.1:${base}`;
   }
-  host = await servePreview(brokerUrl, port, { runtime: child ? "temporary" : "existing" });
+  host = await servePreview(brokerUrl, port, { runtime: child ? "temporary" : "existing", t3code });
   // Launchers match the "Scout App Preview: …/embed/feed" line exactly. Keep its wording.
   console.log(`Scout App: ${host.url.origin}/\nScout App Preview: ${host.url.origin}/embed/feed\n${child ? "New temporary Scout runtime" : "Reading the selected local Scout runtime"} · Ctrl-C to stop`);
+  if (t3code) console.log(`T3 Code: ${host.url.origin}/t3code (your server at ${t3code})`);
 } catch (err) {
   console.error(err instanceof Error ? err.message : err);
   await stop(1);

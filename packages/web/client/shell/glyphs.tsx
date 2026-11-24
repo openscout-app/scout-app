@@ -16,7 +16,7 @@ export function ScoutMark({ size = 18, className }: { size?: number; className?:
   );
 }
 
-export type GlyphName = "feed" | "chats" | "sessions" | "board" | "control" | "appearance" | "panelLeft";
+export type GlyphName = "feed" | "chats" | "sessions" | "board" | "control" | "tool" | "appearance" | "panelLeft";
 
 const dot = (cx: number, cy: number) => <circle cx={cx} cy={cy} r={0.9} fill="currentColor" stroke="none" />;
 
@@ -47,6 +47,13 @@ const GLYPHS: Record<GlyphName, ReactNode> = {
       <circle cx="8" cy="8" r="4.75" />
       <path d="M8 1.75v2M8 12.25v2M1.75 8h2M12.25 8h2" />
       {dot(8, 8)}
+    </>
+  ),
+  /* A connected tool: a window with a prompt. Never the tool's own logo. */
+  tool: (
+    <>
+      <rect x="2.5" y="3" width="11" height="10" rx="1.5" />
+      <path d="M5 7l1.75 1.5L5 10M8.5 10.25h2.5" />
     </>
   ),
   /* Two sliders. */

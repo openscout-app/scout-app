@@ -241,12 +241,50 @@
 .record li header { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; }
 .record li p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; margin-top: 6px; }
 
+/* ── connected tool: T3 Code ──────────────────────────────────────── */
+/* A quiet strip names the tool, its connection, its address and its source.
+   Below it the operator's own T3 Code fills the sheet edge to edge, or a card
+   says plainly why it cannot. Nothing here restyles T3 Code itself. */
+
+.app-main:has(> .app-t3) { scrollbar-gutter: auto; }
+.app-main:has(> .app-t3[data-state="frame"]) { overflow: hidden; }
+.app-t3 { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.app-t3Strip {
+  flex: none; display: flex; align-items: center; gap: 10px; min-width: 0;
+  height: 36px; padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--app-sheet-edge);
+  color: var(--app-faint); font-size: 12px; line-height: 16px; white-space: nowrap;
+}
+.app-t3Name { color: var(--app-ink); font-size: 13px; font-weight: 600; }
+.app-t3Conn { display: inline-flex; align-items: center; gap: 6px; color: var(--app-soft); }
+.app-t3Origin { overflow: hidden; text-overflow: ellipsis; font-family: var(--hud-font-mono); font-size: 11px; }
+.app-t3Spacer { flex: 1 1 auto; }
+.app-t3Credit { color: var(--app-faint); font-family: var(--hud-font-mono); font-size: 11px; text-decoration: none; }
+.app-t3Credit:hover { color: var(--app-soft); text-decoration: underline; }
+.app-t3Open {
+  flex: none; display: inline-flex; align-items: center; height: 24px; padding: 0 9px;
+  border: 1px solid var(--scout-line-strong, var(--border)); border-radius: 6px;
+  color: var(--app-ink); font-size: 12px; text-decoration: none;
+}
+.app-t3Open:hover { border-color: color-mix(in srgb, var(--hud-ink) 24%, transparent); }
+.app-t3Frame { flex: 1 1 auto; display: block; width: 100%; min-height: 0; border: 0; background: var(--hud-bg); }
+.app-t3Body {
+  box-sizing: content-box; width: calc(100% - 2 * var(--app-gutter)); max-width: var(--app-measure);
+  margin: 0 auto; padding: 8px var(--app-gutter) 64px;
+}
+.app-t3Body .app-empty code { font-family: var(--hud-font-mono); font-size: 12px; color: var(--app-ink); }
+.app-t3Body .app-empty a:not(.app-button) { color: var(--app-ink); }
+.app-t3Checking { margin-top: 28px; color: var(--app-faint); font-size: 13px; line-height: 20px; }
+.app-t3Actions { display: flex; align-items: center; gap: 14px; }
+.app-t3Link { color: var(--app-soft); font-size: 12px; text-decoration: none; }
+.app-t3Link:hover { color: var(--app-ink); }
+
 /* ── narrow windows ───────────────────────────────────────────────── */
 
 @media (max-width: 720px) {
   .app { --app-gutter: 16px; --app-seam: 4px; --app-sheet-radius: 10px; }
   .app-main { scrollbar-gutter: auto; }
-  .app-runtimeWhere { display: none; }
+  .app-runtimeWhere, .app-t3Origin { display: none; }
   .app-feedHead, .app-page { padding-top: 20px; }
   .app-empty { padding: 16px; }
   .app-command { align-items: flex-start; }

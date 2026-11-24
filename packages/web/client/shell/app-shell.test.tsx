@@ -50,7 +50,7 @@ describe("AppShell", () => {
     expect(html).toContain('<nav class="app-sidebar" aria-label="Scout App">');
     expect(html).toContain('<span class="app-navLabel">Scout</span></a>');
     expect(html).toContain('<span class="app-crumb">Feed</span>');
-    expect(html.match(/data-glyph="(\w+)"/g)?.map(m => m.slice(12, -1))).toEqual(["feed", "chats", "sessions", "board", "control", "appearance", "panelLeft"]);
+    expect(html.match(/data-glyph="(\w+)"/g)?.map(m => m.slice(12, -1))).toEqual(["feed", "chats", "sessions", "board", "control", "tool", "appearance", "panelLeft"]);
     expect(html).toContain('class="app-runtime" data-status="connecting"');
     const links = [...html.matchAll(/<a class="app-surface" href="([^"]+)" data-status="(\w+)"( aria-current="page")?/g)];
     expect(links.map(m => [m[1], m[2], Boolean(m[3])])).toEqual([
