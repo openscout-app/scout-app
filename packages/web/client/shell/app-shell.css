@@ -1,0 +1,190 @@
+/* App shell: one quiet rail on the left, the surface on the right.
+   The rail carries identity (wordmark, runtime), place (the five surfaces) and
+   the theme. Live surfaces are full ink; the ones arriving next sit under one
+   caption in faint ink, so the shape of the app reads at a glance without a
+   badge on every row. Type is whole pixels, sentence case, no tracking tricks.
+   The surface's own column (sources.css --post-width) sets the content measure. */
+
+.app {
+  --app-rail: 184px;
+  --app-measure: 760px;
+  --app-gutter: 24px;
+  --app-rail-bg: color-mix(in srgb, var(--hud-ink) 2.5%, var(--hud-bg));
+  --app-ink: var(--scout-chrome-ink-strong, var(--ink));
+  --app-soft: var(--scout-chrome-ink-soft, var(--muted));
+  --app-faint: var(--scout-chrome-ink-faint, var(--muted));
+  --app-wash: color-mix(in srgb, var(--hud-ink) 6%, transparent);
+  display: grid;
+  grid-template-columns: var(--app-rail) minmax(0, 1fr);
+  height: 100%;
+}
+.app:has(.s-feed[data-lens="results"]) { --app-measure: 980px; }
+.app[data-scout-theme="dark"] { color-scheme: dark; }
+.app[data-scout-theme="light"] { color-scheme: light; }
+
+.app-skip {
+  position: absolute; left: 8px; top: 8px; z-index: 10;
+  padding: 6px 10px; border-radius: 6px;
+  background: var(--hud-bg); color: var(--app-ink); font-size: 13px;
+  transform: translateY(-200%);
+}
+.app-skip:focus-visible { transform: none; }
+
+/* ── rail ─────────────────────────────────────────────────────────── */
+
+.app-rail {
+  display: flex; flex-direction: column; gap: 20px; min-height: 0;
+  padding: 18px 12px 14px;
+  background: var(--app-rail-bg);
+  border-right: 1px solid var(--scout-line, var(--border));
+  overflow-y: auto;
+}
+.app-brand { display: grid; gap: 6px; padding: 0 8px; }
+.app-wordmark {
+  justify-self: start;
+  color: var(--app-ink); font-size: 16px; font-weight: 600; line-height: 20px; letter-spacing: -0.01em;
+  text-decoration: none; border-radius: 4px;
+}
+.app-runtime {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--app-faint); font-size: 12px; line-height: 16px;
+}
+.app-runtimeDot {
+  flex: none; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--app-faint);
+}
+[data-status="connected"] > .app-runtimeDot { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent); }
+[data-status="unreachable"] > .app-runtimeDot { background: var(--red); }
+[data-status="unreachable"].app-runtime { color: var(--red); }
+
+.app-surfaces { display: grid; gap: 2px; list-style: none; padding: 0; }
+.app-surface {
+  display: flex; align-items: center; height: 30px; padding: 0 8px;
+  border-radius: 6px;
+  color: var(--app-soft); font-size: 13px; font-weight: 400; line-height: 16px; text-decoration: none;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.app-surface:hover { background: var(--app-wash); color: var(--app-ink); }
+.app-surface[aria-current="page"] { background: var(--app-wash); color: var(--app-ink); font-weight: 500; }
+.app-surface[data-status="planned"] { color: var(--app-faint); }
+.app-surface[data-status="planned"]:hover,
+.app-surface[data-status="planned"][aria-current="page"] { color: var(--app-soft); }
+
+.app-next { display: grid; gap: 6px; }
+.app-railCaption { padding: 0 8px; color: var(--app-faint); font-size: 11px; line-height: 16px; }
+
+.app-railFoot { margin-top: auto; padding: 0 4px; }
+.app-theme {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  padding: 2px; border: 1px solid var(--scout-line, var(--border)); border-radius: 7px;
+}
+.app-theme button {
+  height: 22px; padding: 0; border: 0; border-radius: 5px;
+  background: transparent; color: var(--app-faint); font-size: 11px; line-height: 16px; cursor: pointer;
+}
+.app-theme button:hover { color: var(--app-ink); }
+.app-theme button[aria-pressed="true"] { background: var(--app-wash); color: var(--app-ink); }
+
+/* ── main ─────────────────────────────────────────────────────────── */
+
+.app-main {
+  min-width: 0; min-height: 0; overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+  display: flex; flex-direction: column;
+  outline: none;
+}
+.app-surfacePage { flex: 1 0 auto; display: flex; flex-direction: column; }
+.app-surfacePage > .s-feed { flex: 1 0 auto; height: auto; overflow: visible; }
+
+/* The heading starts on the Feed column's left edge. */
+.app-feedHead, .app-page {
+  box-sizing: content-box;
+  width: calc(100% - 2 * var(--app-gutter)); max-width: var(--app-measure);
+  margin: 0 auto; padding: 36px var(--app-gutter) 8px;
+}
+.app-feedHead h1, .app-pageHead h1 {
+  color: var(--app-ink); font-size: 20px; font-weight: 600; line-height: 28px; letter-spacing: -0.015em;
+}
+.app-feedHead p { margin-top: 2px; color: var(--app-faint); font-size: 13px; line-height: 20px; }
+.app-pageNote { color: var(--app-faint); font-size: 12px; line-height: 16px; }
+.app-feedHead .app-pageNote::before { content: "·"; margin: 0 6px; }
+
+/* ── first run ────────────────────────────────────────────────────── */
+
+.app-empty {
+  display: grid; gap: 10px;
+  margin: 28px 0 8px; padding: 20px 22px 22px;
+  border: 1px solid var(--scout-line, var(--border)); border-radius: 10px;
+  background: color-mix(in srgb, var(--hud-ink) 2%, var(--hud-bg));
+  color: var(--app-soft); font-size: 13px; line-height: 20px;
+}
+.app-empty h2 { margin-bottom: 2px; color: var(--app-ink); font-size: 15px; font-weight: 600; line-height: 20px; }
+.app-empty code, .app-planned code {
+  font-family: var(--hud-font-mono); font-size: 12px; color: var(--app-ink);
+}
+.app-emptyStatus {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 8px;
+  color: var(--app-faint); font-size: 12px;
+}
+.app-command {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  padding: 8px 8px 8px 12px; border-radius: 7px;
+  background: var(--app-wash);
+}
+.app-command code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; line-height: 20px; }
+.app-command button, .app-button {
+  flex: none; display: inline-flex; align-items: center; height: 26px; padding: 0 10px;
+  border: 1px solid var(--scout-line-strong, var(--border)); border-radius: 6px;
+  background: var(--hud-bg); color: var(--app-ink); font-size: 12px; line-height: 16px;
+  text-decoration: none; cursor: pointer;
+}
+.app-command button:hover, .app-button:hover { border-color: color-mix(in srgb, var(--hud-ink) 24%, transparent); }
+.app-emptyNext { padding-top: 10px; border-top: 1px solid var(--scout-line, var(--border)); color: var(--app-faint); }
+
+/* ── planned and missing pages ────────────────────────────────────── */
+
+.app-page { display: grid; justify-items: start; gap: 12px; padding-bottom: 64px; color: var(--app-soft); font-size: 13px; line-height: 20px; }
+.app-page p { max-width: 62ch; }
+.app-pageHead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+.app-plannedLead { color: var(--app-ink); font-size: 15px; line-height: 22px; }
+.app-page h2 { margin-top: 8px; color: var(--app-ink); font-size: 13px; font-weight: 600; line-height: 20px; }
+.app-capabilities { display: grid; gap: 4px; padding-left: 16px; color: var(--app-soft); }
+.app-capabilities li::marker { color: var(--app-faint); }
+.app-page .app-button { margin-top: 8px; }
+
+/* ── recorded Chat and Session ────────────────────────────────────── */
+
+.record { box-sizing: content-box; width: calc(100% - 2 * var(--app-gutter)); max-width: var(--app-measure); margin: 0 auto; padding: 28px var(--app-gutter) 64px; }
+.record-back { color: var(--app-soft); font-size: 13px; text-decoration: none; }
+.record-back:hover { color: var(--app-ink); }
+.record h1 { margin: 12px 0 4px; color: var(--app-ink); font-size: 20px; font-weight: 600; line-height: 28px; }
+.record .context, .record time { color: var(--muted); }
+.record ol { list-style: none; padding: 0; margin: 24px 0; }
+.record li { padding: 16px 0; border-top: 1px solid var(--border); }
+.record li header { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; }
+.record li p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; margin-top: 6px; }
+
+/* ── narrow windows: the rail becomes a top bar ───────────────────── */
+
+@media (max-width: 720px) {
+  .app { --app-gutter: 16px; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .app-rail {
+    flex-direction: row; align-items: center; gap: 12px; padding: 10px 16px;
+    border-right: 0; border-bottom: 1px solid var(--scout-line, var(--border));
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+  }
+  .app-rail::-webkit-scrollbar { display: none; }
+  .app-brand { display: flex; align-items: center; gap: 8px; padding: 0; }
+  .app-runtimeText, .app-railCaption, .app-railFoot { display: none; }
+  .app-surfaces, .app-next { display: flex; gap: 2px; }
+  .app-surface { height: 28px; white-space: nowrap; }
+  .app-main { scrollbar-gutter: auto; }
+  .app-feedHead, .app-page { padding-top: 20px; }
+  .app-empty { padding: 16px; }
+  .app-command { align-items: flex-start; }
+  .app-command code { white-space: pre-wrap; overflow-wrap: anywhere; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-surface { transition: none; }
+}

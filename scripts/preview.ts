@@ -75,8 +75,9 @@ try {
     owned.once("exit", () => { if (!closing) { console.error("Preview runtime stopped."); void stop(1); } });
     brokerUrl = `http://127.0.0.1:${base}`;
   }
-  host = await servePreview(brokerUrl, port);
-  console.log(`Scout App Preview: ${host.url.origin}/embed/feed\n${child ? "New temporary Scout runtime" : "Reading the selected local Scout runtime"} · Ctrl-C to stop`);
+  host = await servePreview(brokerUrl, port, { runtime: child ? "temporary" : "existing" });
+  // Launchers match the "Scout App Preview: …/embed/feed" line exactly. Keep its wording.
+  console.log(`Scout App: ${host.url.origin}/\nScout App Preview: ${host.url.origin}/embed/feed\n${child ? "New temporary Scout runtime" : "Reading the selected local Scout runtime"} · Ctrl-C to stop`);
 } catch (err) {
   console.error(err instanceof Error ? err.message : err);
   await stop(1);

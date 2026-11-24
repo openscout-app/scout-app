@@ -5,12 +5,13 @@
   "type": "module",
   "exports": {
     ".": "./screens/feed/index.ts",
+    "./shell": "./shell/index.ts",
     "./embed-navigation": "./surfaces/embed-navigation.ts",
     "./theme.css": "./surfaces/feed-embed-theme.css"
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "bun test ./screens/feed"
+    "test": "bun test ./screens/feed ./shell"
   },
   "dependencies": {
     "@openscout/protocol": "0.5.4",

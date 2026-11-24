@@ -33,6 +33,10 @@ Give the mount a height. The optional stylesheet supplies the Feed's spacing, ty
 
 The native bridge receives `{ kind: "ui-action", action: { type: "navigate", route } }`. Without that bridge, the shell owns the destinations: `/c/:conversationId`, `/sessions/:sessionId`, and `/work/:workId`. “Copy a link to this post” uses `/?post=:id`; the receiving Home route must pass that id as `FeedStream.expand`. The standalone native Feed is not the Home stream: leave its own scrolling and undo toast enabled.
 
+## Mount it in the shell
+
+`scout-preview-feed-client/shell` exports `AppShell`, `SCOUT_SURFACES`, the `ScoutSurface` type, `ScoutApp` and `FeedCapabilitiesProvider`. `<AppShell mode="embed">` renders the same theme wrapper as the snippet above and nothing else. `<AppShell mode="app">` adds the rail with the five surfaces (Feed live; Chat, Sessions, Board and Control planned), the runtime indicator and the theme control. `ScoutApp` maps a URL to the right mode: `/` and `/<surface>` open the app, `/embed/feed` opens the chrome-free Feed.
+
 ## Set capabilities
 
 `NativeAreaScreen`, `FeedContent`, and `FeedStream` accept `capabilities?: Partial<FeedCapabilities>`. To set capabilities for a subtree, wrap it in `<FeedCapabilitiesProvider capabilities={…}>`. Components in the subtree, including standalone `FeedItem` instances, read the merged settings through `useFeedCapabilities()`.

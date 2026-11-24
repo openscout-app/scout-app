@@ -170,6 +170,8 @@ export function FeedContent({ capabilities, ...props }: {
   navigate: Navigate;
   expand?: string;
   capabilities?: Partial<FeedCapabilities>;
+  /** Replaces the plain "Nothing finished yet." line when the whole stream is empty. */
+  empty?: ReactNode;
 }) {
   return (
     <FeedCapabilitiesProvider capabilities={capabilities}>
@@ -178,9 +180,9 @@ export function FeedContent({ capabilities, ...props }: {
   );
 }
 
-function FeedWithSources({ navigate, expand }: { navigate: Navigate; expand?: string }) {
+function FeedWithSources({ navigate, expand, empty }: { navigate: Navigate; expand?: string; empty?: ReactNode }) {
   const sources = useFeedSources();
-  return <FeedStreamView navigate={navigate} sources={sources} expand={expand} />;
+  return <FeedStreamView navigate={navigate} sources={sources} expand={expand} empty={empty} />;
 }
 
 /**
@@ -204,6 +206,8 @@ type FeedStreamProps = {
   onFeed?: (feed: FeedState) => void;
   /** Fixed placements in post order. */
   slots?: readonly FeedSlot[];
+  /** Replaces the plain "Nothing finished yet." line when the whole stream (All) is empty. */
+  empty?: ReactNode;
 };
 
 /** The Feed's days and source rows. Use when the host already reads the sources. */
@@ -215,7 +219,7 @@ export function FeedStream({ capabilities, ...props }: FeedStreamProps & { capab
   );
 }
 
-function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, onFeed, slots }: FeedStreamProps) {
+function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, onFeed, slots, empty }: FeedStreamProps) {
   const { readOnly, handoff } = useFeedCapabilities();
   const [view, setView] = useState<Exclude<FeedViewId, "home" | "following">>("all");
   const [resultsOnly, setResultsOnly] = useState(false);
@@ -483,9 +487,11 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, 
         ) : null}
 
         {loaded && visibleDays.length === 0 && waiting.length === 0 ? (
-          <p className="fd-empty">
-            {resultsOnly ? "No visual or code results in this range yet." : view === "reviewed" ? "No activity from you in this range yet." : "Nothing finished yet."}
-          </p>
+          empty && view === "all" && !resultsOnly ? empty : (
+            <p className="fd-empty">
+              {resultsOnly ? "No visual or code results in this range yet." : view === "reviewed" ? "No activity from you in this range yet." : "Nothing finished yet."}
+            </p>
+          )
         ) : null}
 
         {visibleDays.map(({ day, extra, github, featured, folded }, dayIndex) => {

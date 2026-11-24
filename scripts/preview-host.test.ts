@@ -9,7 +9,13 @@ test("preview serves the bundled client, keeps missing routes out of the shell, 
   const read = (path: string, init?: RequestInit) => fetch(new URL(path, host.url), init);
   try {
     const shell = await read("/embed/feed");
-    expect(await shell.text()).toContain('src="/assets/preview.js"');
+    const html = await shell.text();
+    expect(html).toContain('src="/assets/preview.js"');
+    // Display-only: the app names the runtime it reads, never a credential.
+    expect(html).toContain(`<meta name="scout-runtime-url" content="${absent.url.origin}">`);
+    expect(html).toContain('<meta name="scout-runtime-kind" content="existing">');
+    for (const path of ["/", "/feed", "/chat", "/sessions", "/board", "/control", "/sessions/s%3Aone"]) expect((await read(path)).status).toBe(200);
+    for (const path of ["/embed/chat", "/feed/extra", "/sessions/a/b"]) expect((await read(path)).status).toBe(404);
     for (const file of ["js", "css"]) expect((await read("/assets/preview." + file)).status).toBe(200);
     expect((await read("/c/chat?workId=one")).status).toBe(200);
     expect((await read("/missing")).status).toBe(404);

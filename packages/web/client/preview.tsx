@@ -1,20 +1,15 @@
 import { createRoot } from "react-dom/client";
-import { NativeAreaScreen } from "scout-preview-feed-client";
-import { routeEmbeddedNavigation } from "scout-preview-feed-client/embed-navigation";
-import { routePath } from "./lib/router.ts";
-import { PreviewShell } from "./preview-shell.tsx";
+import { ScoutApp } from "./shell/ScoutApp.tsx";
+import { readRuntimeInfo } from "./shell/runtime.ts";
 import { defaultFeedHandoff } from "./screens/feed/feed-capabilities.tsx";
 import "scout-preview-feed-client/theme.css";
 import "./preview.css";
 
-const url = new URL(location.href);
-
+// `/` and the surface routes open the app shell; `/embed/feed` is the chrome-free Feed launchers open.
 createRoot(document.getElementById("root")!).render(
-  <PreviewShell url={url}>
-    <NativeAreaScreen
-      capabilities={{ readOnly: true, handoff: defaultFeedHandoff }}
-      expand={url.searchParams.get("post") || undefined}
-      navigate={route => routeEmbeddedNavigation(route, dest => location.assign(routePath(dest)))}
-    />
-  </PreviewShell>,
+  <ScoutApp
+    url={new URL(location.href)}
+    runtime={readRuntimeInfo(document)}
+    capabilities={{ readOnly: true, handoff: defaultFeedHandoff }}
+  />,
 );
