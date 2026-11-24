@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { isEditableTarget } from "../lib/keyboard-nav-core.ts";
+import { useFeedCapabilities } from "../screens/feed/feed-capabilities.tsx";
+import { Glyph, ScoutMark, type GlyphName } from "./glyphs.tsx";
 import { navigateTo, onAppLinkClick } from "./navigation.ts";
 import type { ShellMode } from "./routes.ts";
 import { RuntimeContext, runtimeStatusLabel, unknownRuntime, useRuntime, useRuntimeStatus, type RuntimeInfo } from "./runtime.ts";
@@ -10,7 +12,7 @@ import "../surfaces/feed-embed-theme.css";
 import "./app-shell.css";
 
 export type AppShellProps = {
-  /** `app` draws the rail; `embed` draws the surface alone, for a host with its own chrome. */
+  /** `app` draws the Scout frame; `embed` draws the surface alone, for a host with its own chrome. */
   mode: ShellMode;
   /** The surface the page shows. */
   active: SurfaceId;
@@ -22,8 +24,11 @@ export type AppShellProps = {
 
 /**
  * The frame every Scout App surface mounts in. A surface supplies only its
- * content; the shell owns the rail, the theme, the runtime indicator and the
- * keys that move between surfaces, so a new surface needs no chrome of its own.
+ * content; the shell owns the sidebar, top row, status bar, theme and the keys
+ * that move between surfaces, so a new surface needs no chrome of its own.
+ *
+ * App mode is the Scout frame: a full-height sidebar, a 40px top row and a
+ * 28px status bar share one paint, and the page is a rounded sheet inside it.
  */
 export function AppShell({ mode, ...props }: AppShellProps) {
   return mode === "embed" ? <EmbedFrame {...props} /> : <AppFrame {...props} />;
@@ -40,10 +45,46 @@ function EmbedFrame({ runtime = unknownRuntime, children }: Omit<AppShellProps, 
   );
 }
 
+const glyphFor: Record<SurfaceId, GlyphName> = {
+  feed: "feed", chat: "chats", sessions: "sessions", board: "board", control: "control",
+};
+
+type SidebarPreference = "auto" | "expanded" | "collapsed";
+const SIDEBAR_KEY = "scout-app.sidebar";
+
+function readSidebarPreference(): SidebarPreference {
+  try {
+    const saved = globalThis.localStorage?.getItem(SIDEBAR_KEY);
+    return saved === "expanded" || saved === "collapsed" ? saved : "auto";
+  } catch { return "auto"; }
+}
+
+/** Narrow windows fold the sidebar to its icon rail unless the operator chose otherwise. */
+function useNarrow(query = "(max-width: 900px)"): boolean {
+  const [narrow, setNarrow] = useState(() => typeof window !== "undefined" && Boolean(window.matchMedia?.(query).matches));
+  useEffect(() => {
+    const media = window.matchMedia?.(query);
+    if (!media) return;
+    const onChange = (e: MediaQueryListEvent) => setNarrow(e.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, [query]);
+  return narrow;
+}
+
 function AppFrame({ active, surfaces = SCOUT_SURFACES, runtime = unknownRuntime, children }: Omit<AppShellProps, "mode">) {
   const { theme, preference, setPreference } = useThemePreference();
   const status = useRuntimeStatus(true);
   const value = useMemo(() => ({ info: runtime, status }), [runtime, status]);
+  const narrow = useNarrow();
+  const [sidebar, setSidebar] = useState<SidebarPreference>(readSidebarPreference);
+  const collapsed = sidebar === "collapsed" || (sidebar === "auto" && narrow);
+  const toggleSidebar = () => {
+    const next: SidebarPreference = collapsed ? "expanded" : "collapsed";
+    try { globalThis.localStorage?.setItem(SIDEBAR_KEY, next); } catch { /* this page only */ }
+    setSidebar(next);
+  };
+  const current = surfaces.find(s => s.id === active);
 
   // Option-1 through Option-5 open a surface from anywhere outside a text field.
   useEffect(() => {
@@ -61,28 +102,42 @@ function AppFrame({ active, surfaces = SCOUT_SURFACES, runtime = unknownRuntime,
 
   return (
     <RuntimeContext.Provider value={value}>
-      <div className="scout-feed-embed app" data-scout-theme={theme}>
+      <div className="scout-feed-embed app" data-scout-theme={theme} data-sidebar={collapsed ? "collapsed" : "expanded"}>
         <a className="app-skip" href="#app-main">Skip to content</a>
-        <Rail active={active} surfaces={surfaces} preference={preference} onTheme={setPreference} />
+        <Sidebar active={active} surfaces={surfaces} preference={preference} onTheme={setPreference} />
+        <header className="app-topRow">
+          <button
+            type="button"
+            className="app-topRowButton"
+            aria-label={collapsed ? "Show sidebar" : "Hide sidebar"}
+            aria-pressed={!collapsed}
+            title={collapsed ? "Show sidebar" : "Hide sidebar"}
+            onClick={toggleSidebar}
+          >
+            <Glyph name="panelLeft" size={15} />
+          </button>
+          <span className="app-crumb">{current?.label ?? "Scout"}</span>
+          <TopRowUtilities />
+        </header>
         <main id="app-main" className="app-main" tabIndex={-1}>{children}</main>
+        <StatusBar />
       </div>
     </RuntimeContext.Provider>
   );
 }
 
-function Rail({ active, surfaces, preference, onTheme }: {
+function Sidebar({ active, surfaces, preference, onTheme }: {
   active: SurfaceId;
   surfaces: readonly ScoutSurface[];
   preference: ThemePreference;
   onTheme: (preference: ThemePreference) => void;
 }) {
-  const list = useRef<HTMLUListElement>(null);
   const live = surfaces.filter(s => s.status === "live");
   const planned = surfaces.filter(s => s.status === "planned");
 
-  // Up and Down (and Home, End) move between the rail's links.
+  // Up and Down (and Home, End) move between the sidebar's rows.
   const onKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
-    const links = [...(list.current?.parentElement?.querySelectorAll<HTMLAnchorElement>(".app-surface") ?? [])];
+    const links = [...event.currentTarget.querySelectorAll<HTMLAnchorElement>(".app-surface")];
     const at = links.indexOf(document.activeElement as HTMLAnchorElement);
     if (at < 0) return;
     const next = event.key === "ArrowDown" ? at + 1 : event.key === "ArrowUp" ? at - 1
@@ -92,7 +147,7 @@ function Rail({ active, surfaces, preference, onTheme }: {
     links[(next + links.length) % links.length]?.focus();
   };
 
-  const item = (surface: ScoutSurface) => {
+  const row = (surface: ScoutSurface) => {
     const shortcut = surfaces.indexOf(surface) + 1;
     return (
       <li key={surface.id}>
@@ -105,63 +160,76 @@ function Rail({ active, surfaces, preference, onTheme }: {
           title={`${surface.label} · Option-${shortcut}${surface.status === "planned" ? " · Not in this build yet" : ""}`}
           onClick={onAppLinkClick}
         >
-          <span>{surface.label}</span>
+          <Glyph name={glyphFor[surface.id]} />
+          <span className="app-navLabel">{surface.label}</span>
         </a>
       </li>
     );
   };
 
   return (
-    <nav className="app-rail" aria-label="Scout App" onKeyDown={onKeyDown}>
+    <nav className="app-sidebar" aria-label="Scout App" onKeyDown={onKeyDown}>
       <div className="app-brand">
-        <a className="app-wordmark" href="/" onClick={onAppLinkClick}>Scout</a>
-        <RuntimeIndicator />
+        <a className="app-wordmark" href="/" aria-label="Scout App home" title="Scout App" onClick={onAppLinkClick}>
+          <ScoutMark size={22} />
+          <span className="app-navLabel">Scout</span>
+        </a>
       </div>
-      <ul className="app-surfaces" ref={list}>{live.map(item)}</ul>
-      {planned.length ? (
-        <div className="app-next">
-          <p className="app-railCaption" id="app-next-caption">Arriving next</p>
-          <ul className="app-surfaces" aria-labelledby="app-next-caption">{planned.map(item)}</ul>
-        </div>
-      ) : null}
-      <div className="app-railFoot">
-        <ThemeControl preference={preference} onChange={onTheme} />
+      <div className="app-sidebarBody">
+        <ul className="app-surfaces">{live.map(row)}</ul>
+        {planned.length ? (
+          <div className="app-group">
+            <p className="app-groupLabel" id="app-next-caption">Arriving next</p>
+            <ul className="app-surfaces" aria-labelledby="app-next-caption">{planned.map(row)}</ul>
+          </div>
+        ) : null}
+      </div>
+      <div className="app-sidebarFoot">
+        <ThemeRow preference={preference} onChange={onTheme} />
       </div>
     </nav>
   );
 }
 
-function RuntimeIndicator() {
-  const { info, status } = useRuntime();
-  const where = info.url ? ` at ${info.url}` : "";
+const themeOrder: readonly ThemePreference[] = ["system", "light", "dark"];
+const themeLabel: Record<ThemePreference, string> = { system: "Auto", light: "Light", dark: "Dark" };
+
+/** Appearance sits at the sidebar's foot, where Scout keeps its settings. One row cycles Auto, Light and Dark. */
+function ThemeRow({ preference, onChange }: { preference: ThemePreference; onChange: (p: ThemePreference) => void }) {
+  const next = themeOrder[(themeOrder.indexOf(preference) + 1) % themeOrder.length]!;
   return (
-    <p className="app-runtime" data-status={status} role="status" title={`Local Scout runtime${where}: ${runtimeStatusLabel[status]}`}>
-      <span className="app-runtimeDot" aria-hidden="true" />
-      <span className="app-runtimeText">{status === "connected" ? "Local runtime" : runtimeStatusLabel[status]}</span>
-    </p>
+    <button
+      type="button"
+      className="app-surface app-themeRow"
+      aria-label={`Theme: ${themeLabel[preference]}. Switch to ${themeLabel[next]}`}
+      title={`Theme: ${themeLabel[preference]}`}
+      data-theme-preference={preference}
+      onClick={() => onChange(next)}
+    >
+      <Glyph name="appearance" />
+      <span className="app-navLabel">Theme</span>
+      <span className="app-navValue">{themeLabel[preference]}</span>
+    </button>
   );
 }
 
-const themeOptions: ReadonlyArray<{ value: ThemePreference; label: string }> = [
-  { value: "system", label: "Auto" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-];
+function TopRowUtilities() {
+  const { readOnly } = useFeedCapabilities();
+  return <div className="app-topRowUtilities">{readOnly ? <span className="app-utility">Read only</span> : null}</div>;
+}
 
-function ThemeControl({ preference, onChange }: { preference: ThemePreference; onChange: (p: ThemePreference) => void }) {
+/** The frame's bottom edge: whether the runtime answers, and which one it is. */
+function StatusBar() {
+  const { info, status } = useRuntime();
+  const where = info.url?.replace(/^https?:\/\//, "") ?? null;
   return (
-    <div className="app-theme" role="group" aria-label="Theme">
-      {themeOptions.map(option => (
-        <button
-          key={option.value}
-          type="button"
-          aria-pressed={preference === option.value}
-          title={option.value === "system" ? "Follow the system appearance" : undefined}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+    <footer className="app-statusBar">
+      <p className="app-runtime" data-status={status} role="status" title={`Local Scout runtime${info.url ? ` at ${info.url}` : ""}: ${runtimeStatusLabel[status]}`}>
+        <span className="app-runtimeDot" aria-hidden="true" />
+        <span>{info.kind === "temporary" ? "Temporary runtime" : "Local runtime"}</span>
+        <span className="app-runtimeValue">{runtimeStatusLabel[status]}</span>
+      </p>
+      {where ? <span className="app-runtimeWhere">{where}</span> : null}
+    </footer>
   );
 }

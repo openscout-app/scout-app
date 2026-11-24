@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { routePath } from "../lib/router.ts";
 import type { Route } from "../lib/types.ts";
-import { FeedCapabilitiesProvider, useFeedCapabilities, type FeedCapabilities } from "../screens/feed/feed-capabilities.tsx";
+import { FeedCapabilitiesProvider, type FeedCapabilities } from "../screens/feed/feed-capabilities.tsx";
 import { routeEmbeddedNavigation } from "../surfaces/embed-navigation.ts";
 import { AppShell } from "./AppShell.tsx";
 import { FeedEmptyState } from "./FeedEmptyState.tsx";
@@ -63,7 +63,6 @@ function EmbedSurface({ surface, url, runtime }: { surface: ScoutSurface; url: U
 
 function AppContent({ route, url, surfaces }: { route: ShellRoute | null; url: URL; surfaces: readonly ScoutSurface[] }) {
   const surface = route ? surfaceById(route.surface, surfaces) : null;
-  const { readOnly } = useFeedCapabilities();
   const title = !route ? "Not found · Scout App"
     : route.view === "conversation" ? "Chat · Scout App"
     : route.view === "session" ? "Session · Scout App"
@@ -79,7 +78,7 @@ function AppContent({ route, url, surfaces }: { route: ShellRoute | null; url: U
     <div className="app-surfacePage" data-surface={surface.id}>
       <header className="app-feedHead">
         <h1>{surface.label}</h1>
-        <p>{surface.description}{readOnly ? <span className="app-pageNote">Read only</span> : null}</p>
+        <p>{surface.description}</p>
       </header>
       <Component mode="app" url={url} navigate={appNavigate} emptyState={<FeedEmptyState />} />
     </div>

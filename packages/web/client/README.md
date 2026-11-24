@@ -35,7 +35,7 @@ The native bridge receives `{ kind: "ui-action", action: { type: "navigate", rou
 
 ## Mount it in the shell
 
-`scout-preview-feed-client/shell` exports `AppShell`, `SCOUT_SURFACES`, the `ScoutSurface` type, `ScoutApp` and `FeedCapabilitiesProvider`. `<AppShell mode="embed">` renders the same theme wrapper as the snippet above and nothing else. `<AppShell mode="app">` adds the rail with the five surfaces (Feed live; Chat, Sessions, Board and Control planned), the runtime indicator and the theme control. `ScoutApp` maps a URL to the right mode: `/` and `/<surface>` open the app, `/embed/feed` opens the chrome-free Feed.
+`scout-preview-feed-client/shell` exports `AppShell`, `SCOUT_SURFACES`, the `ScoutSurface` type, `ScoutApp` and `FeedCapabilitiesProvider`. `<AppShell mode="embed">` renders the same theme wrapper as the snippet above and nothing else. `<AppShell mode="app">` adds the Scout frame: a 260px sidebar with the five surfaces (Feed live; Chat, Sessions, Board and Control planned) and the theme row, a 40px top row with the page name and a sidebar toggle, the page as a rounded sheet, and a 28px status bar with the runtime status. `ScoutApp` maps a URL to the right mode: `/` and `/<surface>` open the app, `/embed/feed` opens the chrome-free Feed.
 
 ## Set capabilities
 

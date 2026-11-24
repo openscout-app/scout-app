@@ -41,7 +41,7 @@ export function FeedEmptyState() {
         </>
       )}
       <p className="app-emptyNext">
-        Feed lists work as your agents finish it. Chat, Sessions, Board and Control will open beside it in this rail as each one ships.
+        Feed lists work as your agents finish it. Chat, Sessions, Board and Control will open beside it in this sidebar as each one ships.
       </p>
     </section>
   );

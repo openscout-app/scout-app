@@ -42,13 +42,15 @@ describe("AppShell", () => {
     const navigate = () => {};
     const html = renderToStaticMarkup(<AppShell mode="embed" active="feed"><NativeAreaScreen navigate={navigate} /></AppShell>);
     expect(html).toBe(`<div class="scout-feed-embed" data-scout-theme="light">${renderToStaticMarkup(<NativeAreaScreen navigate={navigate} />)}</div>`);
-    expect(html).not.toMatch(/<nav|<main|app-rail|Arriving next/);
+    expect(html).not.toMatch(/<nav|<main|<header|<footer|app-sidebar|app-statusBar|Arriving next/);
   });
 
-  test("app mode draws the rail: wordmark, runtime, all five surfaces with the current one marked", () => {
+  test("app mode draws the frame: sidebar with mark and five surfaces, top row, sheet, status bar", () => {
     const html = renderToStaticMarkup(<AppShell mode="app" active="feed"><p>content</p></AppShell>);
-    expect(html).toContain('<nav class="app-rail" aria-label="Scout App">');
-    expect(html).toContain(">Scout</a>");
+    expect(html).toContain('<nav class="app-sidebar" aria-label="Scout App">');
+    expect(html).toContain('<span class="app-navLabel">Scout</span></a>');
+    expect(html).toContain('<span class="app-crumb">Feed</span>');
+    expect(html.match(/data-glyph="(\w+)"/g)?.map(m => m.slice(12, -1))).toEqual(["feed", "chats", "sessions", "board", "control", "appearance", "panelLeft"]);
     expect(html).toContain('class="app-runtime" data-status="connecting"');
     const links = [...html.matchAll(/<a class="app-surface" href="([^"]+)" data-status="(\w+)"( aria-current="page")?/g)];
     expect(links.map(m => [m[1], m[2], Boolean(m[3])])).toEqual([
@@ -146,12 +148,20 @@ describe("routing in the browser", () => {
   test("/ opens the shell with the first-run guide in place of the bare empty line", async () => {
     const requests = await inBrowser("/", async window => {
       const doc = window.document;
-      expect(doc.querySelector("nav.app-rail")).not.toBeNull();
+      expect(doc.querySelector("nav.app-sidebar")).not.toBeNull();
+      expect(doc.querySelector(".app-topRow .app-crumb")?.textContent).toBe("Feed");
       expect(doc.querySelector('.app-surface[aria-current="page"]')?.textContent).toBe("Feed");
       expect(doc.querySelector(".app-empty h2")?.textContent).toBe("Nothing finished yet.");
       expect(doc.querySelector(".app-command code")?.textContent).toBe(CONNECT_COMMAND);
       expect(doc.querySelector(".fd-empty")).toBeNull();
       expect(doc.querySelector(".app-runtime")?.getAttribute("data-status")).toBe("connected");
+
+      // The top row's panel button folds the sidebar to its icon rail and remembers it.
+      const app = () => doc.querySelector(".app");
+      expect(app()?.getAttribute("data-sidebar")).toBe("expanded");
+      await act(async () => { (doc.querySelector(".app-topRowButton") as unknown as HTMLButtonElement).click(); });
+      expect(app()?.getAttribute("data-sidebar")).toBe("collapsed");
+      expect(window.localStorage.getItem("scout-app.sidebar")).toBe("collapsed");
 
       // Option-3 opens Sessions without reloading the document.
       await act(async () => {
@@ -159,10 +169,14 @@ describe("routing in the browser", () => {
       });
       expect(window.location.pathname).toBe("/sessions");
       expect(doc.querySelector('.app-surface[aria-current="page"]')?.textContent).toBe("Sessions");
+      expect(doc.querySelector(".app-crumb")?.textContent).toBe("Sessions");
       expect(doc.querySelector(".app-planned h1")?.textContent).toBe("Sessions");
 
-      // The theme choice applies at once and survives a reload.
-      await act(async () => { (doc.querySelector('.app-theme button:nth-child(3)') as unknown as HTMLButtonElement).click(); });
+      // The theme row cycles Auto, Light, Dark; the choice applies at once and survives a reload.
+      const themeRow = () => doc.querySelector(".app-themeRow") as unknown as HTMLButtonElement;
+      await act(async () => { themeRow().click(); });
+      await act(async () => { themeRow().click(); });
+      expect(themeRow().getAttribute("data-theme-preference")).toBe("dark");
       expect(doc.querySelector(".app")?.getAttribute("data-scout-theme")).toBe("dark");
       expect(window.localStorage.getItem("scout-app.theme")).toBe("dark");
     });
@@ -172,7 +186,7 @@ describe("routing in the browser", () => {
   test("/embed/feed stays chrome-free with the Feed's own empty line", async () => {
     await inBrowser("/embed/feed", async window => {
       const doc = window.document;
-      expect(doc.querySelector("nav, main, .app-rail, .app-empty")).toBeNull();
+      expect(doc.querySelector("nav, main, .app-sidebar, .app-topRow, .app-statusBar, .app-empty")).toBeNull();
       expect(doc.body.firstElementChild?.className).toBe("scout-feed-embed");
       expect(doc.querySelector(".fd-empty")?.textContent).toBe("Nothing finished yet.");
     });

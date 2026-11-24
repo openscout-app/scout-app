@@ -1,26 +1,47 @@
-/* App shell: one quiet rail on the left, the surface on the right.
-   The rail carries identity (wordmark, runtime), place (the five surfaces) and
-   the theme. Live surfaces are full ink; the ones arriving next sit under one
-   caption in faint ink, so the shape of the app reads at a glance without a
-   badge on every row. Type is whole pixels, sentence case, no tracking tricks.
-   The surface's own column (sources.css --post-width) sets the content measure. */
+/* App shell: the Scout frame.
+   The sidebar, the top row and the status bar are one surface, the frame,
+   painted a step paler than the page. The page is one sheet inside it: under
+   the top row, inset from the window's right edge by the seam, with 14px
+   corners and a 1px edge. The sidebar runs the full height; the status bar
+   runs under the sheet. Geometry follows Scout's shell: a 260px sidebar that
+   folds to a 48px icon rail, a 40px brand row and top row, 16px glyphs on
+   whole pixels, a 28px status bar. Rows change light, never weight, so a
+   label does not shift. The surface's own column (sources.css --post-width)
+   sets the content measure. */
 
 .app {
-  --app-rail: 184px;
+  --app-sidebar: 260px;
+  --app-rail: 48px;
+  --app-top-row: 40px;
+  --app-status-bar: 28px;
+  --app-seam: 6px;
+  --app-sheet-radius: 14px;
   --app-measure: 760px;
   --app-gutter: 24px;
-  --app-rail-bg: color-mix(in srgb, var(--hud-ink) 2.5%, var(--hud-bg));
   --app-ink: var(--scout-chrome-ink-strong, var(--ink));
   --app-soft: var(--scout-chrome-ink-soft, var(--muted));
   --app-faint: var(--scout-chrome-ink-faint, var(--muted));
   --app-wash: color-mix(in srgb, var(--hud-ink) 6%, transparent);
+  --app-hover: color-mix(in srgb, var(--hud-ink) 4%, transparent);
+  --app-frame: color-mix(in srgb, var(--hud-bg) 88%, var(--hud-ink));
+  --app-sheet-edge: color-mix(in srgb, var(--hud-ink) 12%, transparent);
+  --app-motion: 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
   display: grid;
-  grid-template-columns: var(--app-rail) minmax(0, 1fr);
+  grid-template-columns: var(--app-sidebar) minmax(0, 1fr);
+  grid-template-rows: var(--app-top-row) minmax(0, 1fr) var(--app-status-bar);
+  grid-template-areas:
+    "sidebar top"
+    "sidebar main"
+    "sidebar status";
   height: 100%;
+  transition: grid-template-columns var(--app-motion);
 }
+/* Outranks the theme wrapper's own page ground. */
+.app[data-scout-theme] { background: var(--app-frame); }
+.app[data-sidebar="collapsed"] { grid-template-columns: var(--app-rail) minmax(0, 1fr); }
 .app:has(.s-feed[data-lens="results"]) { --app-measure: 980px; }
-.app[data-scout-theme="dark"] { color-scheme: dark; }
-.app[data-scout-theme="light"] { color-scheme: light; }
+.app[data-scout-theme="dark"] { --app-frame: color-mix(in srgb, var(--hud-bg) 94%, var(--hud-ink)); color-scheme: dark; }
+.app[data-scout-theme="light"] { --app-frame: color-mix(in srgb, var(--hud-bg) 93%, var(--hud-ink)); color-scheme: light; }
 
 .app-skip {
   position: absolute; left: 8px; top: 8px; z-index: 10;
@@ -30,71 +51,127 @@
 }
 .app-skip:focus-visible { transform: none; }
 
-/* ── rail ─────────────────────────────────────────────────────────── */
+/* ── sidebar ──────────────────────────────────────────────────────── */
 
-.app-rail {
-  display: flex; flex-direction: column; gap: 20px; min-height: 0;
-  padding: 18px 12px 14px;
-  background: var(--app-rail-bg);
-  border-right: 1px solid var(--scout-line, var(--border));
-  overflow-y: auto;
+.app-sidebar {
+  grid-area: sidebar;
+  display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  overflow: hidden;
 }
-.app-brand { display: grid; gap: 6px; padding: 0 8px; }
+
+/* The brand row: the mark and the wordmark, on the top row's band. */
+.app-brand {
+  flex: none; display: flex; align-items: center;
+  height: var(--app-top-row); padding: 0 8px;
+}
 .app-wordmark {
-  justify-self: start;
-  color: var(--app-ink); font-size: 16px; font-weight: 600; line-height: 20px; letter-spacing: -0.01em;
-  text-decoration: none; border-radius: 4px;
-}
-.app-runtime {
-  display: flex; align-items: center; gap: 6px;
-  color: var(--app-faint); font-size: 12px; line-height: 16px;
-}
-.app-runtimeDot {
-  flex: none; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--app-faint);
-}
-[data-status="connected"] > .app-runtimeDot { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent); }
-[data-status="unreachable"] > .app-runtimeDot { background: var(--red); }
-[data-status="unreachable"].app-runtime { color: var(--red); }
-
-.app-surfaces { display: grid; gap: 2px; list-style: none; padding: 0; }
-.app-surface {
-  display: flex; align-items: center; height: 30px; padding: 0 8px;
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  height: 32px; padding: 0 5px;
   border-radius: 6px;
-  color: var(--app-soft); font-size: 13px; font-weight: 400; line-height: 16px; text-decoration: none;
+  color: var(--app-ink); text-decoration: none;
+  font-family: var(--hud-font-mono); font-size: 11px; font-weight: 700; line-height: 1;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.app-wordmark > svg { flex: none; }
+
+.app-sidebarBody {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  display: grid; align-content: start; gap: 8px;
+  padding: 8px; scrollbar-width: none;
+}
+.app-sidebarBody::-webkit-scrollbar { display: none; }
+
+.app-surfaces { display: grid; gap: 1px; list-style: none; padding: 0; }
+.app-group { display: grid; gap: 2px; }
+/* A quiet sentence-case label divides the list; it does not head the column. */
+.app-groupLabel {
+  display: flex; align-items: center; height: 24px; padding: 0 8px;
+  color: color-mix(in srgb, var(--hud-ink) 48%, transparent);
+  font-size: 11px; line-height: 16px; white-space: nowrap;
+}
+
+.app-surface {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0;
+  height: 28px; padding: 0 8px;
+  border: 0; border-radius: 6px; background: transparent;
+  color: var(--app-soft); font: 400 13px/16px var(--hud-font-sans); letter-spacing: 0;
+  text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer;
   transition: background-color 120ms ease, color 120ms ease;
 }
-.app-surface:hover { background: var(--app-wash); color: var(--app-ink); }
-.app-surface[aria-current="page"] { background: var(--app-wash); color: var(--app-ink); font-weight: 500; }
+.app-surface > svg { flex: none; color: color-mix(in srgb, currentColor 66%, transparent); }
+.app-surface:hover { background: var(--app-hover); color: var(--app-ink); }
+.app-surface:is(:hover, [aria-current="page"]) > svg { color: currentColor; }
+.app-surface[aria-current="page"] { background: var(--app-wash); color: var(--app-ink); }
 .app-surface[data-status="planned"] { color: var(--app-faint); }
-.app-surface[data-status="planned"]:hover,
-.app-surface[data-status="planned"][aria-current="page"] { color: var(--app-soft); }
+.app-surface[data-status="planned"]:is(:hover, [aria-current="page"]) { color: var(--app-soft); }
+.app-navLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.app-navValue { margin-left: auto; color: var(--app-faint); font-size: 12px; }
 
-.app-next { display: grid; gap: 6px; }
-.app-railCaption { padding: 0 8px; color: var(--app-faint); font-size: 11px; line-height: 16px; }
+.app-sidebarFoot { flex: none; padding: 8px; }
 
-.app-railFoot { margin-top: auto; padding: 0 4px; }
-.app-theme {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  padding: 2px; border: 1px solid var(--scout-line, var(--border)); border-radius: 7px;
+/* Folded: the icon rail. Glyphs stay on one column, labels go to the tooltip. */
+.app[data-sidebar="collapsed"] .app-brand { padding: 0 8px; }
+.app[data-sidebar="collapsed"] .app-wordmark { width: 32px; padding: 0; justify-content: center; }
+.app[data-sidebar="collapsed"] :is(.app-navLabel, .app-navValue, .app-groupLabel) { display: none; }
+.app[data-sidebar="collapsed"] .app-surface { width: 32px; height: 32px; padding: 0; justify-content: center; }
+.app[data-sidebar="collapsed"] .app-surfaces { gap: 6px; }
+.app[data-sidebar="collapsed"] .app-sidebarBody { gap: 6px; }
+
+/* ── top row ──────────────────────────────────────────────────────── */
+
+.app-topRow {
+  grid-area: top;
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 0 calc(var(--app-seam) + 12px) 0 4px;
 }
-.app-theme button {
-  height: 22px; padding: 0; border: 0; border-radius: 5px;
-  background: transparent; color: var(--app-faint); font-size: 11px; line-height: 16px; cursor: pointer;
+.app-topRowButton {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0;
+  border: 1px solid transparent; border-radius: 4px; background: transparent;
+  color: var(--app-soft); cursor: pointer;
 }
-.app-theme button:hover { color: var(--app-ink); }
-.app-theme button[aria-pressed="true"] { background: var(--app-wash); color: var(--app-ink); }
+.app-topRowButton:hover { border-color: color-mix(in srgb, var(--hud-ink) 10%, transparent); background: var(--app-hover); color: var(--app-ink); }
+.app-crumb {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--app-ink); font-size: 13px; line-height: 16px;
+}
+.app-topRowUtilities { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.app-utility { color: var(--app-faint); font-size: 12px; line-height: 16px; white-space: nowrap; }
 
-/* ── main ─────────────────────────────────────────────────────────── */
+/* ── the sheet ────────────────────────────────────────────────────── */
 
 .app-main {
+  grid-area: main;
   min-width: 0; min-height: 0; overflow-y: auto;
+  margin-right: var(--app-seam);
+  border: 1px solid var(--app-sheet-edge); border-radius: var(--app-sheet-radius);
+  background: var(--hud-bg);
   scrollbar-gutter: stable both-edges;
   display: flex; flex-direction: column;
   outline: none;
 }
 .app-surfacePage { flex: 1 0 auto; display: flex; flex-direction: column; }
 .app-surfacePage > .s-feed { flex: 1 0 auto; height: auto; overflow: visible; }
+
+/* ── status bar ───────────────────────────────────────────────────── */
+
+.app-statusBar {
+  grid-area: status;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0;
+  padding: 0 calc(var(--app-seam) + 12px) 0 16px;
+  color: var(--app-faint); font-size: 11px; line-height: 16px; white-space: nowrap;
+}
+.app-runtime { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.app-runtimeValue { color: var(--app-soft); }
+.app-runtimeValue::before { content: "·"; margin-right: 6px; color: var(--app-faint); }
+.app-runtimeWhere { overflow: hidden; text-overflow: ellipsis; font-family: var(--hud-font-mono); font-size: 10px; }
+.app-runtimeDot {
+  flex: none; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--app-faint);
+}
+[data-status="connected"] > .app-runtimeDot { background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 18%, transparent); }
+[data-status="unreachable"] > .app-runtimeDot { background: var(--red); }
+[data-status="unreachable"] > .app-runtimeValue { color: var(--red); }
 
 /* The heading starts on the Feed column's left edge. */
 .app-feedHead, .app-page {
@@ -164,21 +241,12 @@
 .record li header { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; }
 .record li p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; margin-top: 6px; }
 
-/* ── narrow windows: the rail becomes a top bar ───────────────────── */
+/* ── narrow windows ───────────────────────────────────────────────── */
 
 @media (max-width: 720px) {
-  .app { --app-gutter: 16px; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .app-rail {
-    flex-direction: row; align-items: center; gap: 12px; padding: 10px 16px;
-    border-right: 0; border-bottom: 1px solid var(--scout-line, var(--border));
-    overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
-  }
-  .app-rail::-webkit-scrollbar { display: none; }
-  .app-brand { display: flex; align-items: center; gap: 8px; padding: 0; }
-  .app-runtimeText, .app-railCaption, .app-railFoot { display: none; }
-  .app-surfaces, .app-next { display: flex; gap: 2px; }
-  .app-surface { height: 28px; white-space: nowrap; }
+  .app { --app-gutter: 16px; --app-seam: 4px; --app-sheet-radius: 10px; }
   .app-main { scrollbar-gutter: auto; }
+  .app-runtimeWhere { display: none; }
   .app-feedHead, .app-page { padding-top: 20px; }
   .app-empty { padding: 16px; }
   .app-command { align-items: flex-start; }
@@ -186,5 +254,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-surface { transition: none; }
+  .app, .app-surface { transition: none; }
 }
