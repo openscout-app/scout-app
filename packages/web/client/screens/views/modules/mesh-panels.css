@@ -1,0 +1,98 @@
+/* Network and Mesh Ops panels: the Network screen's rail, map, inspector and
+ * rack, and the Mesh Ops board, rail and inspector, inside view panels. Every
+ * rule is scoped to a module root, so /network and /mesh-ops draw exactly as
+ * before wherever they still draw their own screens. */
+
+/* the rail, the rack and the boards fill the panel and scroll inside it */
+.vw-mesh-rail,
+.vw-mesh-rack,
+.vw-mesh-ops,
+.vw-mesh-ops-hosts,
+.vw-mesh-ops-item {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vw-mesh-rail > .ctx-panel,
+.vw-mesh-rack > .mesh-rail,
+.vw-mesh-ops > .mesh-ops-list,
+.vw-mesh-ops-hosts > .ctx-panel,
+.vw-mesh-ops-item > .ctx-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The rack is a fit panel. A flex body with a zero basis collapses inside
+   that panel, so a closed rail never gets a height and Open is unreachable.
+   Closed, the body is the rail's own height. Open, the panel shares the side
+   with Hosts and the list scrolls inside it. */
+.vw-side-panel.is-fit:has(.mesh-rail--min) > .hud-grid-body {
+  flex: 0 0 auto;
+  min-height: auto;
+}
+/* DockedSides writes flex-grow: 0 on a fit panel, and Hosts keeps a much
+   larger grow, so an open rack would stay a sliver. Take up to about half
+   the side, and let the list scroll inside that. */
+.vw-side-panel.is-fit:has(.mesh-rail--open) {
+  flex: 1 1 0 !important;
+  min-height: min(420px, 46%);
+}
+.vw-side-panel.is-fit:has(.mesh-rail--open) > .hud-grid-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.vw-mesh-rack:has(.mesh-rail--min) {
+  height: auto;
+}
+.vw-mesh-rack:has(.mesh-rail--open) {
+  height: 100%;
+  min-height: 0;
+}
+.vw-mesh-rack > .mesh-rail.mesh-rail--min {
+  flex: none;
+  height: auto;
+}
+.vw-mesh-rack > .mesh-rail.mesh-rail--open {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+
+.vw-mesh-ops-item > .ctx-panel {
+  overflow-y: auto;
+}
+
+/* the map: the canvas or the tree page fills the panel; the HUD wraps in a narrow one */
+.vw-mesh-map {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vw-mesh-map > .mesh-map-canvas,
+.vw-mesh-map > .mesh-tree-page {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.vw-mesh-map .mesh-hud {
+  flex-wrap: wrap;
+  row-gap: var(--space-xs);
+}
+
+/* the inspector's page margins shrink to a panel's */
+.vw-mesh-machine {
+  height: 100%;
+  min-height: 0;
+}
+
+.vw-mesh-machine > .sys-inspector-content,
+.vw-mesh-machine > .sys-inspector-empty {
+  padding: var(--space-md) var(--space-lg);
+}

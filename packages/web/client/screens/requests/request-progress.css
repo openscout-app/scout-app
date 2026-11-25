@@ -1,0 +1,56 @@
+/* RequestProgress: the line under a request while a decision is on its way. It reads the surface's ink
+ * (currentColor) and accent, so Home, the Inbox and Scoutbot each draw it in their own palette. */
+.rq-progress {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: inherit;
+}
+.rq-progress b { font-weight: 600; }
+.rq-progress > span:not(.rq-progress__track) { opacity: 0.68; }
+
+/* The track: a short rule that sweeps while the decision travels, slows when it stalls, and fills when it lands. */
+.rq-progress__track {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+}
+.rq-progress__track::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: -45%;
+  width: 45%;
+  background: var(--accent, currentColor);
+}
+.rq-progress.is-sending .rq-progress__track::after { animation: rq-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.rq-progress.is-stalled .rq-progress__track::after { animation-duration: 2.4s; opacity: 0.55; }
+.rq-progress.is-done .rq-progress__track::after { left: 0; width: 100%; animation: rq-fill 220ms ease-out; }
+.rq-progress.is-unconfirmed .rq-progress__track::after { left: 0; width: 100%; background: color-mix(in srgb, currentColor 40%, transparent); }
+@keyframes rq-sweep { to { left: 100%; } }
+@keyframes rq-fill { from { width: 0; } to { width: 100%; } }
+
+.rq-progress__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent, currentColor);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.rq-progress__retry:focus-visible { outline: 1px solid var(--accent, currentColor); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rq-progress.is-sending .rq-progress__track::after { animation: none; left: 0; width: 45%; }
+  .rq-progress.is-done .rq-progress__track::after { animation: none; }
+}

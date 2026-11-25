@@ -1,0 +1,16 @@
+.provider-discovery { color: var(--ink, var(--hud-ink)); font-size: var(--text-sm); border-top: 1px solid var(--scout-line, var(--hud-border)); padding-top: var(--space-md); }
+.provider-discovery > summary { cursor: pointer; font-weight: 550; padding-block: var(--space-xs); }
+.provider-discovery > summary:focus-visible { outline: 2px solid var(--accent, var(--hud-accent)); outline-offset: 2px; }
+.provider-discovery-body { display: grid; gap: var(--space-md); padding-block: var(--space-md); }
+.provider-discovery-body p { margin: 0; max-width: 70ch; line-height: 1.5; }
+.provider-discovery-body ol { margin: 0; padding-left: var(--space-3xl); display: grid; gap: var(--space-xs); line-height: 1.5; }
+.provider-discovery-note, .provider-discovery-feedback { color: var(--muted, var(--hud-muted)); font-size: var(--text-xs); }
+.provider-discovery-feedback:empty { display: none; }
+.provider-discovery-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-lg); }
+.provider-discovery-actions button { border: 1px solid var(--scout-line, var(--hud-border)); background: transparent; color: inherit; padding: var(--space-xs) var(--space-sm); font: inherit; cursor: pointer; }
+.provider-discovery-actions button:hover { background: color-mix(in srgb, currentColor 4%, transparent); }
+.provider-discovery-actions button:disabled { cursor: default; opacity: .5; }
+.provider-discovery-actions button:focus-visible, .provider-discovery-actions a:focus-visible { outline: 2px solid var(--accent, var(--hud-accent)); outline-offset: 2px; }
+.provider-discovery-actions a { color: inherit; text-underline-offset: 2px; }
+.provider-discovery-request { display: grid; gap: var(--space-xs); font-size: var(--text-xs); color: var(--muted, var(--hud-muted)); }
+.provider-discovery-request textarea { box-sizing: border-box; width: 100%; min-width: 0; resize: vertical; border: 1px solid var(--scout-line, var(--hud-border)); background: transparent; padding: var(--space-sm); color: var(--ink, var(--hud-ink)); font: inherit; line-height: 1.5; }

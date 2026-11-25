@@ -1,0 +1,95 @@
+/* Repos panels: the Repos page's parts (scout/repo-watch/console.css,
+ * scout/repo-diff/repo-diff.css) inside view panels. Every rule is scoped to a
+ * module root (.vw-repos-*), so the Repos page, the diff page and the macOS
+ * embed draw exactly as before.
+ *
+ * Sizes read the panel, never the window: the page's @media rules return
+ * here as @container rules on the panel body. */
+
+/* ── Repos (the list) ───────────────────────────────────────────────── */
+
+.vw-repos-list,
+.vw-repos-list .rw-panel-shell,
+.vw-repos-list .repo-watch-scope,
+.vw-repos-list .rw-scope {
+  min-height: 100%;
+}
+
+.vw-repos-list .rw-scope {
+  background: var(--bg);
+}
+
+/* the page's 24px gutter is the panel's own frame here */
+.vw-repos-list .rw-page-shell {
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+}
+
+/* the table's columns hold their widths; a narrow panel scrolls sideways */
+.vw-repos-list .rw-table {
+  min-width: 620px;
+}
+
+/* ── Worktree (the context pane) ────────────────────────────────────── */
+
+.vw-repo-worktree,
+.vw-repo-worktree .rw-ctx-rail-scope {
+  height: 100%;
+  min-height: 0;
+}
+
+/* ── Diff ───────────────────────────────────────────────────────────── */
+
+/* the viewer scrolls its own file list and hunks */
+.vw-repo-diff {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.vw-repo-diff > .rd-viewer {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Pull requests (on the Repos routes) ────────────────────────────── */
+
+.vw-repos-prs,
+.vw-repos-prs .rw-scope {
+  min-height: 100%;
+}
+
+.vw-repos-prs .rw-scope {
+  background: var(--bg);
+}
+
+.vw-repos-prs .rw-open-prs {
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+/* console.css @media (max-width: 900px), by the panel */
+@container (max-width: 900px) {
+  .vw-repos-prs .rw-open-pr {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .vw-repos-prs .rw-open-pr-detail {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+/* repo-diff.css @media (max-width: 720px), by the panel */
+@container (max-width: 720px) {
+  .vw-repo-diff .rd-comment-main {
+    grid-template-columns: 1fr;
+  }
+
+  .vw-repo-diff .rd-target-button,
+  .vw-repo-diff .rd-comment-send {
+    width: 100%;
+  }
+}

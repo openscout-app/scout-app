@@ -1,0 +1,81 @@
+/* Project details: the right side of a project's page. Rows, not cards. */
+.vw-pd {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+.vw-pd-sec {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--scout-line);
+}
+
+.vw-pd-title {
+  margin: 0 0 6px;
+  font: 400 10px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.vw-pd-line {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.vw-pd-path {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vw-pd-dim {
+  color: var(--dim);
+}
+
+.vw-pd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 26px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.vw-pd-row:hover .vw-pd-rowMain {
+  text-decoration: underline;
+}
+
+.vw-pd-static {
+  cursor: default;
+}
+
+.vw-pd-static:hover .vw-pd-rowMain {
+  text-decoration: none;
+}
+
+.vw-pd-rowMain {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vw-pd-live {
+  font: 10px var(--font-mono);
+  text-transform: uppercase;
+  color: var(--muted);
+}

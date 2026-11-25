@@ -1,0 +1,76 @@
+/* The menu helper owns a whole window, not a stage inside the main app.
+   Keep its palette and controls, but give every page one frame and measure.
+   Host metadata scopes this to the helper; browser/app settings stay intact. */
+.sq-win[data-host="menu"] {
+  --sq-head-base: 40px;
+  --sq-label: var(--sq-soft);
+}
+.sq-win[data-host="menu"] .sq-side {
+  width: 200px;
+  margin: 0;
+  border-radius: 0;
+  border-right: 1px solid var(--sq-rule);
+  background: var(--sq-side);
+  box-shadow: none;
+}
+.sq-win[data-host="menu"] .sq-side-title {
+  margin: calc(var(--sq-head-base) - 1cap) 20px 20px;
+  font: 600 15px/1.2 var(--sq-sans);
+}
+.sq-win[data-host="menu"] .sq-nav-group { padding-top: 0; }
+.sq-win[data-host="menu"] .sq-nav-group + .sq-nav-group { margin-top: 16px; }
+.sq-win[data-host="menu"] .sq-nav-group-label { padding: 0 20px 6px; font-size: 11px; }
+.sq-win[data-host="menu"] .sq-nav-row { height: 34px; margin: 0 8px; padding: 0 12px; }
+.sq-win[data-host="menu"] .sq-nav-row[aria-current="page"] { box-shadow: none; }
+.sq-win[data-host="menu"] .sq-page {
+  width: 100%;
+  max-width: 840px;
+  padding: 0 32px 48px;
+  animation: none;
+}
+.sq-win[data-host="menu"] .sq-title { font: 600 22px/1.2 var(--sq-sans); }
+.sq-win[data-host="menu"] .sq-promise { margin-top: 10px; font-size: 13px; }
+.sq-win[data-host="menu"] .sq-sections { margin-top: 28px; gap: 24px; }
+.sq-win[data-host="menu"] .sq-label {
+  min-height: 18px;
+  margin-bottom: 8px;
+  font: 600 12px/1.5 var(--sq-sans);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.sq-win[data-host="menu"] .sq-mac-tag {
+  border: 0;
+  padding: 0;
+  font: 400 11px/1.5 var(--sq-sans);
+  letter-spacing: 0;
+}
+.sq-win[data-host="menu"] .sq-row { min-height: 64px; gap: 16px; padding: 14px 16px; }
+.sq-win[data-host="menu"] .sq-row-control { max-width: 100%; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.sq-win[data-host="menu"] .sq-select,
+.sq-win[data-host="menu"] .sq-input { width: 200px; max-width: 100%; height: 32px; }
+.sq-win[data-host="menu"] .sq-input[data-narrow] { width: 140px; }
+.sq-win[data-host="menu"] .sq-select-wrap { min-width: 0; max-width: 100%; }
+.sq-win[data-host="menu"] .sq-button { min-height: 32px; height: auto; justify-content: center; }
+.sq-win[data-host="menu"] .sq-status { font: 500 11px/1.4 var(--sq-sans); letter-spacing: 0; text-transform: none; }
+.sq-win[data-host="menu"] .sq-save { font: 400 11px/1.4 var(--sq-sans); letter-spacing: 0; text-transform: none; }
+/* Mesh uses the same page width. Hide the secondary connection string before
+   it squeezes host names; it remains available in each host's disclosure. */
+.sq-win[data-host="menu"] .sq-hosts-grouphead,
+.sq-win[data-host="menu"] .sq-hosts-summary { grid-template-columns: minmax(0, 1fr) 260px 14px; gap: 12px; }
+.sq-win[data-host="menu"] .sq-hosts-line { display: none; }
+.sq-win[data-host="menu"] .sq-hosts-grouplabel { grid-column: span 1; }
+.sq-win[data-host="menu"] .sq-hosts-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* A compact helper still keeps named navigation. Controls move below their
+   labels rather than forcing a tiny description column or horizontal scroll. */
+@container sq-win (max-width: 760px) {
+  .sq-win[data-host="menu"] .sq-side { width: 164px; }
+  .sq-win[data-host="menu"] .sq-page { padding-inline: 24px; }
+  .sq-win[data-host="menu"] .sq-row { flex-wrap: wrap; gap: 10px; }
+  .sq-win[data-host="menu"] .sq-row-text { flex-basis: 100%; }
+  .sq-win[data-host="menu"] .sq-row-control { justify-content: flex-start; }
+  .sq-win[data-host="menu"] .sq-hosts-grouphead { grid-template-columns: minmax(0, 1fr); }
+  .sq-win[data-host="menu"] .sq-hosts-gaugehead,
+  .sq-win[data-host="menu"] .sq-hosts-chevron-spacer { display: none; }
+  .sq-win[data-host="menu"] .sq-hosts-summary { grid-template-columns: minmax(0, 1fr) 14px; }
+  .sq-win[data-host="menu"] .sq-hosts-summary .sq-hosts-gauges { grid-column: 1 / -1; grid-row: 2; }
+}

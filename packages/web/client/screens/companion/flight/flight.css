@@ -1,0 +1,25 @@
+/* Message flights (FlightLayer.tsx). Prefix flt-. Never takes the pointer; nothing glows. */
+
+.flt { position: fixed; inset: 0; z-index: 1; pointer-events: none; --flt-accent: var(--scx-accent, var(--accent, #e0b860)); }
+.flt-sky { position: absolute; inset: 0; overflow: visible; }
+
+/* The trail: a short run of thin line behind the head. Its dash and fade are set per frame. */
+.flt-trail { fill: none; stroke: var(--flt-accent); stroke-width: 1.25; stroke-linecap: round; opacity: 0; }
+
+/* The head: the message itself, a small point at the front of the trail. */
+.flt-head { fill: var(--flt-accent); opacity: 0; }
+
+/* Landing: one thin ring opens where it arrives. */
+.flt-land {
+  fill: none; stroke: var(--flt-accent); stroke-width: 1;
+  transform-box: fill-box; transform-origin: center;
+  animation: flt-land 360ms ease-out forwards;
+}
+@keyframes flt-land {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(3.2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flt { display: none; }
+}

@@ -1,0 +1,97 @@
+/* A session turn read as runs (study "Chat · Session body", take A). Thin
+   lines, rows not cards, regular weight. Counts are brightness, never hue:
+   additions in ink, removals dimmer. The accent marks only a call that is
+   still running. Every value derives from the HUD theme tokens. */
+
+/* On the session page the turn's rows read in ink and brightness too: a
+   failure is bright, not coral; an addition is ink, not green. */
+.s-session-view .s-tb,
+.s-session-view .s-turn-work,
+.s-runs,
+.s-runs-files {
+  --tb-pass: var(--hud-muted);
+  --tb-add: var(--hud-ink);
+  --tb-fail: var(--hud-ink);
+  --tb-del: var(--hud-dim);
+}
+.s-session-view .s-tb-dl[data-sign="add"] { background: color-mix(in srgb, var(--hud-ink) 6%, transparent); color: var(--hud-ink); }
+.s-session-view .s-tb-dl[data-sign="del"] { background: none; color: var(--hud-dim); }
+.s-session-view .s-tb-step[data-state="fail"] .s-tb-out { box-shadow: 0 0 0 0.5px var(--hud-border) inset; }
+.s-session-view .s-tb-fail-text { color: var(--hud-ink); }
+
+.s-runs { display: grid; gap: 10px; margin-bottom: 12px; }
+.s-runs-run { display: grid; gap: 4px; min-width: 0; }
+
+/* The agent's own lines: plain prose, as readable as the answer. */
+.s-runs-say { color: var(--hud-ink); font-size: 14px; line-height: 1.7; text-wrap: pretty; overflow-wrap: anywhere; }
+.s-runs-say p { margin: 0; }
+.s-runs-say p + p { margin-top: 8px; }
+
+/* A run of calls as one quiet line, where it happened. */
+.s-runs-fold { min-width: 0; }
+.s-runs-line {
+  display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 2px 0;
+  border: 0; background: none; color: var(--hud-dim); font: 400 12px/1.5 var(--hud-font-sans, inherit);
+  text-align: left; cursor: pointer;
+}
+.s-runs-line:hover, .s-runs-line[aria-expanded="true"] { color: var(--hud-muted); }
+.s-runs-line:focus-visible { outline: 1px solid var(--hud-muted); outline-offset: 2px; border-radius: 4px; }
+.s-runs-fold[data-failed] .s-runs-text { color: var(--hud-ink); }
+.s-runs-fold[data-live] .s-runs-line { color: var(--hud-ink); }
+.s-runs-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-runs-chev { flex: none; transition: transform 120ms ease; }
+.s-runs-chev[data-open] { transform: rotate(90deg); }
+.s-runs-clock { flex: none; color: var(--hud-dim); font: 400 10.5px/1 var(--hud-font-mono); font-variant-numeric: tabular-nums; }
+.s-runs-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--state-live, var(--hud-accent)); animation: s-runs-breathe 2.4s ease-in-out infinite; }
+@keyframes s-runs-breathe { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .s-runs-dot { animation: none; } }
+
+/* The calls, open: a hairline at their left. */
+.s-runs-steps { display: grid; gap: 1px; margin: 4px 0 6px 2px !important; padding: 0 0 0 12px !important; border-left: 1px solid var(--hud-border); }
+
+/* Line counts: tabular, brightness only. */
+.s-runs-counts { display: inline-flex; flex: none; gap: 5px; font: 400 10.5px/1 var(--hud-font-mono); font-variant-numeric: tabular-nums; }
+.s-runs-add { color: var(--hud-ink); }
+.s-runs-del { color: var(--hud-dim); }
+
+/* Changed files close the turn: a hairline table, the total first. */
+.s-runs-files { margin-top: 12px; border-top: 1px solid var(--hud-border); border-bottom: 1px solid var(--hud-border); font-size: 12px; }
+.s-runs-files ul { margin: 0; padding: 0; list-style: none; }
+.s-runs-files-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; color: var(--hud-muted); }
+.s-runs-file { border-top: 1px solid var(--hud-border); }
+.s-runs-file-row {
+  display: flex; align-items: baseline; gap: 10px; width: 100%; min-height: 26px; padding: 4px 0;
+  border: 0; background: none; color: inherit; font: inherit; text-align: left;
+}
+button.s-runs-file-row { cursor: pointer; }
+button.s-runs-file-row:hover .s-runs-file-name { text-decoration: underline; text-decoration-color: var(--hud-border); text-underline-offset: 3px; }
+.s-runs-file-name { flex: none; max-width: 50%; overflow: hidden; color: var(--hud-ink); font: 400 11.5px/1.5 var(--hud-font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.s-runs-file-dir { flex: 1; min-width: 0; overflow: hidden; color: var(--hud-dim); font: 400 11px/1.5 var(--hud-font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.s-runs-file-row .s-runs-counts { margin-left: auto; }
+.s-runs-file-diff { margin: 0 0 8px; }
+
+/* The quiet line that ends a turn. */
+.s-runs-end { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; color: var(--hud-dim); font-size: 11px; }
+.s-runs-end svg { flex: none; }
+.s-runs-end-last { min-width: 0; overflow: hidden; color: var(--hud-muted); text-overflow: ellipsis; white-space: nowrap; }
+.s-runs-end-last::before { margin-right: 6px; color: var(--hud-dim); content: "·"; }
+
+/* The running turn, and the line before its first step. */
+.s-runs-turn { min-width: 0; }
+.s-runs-waiting { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--hud-ink); font-size: 12px; }
+
+/* Copy and Open session sit on the turn's end line when the turn reads by runs. */
+.s-session-view .s-thread-msg-card-content:has(> .s-runs-end) .s-session-actions { top: auto; bottom: 0; }
+
+/* The day and time, centered and muted, where the day changes. */
+.s-session-day { margin: 10px 0 14px; color: var(--hud-dim); font-size: 11px; text-align: center; }
+
+/* Above the composer: what keeps a message from reaching the session now. */
+.s-session-status-note { display: flex; align-items: center; gap: 8px; max-width: 760px; margin: 0 auto 8px; padding: 6px 2px 0; border-top: 1px solid var(--hud-border); color: var(--hud-muted); font-size: 12px; }
+.s-session-status-note strong { color: var(--hud-ink); font-weight: 400; }
+.s-session-status-ring { flex: none; width: 6px; height: 6px; border: 1px solid var(--hud-muted); border-radius: 50%; }
+
+/* Below the composer: the harness, model and effort, small. */
+.s-session-runtime { display: flex; align-items: center; gap: 6px; max-width: 760px; min-height: 16px; margin: 6px auto 0; padding: 0 2px; overflow: hidden; color: var(--hud-dim); font-size: 11px; white-space: nowrap; }
+.s-session-runtime-mono { overflow: hidden; font: 400 10.5px/1.4 var(--hud-font-mono); text-overflow: ellipsis; }
+.s-session-runtime-sep { color: var(--hud-dim); opacity: 0.6; }

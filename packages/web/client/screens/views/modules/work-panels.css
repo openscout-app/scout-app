@@ -1,0 +1,102 @@
+/* The Work view's panels: the Work page's casefile cut into panels, plus the
+   Flights and Participants rows. Sized by the panel (the body is a query
+   container), never the window: the page's @media rules have @container
+   twins here, so a narrow panel on a wide window reflows the same way. */
+
+.vw-work { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.vw-work > .s-work-detail--panel.s-work-casefile { max-width: none; margin: 0; padding: 10px 12px 14px; gap: 12px; }
+.vw-work .s-work-detail--panel .s-work-casefile-layout,
+.vw-work .s-work-detail--panel .s-work-casefile-main { gap: 12px; }
+
+/* One part per panel: the panel is the card, and its head names it. */
+.vw-work-timeline .s-wc-card,
+.vw-work-tail .s-wc-card,
+.vw-work-files .s-wc-card { padding: 0; border: 0; background: none; }
+.vw-work-timeline .s-wc-card-head > h2,
+.vw-work-files .s-wc-card-head > h2,
+.vw-work-tail .s-wc-tail-head h2 { display: none; }
+.vw-work-timeline .s-work-event-more { margin-top: 10px; }
+
+/* The tail and the file browser fill the panel instead of a fixed height. */
+.vw-work-tail,
+.vw-work-files { display: flex; flex-direction: column; overflow: hidden; }
+.vw-work-tail > .s-work-detail--panel,
+.vw-work-files > .s-work-detail--panel { flex: 1; min-height: 0; }
+.vw-work-tail .s-work-casefile-layout,
+.vw-work-files .s-work-casefile-layout,
+.vw-work-tail .s-work-casefile-main,
+.vw-work-files .s-work-casefile-main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.vw-work-tail .s-wc-tail,
+.vw-work-files .s-work-materials-section { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+.vw-work-tail .s-wc-tail[data-open] .s-wc-tail-head { margin-bottom: 0; }
+.vw-work-tail .s-wc-tail .s-work-tail-frame { flex: 1; min-height: 0; height: auto; margin: 0 -12px -14px; }
+.vw-work-files .s-wc-browser { flex: 1; min-height: 0; height: auto; }
+
+/* Flights and child work stack in one scrolling panel. */
+.vw-work-flights .vw-work-list { height: auto; overflow: visible; }
+.vw-work-sub {
+  padding: 12px 12px 4px; color: var(--dim);
+  font: var(--text-3xs) var(--font-mono); letter-spacing: var(--voice-track, var(--tracking-xl)); text-transform: var(--voice-case, uppercase);
+}
+.vw-work-flight {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.vw-work-flight > .vw-row { border-bottom: 0; }
+.vw-work-chat { margin-right: 10px; }
+.vw-row--flight { grid-template-columns: minmax(0, 1fr) minmax(0, 96px) 40px; row-gap: 3px; }
+.vw-row--flight .vw-kind { margin-right: 4px; }
+.vw-work-flight-note { grid-column: 1 / -1; display: grid; gap: 1px; min-width: 0; font-size: 0.92em; }
+.vw-row--person { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; row-gap: 2px; }
+.vw-work-person-note { grid-column: 1 / -1; font-size: 0.92em; }
+div.vw-row--person { cursor: default; }
+
+/* The page's own work item in the list. */
+.vw-row--work[aria-current] { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.vw-row--work[aria-current] > :first-child { font-weight: 600; }
+
+@container (max-width: 420px) {
+  .vw-row--flight { grid-template-columns: minmax(0, 1fr) 40px; }
+  .vw-row--flight > :nth-child(2) { display: none; }
+  .vw-row--person { grid-template-columns: minmax(0, 1fr) 40px; }
+  .vw-row--person > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .vw-row--person > .vw-work-person-note { grid-row: 3; }
+  .vw-work-facts dt { flex-basis: 80px; }
+}
+
+/* the page's @media (max-width: 860px) rules, by the panel */
+@container (max-width: 860px) {
+  .vw-work .s-wc-made { grid-template-columns: minmax(0, 1fr); }
+  .vw-work .s-wc-made > .s-wc-label { padding-top: 0; }
+  .vw-work .s-wc-made-more { grid-column: 1; }
+  .vw-work .s-wc-life { flex-wrap: wrap; }
+  .vw-work-files .s-wc-browser { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(96px, 38%) minmax(0, 1fr); }
+  .vw-work-files .s-wc-file-list { border-right: 0; border-bottom: 1px solid var(--border); }
+}
+
+/* the page's @media (max-width: 600px) rules, by the panel */
+@container (max-width: 600px) {
+  .vw-work .s-wc-head { flex-wrap: wrap; }
+  .vw-work .s-wc-head-tools { margin-left: -8px; }
+  .vw-work-item .s-wc-card { padding: 12px 12px 14px; }
+  .vw-work-item .s-wc-request { padding: 12px 12px 10px; }
+  .vw-work .s-work-event { grid-template-columns: 64px 24px minmax(0, 1fr); column-gap: 8px; }
+  .vw-work .s-work-event:not(:last-child)::after { left: 83.5px; }
+  .vw-work .s-work-event-more { margin-left: 86px; }
+  .vw-work .s-work-ask-facts { grid-template-columns: 1fr; }
+  .vw-work .s-work-ask-facts dt { flex-basis: 120px; }
+}
+
+/* ── Sharp look ── */
+
+/* the parent link: square, a 3% hover plate, an ink focus line */
+:root[data-scout-look="sharp"] .vw-work-parent { border-radius: 0; border-color: var(--edge, var(--border)); }
+:root[data-scout-look="sharp"] .vw-work-parent:hover { background: var(--row-hover, color-mix(in srgb, var(--ink) 3%, transparent)); }
+:root[data-scout-look="sharp"] .vw-work-parent:focus-visible { outline-color: var(--ink); }
+
+/* the page's own item is the selection plate; its title steps to the title weight */
+:root[data-scout-look="sharp"] .vw-row--work[aria-current] {
+  background: var(--select-bg, color-mix(in srgb, var(--ink) 6%, transparent));
+  color: var(--ink);
+}
+:root[data-scout-look="sharp"] .vw-row--work[aria-current] > :first-child { font-weight: var(--w-title); }

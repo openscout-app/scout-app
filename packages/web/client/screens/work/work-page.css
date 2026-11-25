@@ -1,0 +1,133 @@
+/* The work page (WorkPage.tsx): the views' own frame. The list and, beside
+   the item, the detail are docked sides (DockedSides, views.css); the item,
+   and below it the detail, are panels drawn like the views' grid panels
+   (hud-grid.css), so the page reads in the same planes as every composed
+   view: lifted panels on the ground, a frame gap between them. */
+
+.wp.vw { height: 100%; min-height: 0; box-sizing: border-box; color: var(--ink); }
+.wp-body { flex: 1; min-height: 0; }
+
+.wp-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--frame-gap, 8px); }
+.wp-main > .hud-grid-panel { flex: 1 1 0; min-height: 120px; }
+
+.wp-quiet { margin: 0; padding: 12px; color: var(--dim); font-size: var(--text-sm); }
+.wp-count { margin-left: 6px; color: var(--dim); font: var(--text-2xs) var(--font-mono); font-variant-numeric: tabular-nums; }
+.wp-num { text-align: right; font-variant-numeric: tabular-nums; }
+.wp-mark { color: var(--accent); }
+
+/* ── The list of work ───────────────────────────────────────────────────── */
+
+.wp-list { list-style: none; margin: 0; padding: 0; }
+.wp-row {
+  position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 2px; width: 100%;
+  padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-lg);
+  border: 0; border-bottom: 1px solid var(--scout-line); background: none; text-align: left;
+  font: inherit; font-size: var(--text-sm); color: var(--muted); cursor: pointer;
+}
+.wp-row:hover { background: var(--row-hover, color-mix(in srgb, var(--ink) 4%, transparent)); color: var(--ink); }
+.wp-row[aria-current] { color: var(--ink); background: var(--select-bg, color-mix(in srgb, var(--ink) 7%, transparent)); }
+/* the selection strip: square, on a square row */
+.wp-row[aria-current]::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+.wp-row[data-done] { color: var(--dim); }
+.wp-row:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.wp-row-line { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.wp-row-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-row-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px; gap: 8px; color: var(--dim); font-size: var(--text-xs); }
+.wp-row-meta > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a blocked or review item keeps a small accent square while its meta is hidden */
+.wp-row-dot { display: none; flex: 0 0 5px; height: 5px; align-self: center; background: var(--accent); }
+
+/* Docked narrow, a row is its title: the meta comes back once the side is wide enough to hold it. */
+@container vw-side (max-width: 239px) {
+  .wp-row { padding-block: var(--space-xs); }
+  .wp-row-meta { display: none; }
+  .wp-row-dot { display: block; }
+}
+
+/* ── The work item ──────────────────────────────────────────────────────── */
+
+.wp-item-panel > .hud-grid-body { overflow: hidden; }
+.wp-item-panel > .hud-grid-body > .vw-work { height: 100%; }
+.wp-item-panel .s-work-detail--panel.s-work-casefile { padding: var(--space-xl) var(--space-3xl) var(--space-4xl); }
+.wp[data-arrangement="below"] .wp-item-panel .s-work-detail--panel.s-work-casefile { max-width: 1240px; padding-bottom: var(--space-3xl); }
+
+/* House style on this page: regular-weight titles, and the item's sections
+   as rows divided by hairlines rather than bordered cards. */
+.wp .s-wc-title,
+.wp-item-panel .s-wc-card-head h2 { font-weight: 400; }
+.wp-item-panel .s-wc-card {
+  padding-inline: 0;
+  border: 0;
+  border-top: 1px solid var(--scout-line);
+  border-radius: 0;
+  background: none;
+}
+
+/* ── Heads ─────────────────────────────────────────────────────────────────
+   Every part has a head at the same height (hud-grid-head, 36px), so the
+   list, the item and the detail line up across the page. The title takes the
+   room, so the head's tools and a side's fold keep the far edge. */
+
+.wp .hud-grid-head > .hud-grid-title { flex: 1 1 auto; display: flex; align-items: center; min-width: 0; }
+.wp .hud-grid-head > .hud-grid-right { flex: 0 1 auto; }
+
+/* the item is the page's subject: its head carries the one accent mark */
+.wp-item-panel { container: wp-item / inline-size; --wc-accent: var(--accent); }
+.wp-item-mark { flex: none; width: 6px; height: 6px; margin-right: 8px; background: var(--accent); }
+
+/* the run's ways in, repeated from the run card at head size; narrow, just their marks */
+.s-wc-actions--compact { flex-wrap: nowrap; gap: 4px; }
+/* head weight, like the tabs beside it: hairline edge, regular muted label, thin marks */
+.s-wc-actions--compact .s-wc-btn {
+  height: 22px; padding: 0 8px; gap: var(--space-2xs);
+  border-color: var(--scout-line); color: var(--muted);
+  font-size: var(--text-xs); font-weight: 400; letter-spacing: 0.01em;
+}
+.s-wc-actions--compact .s-wc-btn:hover { color: var(--ink); border-color: var(--border); background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.s-wc-actions--compact .s-wc-btn svg { width: 11px; height: 11px; stroke-width: 1.5; flex: none; }
+.s-wc-actions--compact .s-wc-btn-primary {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--wc-accent) 32%, var(--scout-line));
+  background: color-mix(in srgb, var(--wc-accent) 6%, transparent);
+}
+.s-wc-actions--compact .s-wc-btn-primary:hover { background: color-mix(in srgb, var(--wc-accent) 11%, transparent); }
+@container wp-item (max-width: 639px) {
+  .s-wc-actions--compact .s-wc-btn { width: 22px; padding: 0; gap: 0; justify-content: center; font-size: 0; }
+}
+
+/* ── The detail: a title bar, then its tabs ─────────────────────────────── */
+
+.wp-detail-panel .hud-grid-body { overflow: hidden; }
+.wp-detail { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.wp-tabs {
+  display: flex; align-items: stretch; flex: none; height: 32px; padding: 0 4px;
+  border-bottom: 1px solid var(--scout-line); overflow-x: auto; scrollbar-width: none;
+}
+.wp-tab {
+  position: relative; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: 0; background: none;
+  font: inherit; font-size: var(--text-xs); color: var(--muted); cursor: pointer; white-space: nowrap;
+}
+.wp-tab-glyph { flex: none; color: var(--dim); }
+.wp-tab:hover,
+.wp-tab:hover .wp-tab-glyph { color: var(--ink); }
+.wp-tab[aria-selected="true"] { color: var(--ink); }
+.wp-tab[aria-selected="true"] .wp-tab-glyph { color: var(--accent); }
+.wp-tab[aria-selected="true"]::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--accent); }
+.wp-tab:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.wp-tab .wp-count { margin-left: 0; }
+
+.wp-switch { display: flex; align-items: center; border: 1px solid var(--scout-line-strong, var(--scout-line)); border-radius: var(--radius-xs); }
+.wp-switch button { display: grid; place-items: center; width: 26px; height: 22px; padding: 0; border: 0; background: none; color: var(--dim); cursor: pointer; }
+.wp-switch button + button { border-left: 1px solid var(--scout-line-strong, var(--scout-line)); }
+.wp-switch button:hover { color: var(--ink); }
+.wp-switch button[aria-pressed="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.wp-switch button:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+
+.wp-tabpanel { flex: 1; min-height: 0; overflow: hidden; container-type: inline-size; }
+.wp-tabpanel > .vw-work { height: 100%; }
+.wp-flight { height: 100%; overflow-y: auto; }
+.wp-flight .vw-work { height: auto; overflow: visible; }
+.wp-flight .vw-rows { height: auto; overflow: visible; }
+
+/* Below: the seam between the item and the detail sits in the frame gap, like a side's own split. */
+.wp-seam { cursor: row-resize; }

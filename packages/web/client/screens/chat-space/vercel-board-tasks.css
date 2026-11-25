@@ -1,0 +1,641 @@
+/* A Vercel Board room's tasks: a run's head, its tasks grouped by stage in the
+   order they run, the task opened once in a pane beside them, and the room's
+   other runs listed below. Mono for what the machine knows
+   (times, states), sans for what a person wrote (task text).
+
+   Three colour vocabularies, kept apart:
+   - a task's hue (--vbt-hue-*), given in plan order, the same on its row,
+     its opened pane and its message in Conversation;
+   - how a task stands (--vbt-st-*): working is blue, done, blocked and failed
+     are the status hues; a hand-back (release, expiry) is quiet, never red;
+   - who (--vbt-who-*): operator, agent, person.
+   How a thing is drawn carries the state on hued parts: hollow before a
+   claim, tinted with a live edge while working, solid once done. Red and
+   amber stay out of the task palette so they keep meaning failed and blocked.
+
+   The view sizes itself to its own width (a container), so it can move from
+   Chat to a page of its own. */
+
+.vbt, .vbc {
+  --vbt-hue-0: oklch(0.76 0.12 298);
+  --vbt-hue-1: oklch(0.78 0.1 228);
+  --vbt-hue-2: oklch(0.78 0.11 352);
+  --vbt-hue-3: oklch(0.82 0.13 128);
+  --vbt-hue-4: oklch(0.74 0.13 330);
+  --vbt-hue-5: oklch(0.74 0.12 262);
+  --vbt-hue-6: oklch(0.78 0.11 165);
+  --vbt-hue-7: oklch(0.8 0.09 200);
+  --vbt-who-operator: oklch(0.85 0.11 88);
+  --vbt-who-agent: oklch(0.8 0.085 192);
+  --vbt-who-person: oklch(0.78 0.1 355);
+  /* working is blue, as in the job-table study: the theme accent can be a warm
+     hue that reads as the operator's colour or as blocked */
+  --vbt-st-run: oklch(0.76 0.12 252);
+  --vbt-st-done: var(--green);
+  --vbt-st-block: var(--amber);
+  --vbt-st-fail: var(--red);
+  --vbt-quiet: color-mix(in srgb, var(--ink) 46%, transparent);
+  --vbt-faint: color-mix(in srgb, var(--ink) 64%, transparent);
+  --vbt-hair: color-mix(in srgb, var(--ink) 9%, transparent);
+  --vbt-hair-strong: color-mix(in srgb, var(--ink) 18%, transparent);
+  --vbt-grid: color-mix(in srgb, var(--ink) 5%, transparent);
+  /* text on a solid task hue */
+  --vbt-on-hue: color-mix(in srgb, var(--bg) 92%, var(--ink));
+  --vbt-gutter: var(--space-3xl);
+  --vbt-label-w: 128px;
+  --vbt-cols: 72px 140px minmax(0, 1.2fr) 88px 72px minmax(0, 1fr);
+  --vbt-ease: var(--motion-ease-emphasis);
+}
+.vbt {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  container: vbt / inline-size;
+  font-size: var(--text-md);
+  line-height: var(--leading-tight);
+  color: var(--ink);
+}
+[data-scout-theme-mode="light"] .vbt, [data-scout-theme-mode="light"] .vbc {
+  --vbt-hue-0: oklch(0.56 0.15 298);
+  --vbt-hue-1: oklch(0.56 0.12 238);
+  --vbt-hue-2: oklch(0.58 0.15 352);
+  --vbt-hue-3: oklch(0.6 0.14 132);
+  --vbt-hue-4: oklch(0.55 0.16 330);
+  --vbt-hue-5: oklch(0.52 0.15 265);
+  --vbt-hue-6: oklch(0.58 0.11 165);
+  --vbt-hue-7: oklch(0.58 0.09 205);
+  --vbt-who-operator: oklch(0.6 0.11 88);
+  --vbt-who-agent: oklch(0.55 0.085 192);
+  --vbt-who-person: oklch(0.54 0.1 355);
+  --vbt-st-run: oklch(0.55 0.15 252);
+  --vbt-grid: color-mix(in srgb, var(--ink) 6%, transparent);
+  --vbt-on-hue: var(--bg);
+}
+
+.vbt-notice { margin: 0; padding: var(--space-3xl); color: var(--vbt-faint); }
+.vbt-notice[data-tone="error"] { color: var(--red); }
+.vbt-live { color: var(--vbt-st-run); font-variant-numeric: tabular-nums; }
+.vbt-none { color: var(--vbt-quiet); }
+.vbt-stale { color: var(--dim); }
+
+/* a task's mark: a small square in its hue, hollow until someone holds it */
+.vbt-swatch {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-xs);
+  background: var(--hue, var(--vbt-quiet));
+  transition: background var(--motion-duration-state), box-shadow var(--motion-duration-state);
+}
+[data-st="ready"] > .vbt-swatch, .vbt-swatch[data-st="ready"] { background: none; box-shadow: inset 0 0 0 1.25px var(--hue); }
+[data-st="waiting"] > .vbt-swatch, .vbt-swatch[data-st="waiting"],
+[data-st="cancelled"] > .vbt-swatch, .vbt-swatch[data-st="cancelled"] { background: none; box-shadow: inset 0 0 0 1.25px var(--vbt-quiet); }
+[data-st="running"] > .vbt-swatch, .vbt-swatch[data-st="running"] { animation: vbt-breathe var(--motion-duration-breathe) ease-in-out infinite; }
+[data-st="failed"] > .vbt-swatch, .vbt-swatch[data-st="failed"] { background: var(--vbt-st-fail); }
+[data-st="blocked"] > .vbt-swatch, .vbt-swatch[data-st="blocked"] { background: var(--vbt-st-block); }
+
+/* ── the split: the run's list, and the task opened beside it ─────────── */
+
+.vbt-split {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.vbt-split[data-detail] { grid-template-columns: minmax(0, 1fr) minmax(320px, 38%); }
+.vbt-main { min-width: 0; min-height: 0; overflow-y: auto; padding-bottom: var(--space-3xl); }
+/* narrow: the task covers the list until it closes */
+@container vbt (max-width: 720px) {
+  .vbt-split[data-detail] { grid-template-columns: minmax(0, 1fr); }
+  .vbt-split[data-detail] > * { grid-area: 1 / 1; }
+}
+
+/* ── run head: name and tallies, then when it ran ──────────────────────── */
+
+.vbt-run-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-3xl) var(--vbt-gutter) var(--space-xl);
+}
+.vbt-run-line { display: flex; align-items: baseline; gap: var(--space-lg) var(--space-2xl); flex-wrap: wrap; min-width: 0; }
+.vbt-run-title {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-4xl);
+  font-weight: 400;
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-sm, 0);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vbt-run-line .vbt-tally { margin-left: auto; }
+.vbt-run-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-lg);
+  margin: 0;
+  font: var(--text-sm)/1.4 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--vbt-quiet);
+}
+.vbt-run-meta > span + span::before { content: "·"; margin-right: var(--space-lg); color: var(--vbt-quiet); }
+.vbt-run-meta [title] { cursor: help; }
+.vbt-run-clock[data-live] { color: var(--vbt-st-run); }
+.vbt-run-clock[data-st="failed"] { color: var(--vbt-st-fail); }
+
+.vbt-tally { display: flex; gap: var(--space-2xl); font: var(--text-sm)/1 var(--font-mono); color: var(--vbt-quiet); white-space: nowrap; }
+.vbt-count { display: inline-flex; align-items: center; gap: var(--space-xs); --st: var(--vbt-faint); }
+.vbt-count i { width: 6px; height: 6px; border-radius: 50%; background: var(--st); }
+.vbt-count b { font-weight: 400; color: var(--ink); font-variant-numeric: tabular-nums; }
+.vbt-count[data-st="running"] { --st: var(--vbt-st-run); }
+.vbt-count[data-st="done"] { --st: var(--vbt-st-done); }
+.vbt-count[data-st="failed"] { --st: var(--vbt-st-fail); }
+.vbt-count[data-st="blocked"] { --st: var(--vbt-st-block); }
+.vbt-count[data-st="ready"] i, .vbt-count[data-st="waiting"] i { background: none; box-shadow: inset 0 0 0 1.25px var(--st); }
+
+/* ── the list: a group per stage, a rail carrying the run through them ── */
+
+.vbt-list { display: flex; flex-direction: column; }
+.vbt-head, .vbt-row, .vbt-group-head {
+  display: grid;
+  grid-template-columns: var(--vbt-cols);
+  column-gap: var(--space-lg);
+  align-items: center;
+  padding: 0 var(--vbt-gutter) 0 calc(var(--vbt-gutter) - var(--space-lg));
+}
+.vbt-head {
+  height: 28px;
+  border-bottom: 1px solid var(--scout-line);
+  font: 11px/1 var(--font-mono);
+  color: var(--vbt-quiet);
+}
+.vbt-group { display: flex; flex-direction: column; }
+.vbt-group-head {
+  height: 30px;
+  margin: 0;
+  font: 11px/1 var(--font-mono);
+  font-weight: 400;
+  color: var(--vbt-quiet);
+}
+.vbt-group-head > .vbt-rail { grid-column: 1; }
+.vbt-group-name { grid-column: 2; color: var(--ink); }
+.vbt-group-note { grid-column: 3 / -1; }
+
+/* the rail: one line down the gutter, square ended, a tick into each task and a node at each stage */
+.vbt-rail { position: relative; align-self: stretch; }
+.vbt-rail::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: var(--vbt-hair-strong); }
+.vbt-row > .vbt-rail::after { content: ""; position: absolute; top: 50%; left: 50%; right: calc(-1 * var(--space-lg)); height: 1px; background: var(--vbt-hair-strong); }
+.vbt-rail[data-node]::after { content: ""; position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; transform: translate(-50%, -50%); background: var(--bg); box-shadow: inset 0 0 0 1px var(--vbt-faint); }
+/* the run starts at its first stage and ends at its last task */
+.vbt-list > .vbt-group:first-of-type > :first-child > .vbt-rail::before { top: 50%; }
+.vbt-list > .vbt-group:last-of-type > .vbt-row:last-child > .vbt-rail::before { bottom: 50%; }
+
+.vbt-row {
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vbt-row:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.vbt-row[data-selected] { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.vbt-row:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.vbt-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vbt-row > .vbt-rail { overflow: visible; }
+.vbt-row[data-st="done"] .vbt-task, .vbt-row[data-st="cancelled"] .vbt-task { color: var(--vbt-faint); }
+.vbt-row[data-selected] .vbt-task { color: var(--ink); }
+
+/* a row whose state just changed tints in its new state's colour, then settles */
+.vbt-row[data-landed] { animation: vbt-land 1.6s cubic-bezier(0.2, 0.7, 0.2, 1); --land: var(--vbt-st-run); }
+.vbt-row[data-landed][data-st="done"] { --land: var(--vbt-st-done); }
+.vbt-row[data-landed][data-st="failed"] { --land: var(--vbt-st-fail); }
+.vbt-row[data-landed][data-st="blocked"] { --land: var(--vbt-st-block); }
+.vbt-row[data-landed][data-st="ready"], .vbt-row[data-landed][data-st="waiting"] { --land: var(--vbt-faint); }
+@keyframes vbt-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@keyframes vbt-land {
+  0% { background: color-mix(in srgb, var(--land) 16%, transparent); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vbt-row[data-landed], .vbt-swatch { animation: none; }
+}
+
+.vbt-t { font: 11px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--vbt-faint); }
+/* narrow: the task, who did it and how it stands; the result opens with the task */
+@container vbt (max-width: 560px) {
+  .vbt-head > :last-child, .vbt-row > .vbt-result { display: none; }
+  .vbt-head, .vbt-row, .vbt-group-head { grid-template-columns: 20px minmax(0, 1fr) auto auto; }
+  .vbt-row > .vbt-t, .vbt-head > :nth-last-child(2):not(:nth-child(3)) { display: none; }
+}
+.vbt-row > .vbt-task { display: flex; align-items: center; gap: var(--space-sm); color: var(--ink); }
+.vbt-task > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.vbt-who { display: inline-flex; align-items: center; gap: var(--space-xs); max-width: 100%; --who: var(--vbt-faint); color: var(--who); }
+.vbt-who > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vbt-who i { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--who); }
+.vbt-who-mark { flex: 0 0 auto; display: inline-flex; color: var(--vbt-faint); }
+.vbt-who[data-kind="operator"] { --who: var(--vbt-who-operator); }
+.vbt-who[data-kind="agent"] { --who: var(--vbt-who-agent); }
+.vbt-who[data-kind="agent"] i { border-radius: var(--radius-xs); }
+.vbt-who[data-kind="person"] { --who: var(--vbt-who-person); }
+.vbt-who[data-kind="person"] i { background: none; box-shadow: inset 0 0 0 1.25px var(--who); }
+.vbt-arrow { color: var(--vbt-quiet); }
+
+.vbt-state { display: inline-flex; align-items: center; gap: var(--space-xs); font: 11px/1 var(--font-mono); --st: var(--vbt-faint); color: var(--st); }
+.vbt-state i { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--st); }
+.vbt-state[data-st="running"] { --st: var(--vbt-st-run); }
+.vbt-state[data-st="ready"] i, .vbt-state[data-st="waiting"] i { background: none; box-shadow: inset 0 0 0 1.25px var(--st); }
+.vbt-state[data-st="waiting"] { --st: var(--vbt-quiet); }
+.vbt-state[data-st="blocked"] { --st: var(--vbt-st-block); }
+.vbt-state[data-st="blocked"] i { border-radius: var(--radius-xs); }
+.vbt-state[data-st="done"] { --st: var(--vbt-st-done); }
+.vbt-state[data-st="failed"] { --st: var(--vbt-st-fail); }
+.vbt-state[data-st="cancelled"] { --st: var(--vbt-quiet); }
+
+.vbt-result { color: var(--vbt-faint); }
+.vbt-result[data-st="done"] { color: var(--ink); }
+.vbt-result[data-st="failed"] { color: var(--vbt-st-fail); }
+.vbt-result[data-st="blocked"] { color: var(--vbt-st-block); }
+
+/* ── the task, opened once ────────────────────────────────────────────── */
+
+.vbt-detail {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-3xl) var(--vbt-gutter);
+  border-left: 1px solid var(--scout-line);
+  background: var(--bg);
+}
+@container vbt (max-width: 720px) { .vbt-detail { border-left: 0; } }
+.vbt-detail-head { display: flex; align-items: center; gap: var(--space-sm); min-width: 0; }
+.vbt-detail-step {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-xl, 17px);
+  font-weight: 400;
+  line-height: var(--leading-tight);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.vbt-close {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: 0 calc(-1 * var(--space-xs)) 0 var(--space-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--vbt-faint);
+  cursor: pointer;
+}
+.vbt-close:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.vbt-close:focus-visible, .vbt-copy:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.vbt-detail-title { margin: calc(-1 * var(--space-md)) 0 0; color: var(--vbt-faint); overflow-wrap: anywhere; }
+
+.vbt-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-sm) var(--space-xl);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.vbt-facts dt { font: 11px/18px var(--font-mono); color: var(--vbt-quiet); }
+.vbt-facts dd { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs) var(--space-lg); min-width: 0; margin: 0; line-height: 18px; }
+.vbt-after { color: var(--vbt-faint); }
+
+.vbt-detail-result { display: flex; flex-direction: column; gap: var(--space-sm); padding-top: var(--space-xl); border-top: 1px solid var(--scout-line); }
+.vbt-detail-result h4 { margin: 0; font: 11px/1 var(--font-mono); font-weight: 400; color: var(--vbt-quiet); }
+.vbt-detail-result[data-st="failed"] h4 { color: var(--vbt-st-fail); }
+.vbt-detail-empty { margin: 0; padding-top: var(--space-xl); border-top: 1px solid var(--scout-line); color: var(--vbt-quiet); }
+
+/* Board's Markdown, in the reading voice */
+.vbt-md { color: var(--ink); line-height: var(--leading-normal, 1.5); overflow-wrap: anywhere; }
+.vbt-md > :first-child { margin-top: 0; }
+.vbt-md > :last-child { margin-bottom: 0; }
+.vbt-md :is(p, ul, ol, pre, blockquote, table) { margin: 0 0 var(--space-md); }
+.vbt-md :is(h1, h2, h3, h4, h5, h6) { margin: var(--space-xl) 0 var(--space-sm); font-size: var(--text-md); font-weight: 500; line-height: var(--leading-tight); }
+.vbt-md :is(ul, ol) { padding-left: var(--space-2xl); }
+.vbt-md li + li { margin-top: var(--space-xs); }
+.vbt-md code { font: 0.92em/1 var(--font-mono); color: var(--vbt-faint); }
+.vbt-md pre { overflow-x: auto; padding: var(--space-md); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.vbt-md pre code { line-height: 1.45; }
+.vbt-md blockquote { padding-left: var(--space-lg); border-left: 1px solid var(--vbt-hair-strong); color: var(--vbt-faint); }
+.vbt-md table { border-collapse: collapse; font-size: var(--text-sm); }
+.vbt-md :is(th, td) { padding: var(--space-xs) var(--space-md); border-bottom: 1px solid var(--scout-line); text-align: left; }
+.vbt-md a { color: var(--accent); }
+.vbt-md-link { color: var(--vbt-faint); }
+
+.vbt-brief { font-size: var(--text-sm); color: var(--vbt-faint); }
+.vbt-brief summary { font: 11px/1 var(--font-mono); color: var(--vbt-quiet); cursor: pointer; }
+.vbt-brief p { margin: var(--space-sm) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.vbt-detail-foot { margin-top: auto; }
+.vbt-copy {
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: none;
+  font: 11px/1.4 var(--font-mono);
+  color: var(--vbt-faint);
+  cursor: pointer;
+}
+.vbt-copy:hover { color: var(--ink); border-color: var(--vbt-faint); }
+
+/* ── the room's runs: a quiet switcher at the end of the run's meta line ─ */
+
+.vbt-runs { position: relative; display: inline-flex; align-items: baseline; gap: var(--space-lg); }
+/* the meta line's "·" before it is a flex item here, so the gap spaces it */
+.vbt-run-meta > .vbt-runs::before { margin-right: 0; }
+.vbt-runs-toggle, .vbt-runs-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--vbt-quiet);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.vbt-runs-toggle b { font-weight: 400; color: var(--vbt-faint); }
+.vbt-runs-toggle[data-past] { color: var(--vbt-faint); }
+.vbt-runs-toggle:hover, .vbt-runs-back:hover, .vbt-runs-toggle[aria-expanded="true"] { color: var(--ink); }
+.vbt-runs-toggle:focus-visible, .vbt-runs-back:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.vbt-runs-chevron { flex: 0 0 auto; transition: transform var(--motion-duration-state); }
+.vbt-runs-toggle[aria-expanded="true"] .vbt-runs-chevron { transform: rotate(180deg); }
+.vbt-runs-back { color: var(--vbt-st-run); }
+.vbt-runs-menu {
+  position: absolute;
+  top: calc(100% + var(--space-sm));
+  left: calc(-1 * var(--space-lg));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--space-2xs) 0;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: 0 8px 24px color-mix(in srgb, black 28%, transparent);
+}
+.vbt-runs-menu[data-align="end"] { left: auto; right: 0; }
+.vbt-runs-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name when" "tally tally";
+  gap: var(--space-xs) var(--space-lg);
+  margin: 0;
+  padding: var(--space-sm) var(--space-lg);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font: var(--text-sm)/1.3 var(--font-sans, inherit);
+  color: var(--vbt-faint);
+  text-align: left;
+  cursor: pointer;
+}
+.vbt-runs-item:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
+.vbt-runs-item:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.vbt-runs-item[aria-checked="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.vbt-runs-name { grid-area: name; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vbt-runs-when { grid-area: when; font: var(--text-sm)/1.3 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--vbt-quiet); }
+.vbt-runs-item .vbt-tally { grid-area: tally; gap: var(--space-lg); font-size: 11px; }
+
+/* ── room details: where a Board room comes from ──────────────────────── */
+
+.vbt-source-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-xs) var(--space-lg);
+  margin: var(--space-sm) 0 0;
+  font-size: 12px;
+}
+.vbt-source-list dt { color: var(--dim); }
+.vbt-source-list dd { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 11px; }
+.vbt-source-list dd[data-state="re_reading"], .vbt-source-list dd[data-state="backfilling"] { color: var(--amber); }
+
+/* Board rooms' tab strip: Conversation / Tasks, two views of one channel.
+   The underline marks the open tab on a square edge. */
+.vbt-tabs { align-items: stretch; }
+.vbt-tabs .chat-chan-tab { border: 0; border-radius: 0; background: none; padding: 0; font: inherit; font-size: 13px; font-weight: 400; cursor: pointer; }
+.vbt-tabs .chat-chan-tab:not([aria-current]) { color: var(--vbt-faint, var(--dim)); box-shadow: none; }
+.vbt-tabs .chat-chan-tab:not([aria-current]):hover { color: var(--ink); }
+.vbt-tabs .chat-chan-tab b { margin-left: var(--space-2xs); font: 400 11px/1 var(--font-mono); color: var(--dim); }
+/* a Board room carries Vercel's mark where a room has "#", in the same slot and colour */
+.chat-hash[data-board], .rr-row-hash[data-board] { display: inline-flex; align-items: center; justify-content: center; vertical-align: -1px; }
+.chat-chan-name .chat-hash[data-board] { margin-right: var(--space-sm); }
+/* the header names the board, then the channel */
+.chat-chan-board { color: var(--dim); }
+.chat-chan-board-sep { margin: 0 var(--space-xs); color: var(--dim); }
+
+/* ── conversation: the channel as a message stream ────────────────────── */
+
+.vbc {
+  --vbc-inset: var(--chat-inset, 20px);
+  --vbc-av: var(--chat-av, 32px);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--text-md);
+  color: var(--ink);
+}
+/* the feed insets everything but its rows; this stream is rows, edge to edge */
+.chat-feed-inner > .vbc:not(.chat-turn):not(.chat-day) { margin-inline: 0; }
+.vbc-notice { margin: 0; padding: var(--space-3xl) var(--chat-inset, 20px); color: var(--vbt-faint, var(--dim)); }
+.vbc-notice[data-tone="error"] { color: var(--red); }
+/* A failed refresh over posts on screen: one quiet line, not an error. */
+.vbc-notice.vbc-stale { padding: var(--space-sm) var(--chat-inset, 20px); font-size: var(--text-sm); color: var(--dim); }
+.vbc-day { margin-top: var(--space-2xl); }
+.vbc-item:first-child > .vbc-day { margin-top: 0; }
+
+.vbc-post {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--vbc-av) minmax(0, 1fr);
+  column-gap: 10px;
+  padding: 2px var(--vbc-inset);
+}
+.vbc-post[data-head] { padding-top: var(--space-md); }
+.vbc-post:hover { background: color-mix(in srgb, var(--ink) 3%, transparent); }
+/* an open thread: a square strip in the task's hue on the row's square edge */
+.vbc-post[data-open] { background: color-mix(in srgb, var(--ink) 4%, transparent); box-shadow: inset 2px 0 0 var(--hue, var(--vbt-faint)); }
+.vbc-gutter { display: flex; justify-content: flex-start; align-items: flex-start; padding-top: 2px; }
+.vbc-hover-time { visibility: hidden; padding-top: var(--space-2xs); font-size: 10px; }
+.vbc-post:hover .vbc-hover-time { visibility: visible; }
+
+.vbc-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+  font: 400 13px/1 var(--font-sans, inherit);
+  --who: var(--vbt-faint);
+  color: var(--who);
+  background: color-mix(in srgb, var(--who) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--who) 30%, transparent);
+}
+.vbc-face[data-kind="operator"] { --who: var(--vbt-who-operator); }
+.vbc-face[data-kind="agent"] { --who: var(--vbt-who-agent); }
+.vbc-face[data-kind="person"] { --who: var(--vbt-who-person); }
+
+.vbc-main { min-width: 0; }
+.vbc-head { display: flex; align-items: baseline; gap: var(--space-md); margin: 0 0 2px; min-width: 0; }
+.vbc-name { font-weight: 500; color: var(--ink); white-space: nowrap; }
+.vbc-time { font: 11px/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--vbt-quiet); white-space: nowrap; }
+.vbc-plan { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px/1 var(--font-mono); color: var(--vbt-quiet); }
+
+/* how the task stands, on the message itself: its mark, its step, its state, who holds it */
+.vbc-text-head { display: flex; align-items: center; gap: var(--space-sm); min-width: 0; }
+/* The message keeps the row: it never narrows below a readable measure, and the
+   trail (step, state, holder) gives way first, its step name cut short. */
+.vbc-text-head > span:not(.vbc-task) { flex: 0 1 auto; min-width: min(24ch, 100%); }
+.vbc-text-head > .vbt-swatch { margin-right: 2px; }
+.vbc-task { display: inline-flex; align-items: center; gap: var(--space-md); margin-left: var(--space-sm); flex: 0 1 auto; min-width: 0; }
+.vbc-task > :not(.vbc-step-name) { flex: 0 0 auto; }
+.vbc-step-name { min-width: 0; max-width: 28ch; overflow: hidden; text-overflow: ellipsis; font: 11px/1 var(--font-mono); color: var(--hue, var(--vbt-faint)); white-space: nowrap; }
+.vbc-task .vbt-who { font-size: 12px; }
+
+.vbc-text { min-width: 0; max-width: 76ch; }
+.vbc-text p { margin: 0; overflow-wrap: anywhere; }
+.vbc-text-head { color: var(--ink); line-height: 1.45; }
+.vbc-text-body {
+  margin-top: 1px;
+  white-space: pre-wrap;
+  color: var(--vbt-faint);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.vbc-text-body[data-open] { display: block; }
+.vbc-post[data-st="done"] .vbc-text-head, .vbc-post[data-st="cancelled"] .vbc-text-head { color: color-mix(in srgb, var(--ink) 82%, transparent); }
+
+/* the thread's line under a message: how many replies, and the outcome so far */
+.vbc-thread-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  max-width: 100%;
+  margin: var(--space-xs) 0 var(--space-2xs);
+  padding: var(--space-2xs) 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  color: var(--vbt-faint);
+  cursor: pointer;
+}
+.vbc-thread-line:hover .vbc-thread-count { text-decoration: underline; text-underline-offset: 2px; }
+.vbc-thread-line:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.vbc-thread-count { flex: 0 0 auto; color: var(--vbt-st-run); }
+.vbc-thread-preview { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vbc-thread-preview[data-st="failed"] { color: var(--vbt-st-fail); }
+
+/* the open thread: hand-offs as lines, replies as small messages, the result last */
+.vbc-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--space-xs) 0 var(--space-md);
+  padding: 0 0 0 var(--space-lg);
+  border-left: 1px solid var(--vbt-hair);
+  list-style: none;
+}
+.vbc-step { display: grid; grid-template-columns: 44px 104px minmax(0, 1fr); column-gap: var(--space-md); align-items: center; height: 22px; --tone: var(--vbt-faint); }
+.vbc-step-verb { display: inline-flex; align-items: center; gap: var(--space-xs); font: 11px/1 var(--font-mono); color: var(--tone); }
+.vbc-step-verb i { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--tone); }
+.vbc-step-who { display: inline-flex; align-items: center; gap: var(--space-xs); min-width: 0; font-size: 12px; }
+.vbc-step[data-tone="quiet"] { --tone: var(--vbt-quiet); }
+.vbc-step[data-tone="run"] { --tone: var(--vbt-st-run); }
+.vbc-step[data-tone="done"] { --tone: var(--vbt-st-done); }
+.vbc-step[data-tone="fail"] { --tone: var(--vbt-st-fail); }
+.vbc-step[data-tone="block"] { --tone: var(--vbt-st-block); }
+.vbc-step[data-tone="block"] .vbc-step-verb i { border-radius: var(--radius-xs); }
+.vbc-step[data-tone="back"] .vbc-step-verb i { background: none; box-shadow: inset 0 0 0 1.25px var(--tone); }
+
+.vbc-reply { display: grid; grid-template-columns: 20px minmax(0, 1fr); column-gap: var(--space-md); padding: var(--space-xs) 0; }
+.vbc-reply p { margin: 0; }
+.vbc-reply-head { display: flex; align-items: baseline; gap: var(--space-md); }
+.vbc-reply-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; max-width: 72ch; }
+
+.vbc-result { padding: var(--space-xs) 0 var(--space-2xs); }
+.vbc-result-label { display: block; margin-bottom: 2px; font: 11px/1.4 var(--font-mono); color: var(--vbt-st-done); }
+.vbc-result[data-st="failed"] .vbc-result-label { color: var(--vbt-st-fail); }
+.vbc-result p { margin: 0; max-width: 72ch; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; }
+
+/* Scout's own messages in a Board room: after the board's, under one rule */
+.vbc-scout-rule { display: flex; align-items: center; gap: 10px; margin: var(--space-2xl) 0 var(--space-2xs); }
+.vbc-scout-rule > span { flex-shrink: 0; padding-left: var(--chat-inset, 20px); font: 11px/16px var(--font-mono); color: var(--dim); }
+.vbc-scout-rule::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.chat-feed-inner > .vbc-scout-rule:not(.chat-turn):not(.chat-day) { margin-inline: 0; }
+
+/* The Scout session behind the task: live steps, then one folded line, then the full trace. */
+.vbt-session { display: flex; flex-direction: column; gap: var(--space-sm); padding-top: var(--space-xl); border-top: 1px solid var(--scout-line); }
+.vbt-session-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-sm); }
+.vbt-session-head h4 { margin: 0; font: 11px/1 var(--font-mono); font-weight: 400; color: var(--vbt-quiet); }
+.vbt-session-open { font: 11px/1 var(--font-mono); color: var(--vbt-quiet); text-decoration: none; }
+.vbt-session-open:hover, .vbt-session-open:focus-visible { color: var(--scout-ink); text-decoration: underline; }
+.vbt-session-wait { margin: 0; font-size: var(--text-sm); color: var(--vbt-faint); }
+.vbt-session .s-turn-work, .vbt-session .s-session-work { max-width: none; margin: 0; }
+
+/* Manual review stays inside the task detail, below the Board evidence. */
+.vbt-review {
+  display: grid;
+  gap: var(--space-sm);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--scout-line);
+}
+.vbt-review h4, .vbt-review p { margin: 0; overflow-wrap: anywhere; }
+.vbt-review h4 { font: 11px/1 var(--font-mono); color: var(--vbt-quiet); }
+.vbt-review p { color: var(--vbt-faint); }
+.vbt-review .vbt-review-error { color: var(--vbt-st-fail); }
+.vbt-review-picker,
+.vbt-review-fields,
+.vbt-review-fields label:not(.vbt-review-check) { display: grid; gap: var(--space-xs); min-width: 0; }
+.vbt-review-fields { gap: var(--space-sm); }
+.vbt-review-picker select,
+.vbt-review-fields select,
+.vbt-review-fields input:not([type="checkbox"]) {
+  min-width: 0;
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.vbt-review-check,
+.vbt-review-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); }
+.vbt-review-actions:empty { display: none; }
+.vbt-review-evidence { overflow-wrap: anywhere; padding-block: var(--space-sm); }
+.vbt-review code { min-width: 0; font-family: var(--font-mono); }

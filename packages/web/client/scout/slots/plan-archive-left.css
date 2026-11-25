@@ -1,0 +1,127 @@
+.pa-panel {
+  padding: var(--space-lg) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  font-family: var(--font-mono);
+}
+
+.pa-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
+
+.pa-group-title {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+  padding: 0 var(--space-xs) var(--space-2xs);
+}
+
+.pa-row {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+
+.pa-row:hover {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.pa-row--active {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.pa-row-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pa-row-count {
+  font-size: var(--text-xs);
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.pa-row--active .pa-row-count {
+  color: var(--accent);
+}
+
+.pa-chips {
+  display: flex;
+  gap: var(--space-2xs);
+  flex-wrap: wrap;
+  padding: 0 var(--space-2xs);
+}
+
+.pa-chip {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: background 100ms ease, border-color 100ms ease;
+}
+
+.pa-chip:hover {
+  border-color: color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.pa-chip--active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+/* ── Sharp look ──
+ * Scoped to data-scout-look="sharp"; Classic is untouched. */
+
+/* Group title: 10px mono caps at the label weight */
+:root[data-scout-look="sharp"] .pa-group-title {
+  font-weight: var(--w-label, 400);
+  letter-spacing: var(--tr-label, 0.02em);
+}
+
+/* Rows: hover is the 3% plate, selection the select plate in ink */
+:root[data-scout-look="sharp"] .pa-row:hover {
+  background: var(--row-hover, color-mix(in srgb, var(--ink) 3%, transparent));
+}
+:root[data-scout-look="sharp"] .pa-row--active {
+  background: var(--select-bg, color-mix(in srgb, var(--ink) 8%, transparent));
+  color: var(--ink);
+}
+:root[data-scout-look="sharp"] .pa-row--active .pa-row-count {
+  color: var(--ink);
+}
+
+/* Chips: a hairline ghost; pressed is the plate */
+:root[data-scout-look="sharp"] .pa-chip {
+  border-color: var(--edge, color-mix(in srgb, var(--ink) 10%, transparent));
+}
+:root[data-scout-look="sharp"] .pa-chip:hover {
+  border-color: var(--edge-strong, color-mix(in srgb, var(--ink) 22%, transparent));
+}
+:root[data-scout-look="sharp"] .pa-chip--active {
+  background: var(--select-bg, color-mix(in srgb, var(--ink) 8%, transparent));
+  border-color: var(--edge-strong, color-mix(in srgb, var(--ink) 22%, transparent));
+  color: var(--ink);
+}

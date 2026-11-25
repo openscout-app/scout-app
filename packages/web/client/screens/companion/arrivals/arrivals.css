@@ -1,0 +1,1579 @@
+/* The arrivals board (Studio /studies/companion-board-light). Prefix arv-;
+ * sits inside the system corner's .scx root for its anchoring and Acts buttons.
+ * Two looks over one markup (··· › Look): Board, the companion's own surface
+ * and flaps, and Business, the app's theme as plain type. Both take the app's
+ * accent (for an ask and its Allow only) and its corners (Settings › Look). */
+
+/* Board's tokens. On :root too, so a page that draws the board without its
+ * layer (Studio) reads them; the desk's plates keep them in either look. */
+:root, .arv-desk {
+  --arv-ink: #f1eee6;
+  --arv-ink-2: rgba(241, 238, 230, 0.62);
+  --arv-ink-3: rgba(241, 238, 230, 0.4);
+  --arv-line: rgba(255, 255, 255, 0.08);
+  --arv-edge: rgba(255, 255, 255, 0.09);
+  --arv-wash: rgba(255, 255, 255, 0.035);
+  --arv-face-top: #121316;
+  --arv-face-end: #0c0d0f;
+  --arv-face: linear-gradient(180deg, var(--arv-face-top), var(--arv-face-end));
+  --arv-pop: #17181b;
+  --arv-field: rgba(0, 0, 0, 0.25);
+  --arv-flap: linear-gradient(180deg, #25272b 0 50%, #222428 50%);
+  --arv-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 14px 30px rgba(0, 0, 0, 0.5);
+  --arv-r-out: 10px;
+  --arv-r-in: 5px;
+  --arv-r-mark: 3px;
+  --arv-r-cell: 1.5px;
+  /* A field with a round button inside it (the reply box): 16 is the circle's 11 plus its 5px inset. */
+  --arv-r-field: 16px;
+  /* Ready: a task you asked to hear about is done. Its own calm colour, never the ask's accent. */
+  --arv-ready: oklch(0.8 0.1 232);
+}
+/* Business: the app's theme as the app draws it (its [data-scout-theme]
+ * aliases), light or dark; the fallbacks are Graphite dark. */
+.arv-layer.is-business {
+  --arv-ink: var(--ink, oklch(0.96 0.0013 286.4));
+  --arv-ink-2: var(--muted, oklch(0.79 0.0129 286.1));
+  --arv-ink-3: color-mix(in srgb, var(--muted, oklch(0.79 0.0129 286.1)) 62%, transparent);
+  --arv-line: var(--border, oklch(0.43 0.0119 285.8 / 0.45));
+  --arv-edge: var(--border, oklch(0.43 0.0119 285.8 / 0.6));
+  --arv-wash: color-mix(in srgb, var(--ink, oklch(0.96 0.0013 286.4)) 5%, transparent);
+  --arv-face-top: var(--surface, oklch(0.205 0.0035 286.1));
+  --arv-face-end: var(--surface, oklch(0.205 0.0035 286.1));
+  --arv-face: var(--surface, oklch(0.205 0.0035 286.1));
+  --arv-pop: var(--surface, oklch(0.205 0.0035 286.1));
+  --arv-field: var(--bg, oklch(0.14 0.0021 286.1));
+  --arv-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  /* Toward the theme's ink: lighter on a dark theme, deeper on a light one. */
+  --arv-ready: color-mix(in oklch, oklch(0.64 0.13 240) 72%, var(--ink, oklch(0.96 0.0013 286.4)));
+}
+/* Resolve corners where the host's radius scale is in scope. The native app
+ * sends its chosen radii directly, while the browser resolves them from Look. */
+.arv-layer, .arv-desk {
+  --arv-r-out: var(--radius-xl, 10px);
+  --arv-r-in: var(--radius-sm, 5px);
+  --arv-r-mark: var(--radius-xs, 3px);
+  --arv-r-cell: var(--radius-xs, 1.5px);
+  --arv-r-field: var(--radius-2xl, 16px);
+}
+
+.arv-board {
+  position: relative;
+  box-sizing: border-box;
+  width: 320px;
+  padding: 6px 8px;
+  border-radius: var(--arv-r-out);
+  background: var(--arv-face);
+  border: 1px solid var(--arv-edge);
+  box-shadow: var(--arv-shadow);
+  font: 12px/1.4 var(--scx-sans);
+  color: var(--arv-ink);
+  text-align: left;
+}
+.arv-board.is-folded { display: block; }
+.arv-board.is-folded .arv-rows { flex: 1; min-width: 0; }
+.arv-board.is-open { width: 440px; padding: 8px 10px 6px; }
+.arv-board.is-open.is-wide { width: 680px; }
+
+/* the head: the brand, its tools as quiet words, the last pass's time */
+.arv-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 2px 6px; }
+.arv-brand { font: 600 10px var(--scx-sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--arv-ink-2); }
+.arv-head__r { display: inline-flex; align-items: baseline; gap: 12px; }
+.arv-newbtn { padding: 0; border: 0; background: none; cursor: pointer; font: 500 10px var(--scx-sans); letter-spacing: 0.1em; text-transform: uppercase; color: var(--arv-ink-3); }
+.arv-newbtn:hover, .arv-newbtn.is-on { color: var(--arv-ink); }
+.arv-clock { font: 400 11px var(--scx-mono); color: var(--arv-ink-2); font-variant-numeric: tabular-nums; }
+.is-business .arv-brand { font: 600 12px var(--scx-sans); letter-spacing: 0; text-transform: none; color: var(--arv-ink); }
+.is-business .arv-newbtn { font: 500 11px var(--scx-sans); letter-spacing: 0; text-transform: none; }
+
+/* A row, one line: who (the project's tile, the harness coin), what it said
+ * in its own words after its name, then the remark and its time. */
+.arv-rows { margin: 0; padding: 0; list-style: none; }
+.arv-row {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 9px;
+  height: 26px; padding: 0 4px; border-radius: var(--arv-r-in); cursor: default;
+}
+.arv-board.is-open .arv-row:hover { background: var(--arv-wash); }
+/* Open, rows keep their DOM order and sit by CSS order (ArrivalsBoard), so a pass moves no node. */
+.arv-board.is-open .arv-rows.is-ordered { display: flex; flex-direction: column; }
+/* Hung from a bottom corner, the list sits on its bottom edge, so while its
+ * height glides on a pass (ArrivalsBoard) every row keeps its place from the
+ * corner and the head moves with the rows. */
+.scx.arv:not(.is-top) .arv-board.is-open .arv-rows.is-ordered { justify-content: flex-end; }
+
+/* who: always both marks, so every row's words start in the same place */
+.arv-marks { display: inline-flex; align-items: center; gap: 4px; }
+.arv-tile { flex: none; display: inline-grid; place-items: center; border-radius: var(--arv-r-mark); overflow: hidden; }
+.arv-tile > * { display: block; filter: grayscale(1) brightness(1.15); opacity: 0.85; }
+/* ProjectMark rounds itself inline; the tile's corner (the app's setting) clips it instead. */
+.arv-tile > svg { border-radius: 0 !important; }
+.arv-tile.is-fallback { box-sizing: border-box; border: 0.5px solid var(--arv-line); }
+/* the project's letters in plain type: legibility over the dot-matrix, a hairline tile, no hue */
+.arv-tile.is-code { box-sizing: border-box; border: 0.5px solid color-mix(in srgb, var(--arv-ink) 16%, transparent); font-family: var(--scx-mono, ui-monospace, "SF Mono", Menlo, monospace); font-weight: 500; line-height: 1; letter-spacing: 0.02em; color: var(--arv-ink-2); }
+.arv-tile.is-code.is-fallback { color: var(--arv-ink-3); border-style: dashed; }
+.arv-tile.is-fallback > svg { width: 100%; height: 100%; opacity: 0.55; }
+.arv-coin { flex: none; display: inline-grid; place-items: center; width: 13px; height: 13px; border-radius: 50%; background: color-mix(in srgb, var(--arv-ink) 7%, transparent); color: var(--arv-ink-2); }
+.arv-coin.is-fallback { color: var(--arv-ink-3); background: none; box-shadow: inset 0 0 0 0.5px var(--arv-line); }
+/* a known harness wears its brand tint (harnessTint): the glyph in it, the coin a wash of it */
+.arv-coin.is-tinted { color: var(--arv-coin-tint); background: color-mix(in srgb, var(--arv-coin-tint) 16%, transparent); }
+
+/* what it said: its name, quiet, then its words */
+.arv-said { display: flex; align-items: center; min-width: 0; overflow: hidden; font-size: 12px; color: color-mix(in srgb, var(--arv-ink) 80%, transparent); }
+.is-business .arv-said { color: var(--arv-ink-2); }
+.arv-said .arv-name { flex: 0 1 auto; max-width: 45%; margin-right: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 500 12px var(--scx-sans); color: var(--arv-ink-3); }
+.arv-now { flex: 1 1 0; min-width: 0; overflow: hidden; }
+.arv-line.is-quiet { color: var(--arv-ink-3); }
+
+/* The remark and its time. Board: one row of cells, one size; the time holds
+ * its column, an earlier day's weekday sitting right where the minutes do. */
+.arv-state { flex: none; display: inline-flex; align-items: center; gap: 9px; }
+.arv-status { display: inline-flex; }
+.arv-at { display: inline-flex; justify-content: flex-end; min-width: 37px; }
+.arv-time { display: inline-flex; align-items: center; gap: 1px; }
+.arv-time i { width: 3px; text-align: center; font: normal 9px/1 var(--scx-mono); color: var(--arv-ink-3); }
+.arv-row.is-ended .arv-at .arv-flap { color: color-mix(in srgb, var(--arv-ink) 75%, transparent); }
+/* Business: a word and a time, no cells */
+.arv-state.is-type { gap: 8px; font: 11px var(--scx-sans); }
+.arv-state.is-type b { font-weight: 500; color: var(--arv-ink); }
+.arv-state.is-type.is-dim b { color: var(--arv-ink-3); }
+.arv-state.is-type.is-accent b { color: var(--scx-accent); }
+.arv-state.is-type time { min-width: 32px; text-align: right; font: 10px var(--scx-mono); color: var(--arv-ink-3); font-variant-numeric: tabular-nums; }
+
+/* The now line rolls up one line: the old out the top, the new in from below. */
+.arv-line { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.arv-roll { position: relative; display: block; overflow: hidden; }
+.arv-roll__out { position: absolute; left: 0; right: 0; top: 0; animation: arv-roll-out var(--arv-enter) var(--arv-ease) var(--arv-roll-d, 0ms) forwards; }
+.arv-roll__in { animation: arv-roll-in var(--arv-enter) var(--arv-ease) var(--arv-roll-d, 0ms) backwards; }
+@keyframes arv-roll-out { to { transform: translateY(-100%); } }
+@keyframes arv-roll-in { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .arv-roll__out { display: none; }
+  .arv-roll__in { animation: none; }
+}
+
+/* attached (on a window or the desk): a quiet word before the remark */
+.arv-row.is-placed .arv-state::before { content: "attached"; font: 10px var(--scx-sans); color: var(--arv-ink-3); }
+
+/* An ask blinks; every asking row reads the same clock (--arv-pulse-d), so they blink together. */
+.arv-row.is-asking .arv-status { animation: arv-blink var(--arv-pulse, 1280ms) steps(1) var(--arv-pulse-d, 0ms) infinite; }
+@keyframes arv-blink { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .arv-row.is-asking .arv-status { animation: none; } }
+
+/* Ready holds still: no blink, its word and its Continue in the Ready colour. */
+.arv-row.is-ready .arv-flap:not(.is-empty), .arv-row.is-ready .arv-state.is-type b { color: var(--arv-ready); }
+.arv-row.is-ready .arv-line { color: var(--arv-ink); }
+.arv-ask.is-ready { color: var(--arv-ink-2); }
+.arv-ask.is-ready .arv-ask__task { color: var(--arv-ready); }
+.arv-ask .scx-acts .is-primary.is-ready { color: var(--arv-ready); border-color: color-mix(in oklch, var(--arv-ready) 50%, transparent); }
+.arv-ask .scx-acts .is-primary.is-ready:hover { color: var(--arv-ready); background: color-mix(in oklch, var(--arv-ready) 10%, transparent); }
+
+/* the ask strip, under its row from where the words start: what, the command, Allow / Deny */
+.arv-ask { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px 46px; font-size: 10px; color: var(--arv-ink-2); }
+.arv-board.is-folded .arv-ask { padding-left: 4px; }
+.arv-ask__task, .arv-ask__cmd { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.arv-ask__cmd { font: 10px var(--scx-mono); color: var(--arv-ink-3); }
+.arv-ask .scx-acts { margin-left: 0; gap: 6px; }
+.arv-ask .scx-acts button { height: 20px; padding: 0 9px; border-radius: var(--arv-r-in); border: 1px solid var(--arv-line); background: none; font: 500 10px var(--scx-sans); color: var(--arv-ink-2); }
+.arv-ask .scx-acts button:hover { color: var(--arv-ink); background: var(--arv-wash); }
+.arv-ask .scx-acts .is-primary { color: var(--scx-accent); border-color: color-mix(in oklch, var(--scx-accent) 50%, transparent); background: none; }
+.arv-ask .scx-acts .is-primary:hover { color: var(--scx-accent); background: color-mix(in oklch, var(--scx-accent) 8%, transparent); }
+.arv-ask .scx-hint { margin: 0; color: var(--arv-ink-3); }
+.arv-ask .scx-hint.is-error { color: var(--arv-ink-2); }
+
+/* flaps */
+.arv-flaps { display: inline-flex; gap: 1px; }
+.arv-flap {
+  position: relative; display: inline-grid; place-items: center; width: 7.5px; height: 12px; border-radius: var(--arv-r-cell);
+  background: var(--arv-flap); color: var(--arv-ink); font: 600 9px/1 var(--scx-mono);
+}
+/* the split is a hint, not a cut: a faint hairline the letter rides over, so the word stays readable */
+.arv-flap::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 0.5px; background: rgba(0, 0, 0, 0.3); }
+/* an empty cell is a hairline, not a blank tile */
+.arv-flap.is-empty { background: none; box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06); }
+.arv-flap.is-empty::after { display: none; }
+.arv-flap span { position: relative; z-index: 1; }
+.arv-flap.is-spin span { transform: scaleY(0.8); opacity: 0.8; }
+.arv-flaps.is-accent .arv-flap { color: var(--scx-accent); }
+.arv-flaps.is-dim .arv-flap { color: color-mix(in srgb, var(--arv-ink) 55%, transparent); }
+
+.arv-more { display: block; margin-top: 3px; text-align: right; font-size: 9px; color: var(--arv-ink-3); }
+
+/* Folded to lines (board-strip.ts, FoldStrip; Studio /studies/companion-board-cells, E):
+ * one line per agent with something going on: harness mark, the session's
+ * name, its field of dots. Only an ask adds its row above. Nothing going on:
+ * the Scout mark alone. */
+.arv-board.is-folded.is-strip { width: 300px; padding: 5px 6px; }
+/* an ask's row carries its flaps and Allow: room for them while it shows */
+.arv-board.is-folded.is-strip:has(> .arv-strip-ask) { width: 360px; }
+/* nothing going on: only the Scout mark, small; a click opens the board */
+.arv-board.is-strip:has(> .arv-mark:only-child) { width: auto; padding: 4px; }
+.arv-mark { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: var(--arv-r-in); background: none; color: var(--arv-ink-2); cursor: pointer; }
+.arv-mark:hover { color: var(--arv-ink); background: var(--arv-wash); }
+.arv-mark__svg { width: 14px; height: 14px; }
+.arv-strip-row { display: flex; align-items: stretch; gap: 4px; }
+.arv-strip-row > .arv-strip { flex: 1; min-width: 0; }
+.arv-strip-board {
+  flex: none; display: flex; align-items: flex-start; justify-content: center; width: 20px; padding: 6px 0 0;
+  border: 0; border-left: 1px solid var(--arv-line); background: none; color: var(--arv-ink-3); cursor: pointer;
+}
+.arv-strip-board:hover { color: var(--arv-ink); background: var(--arv-wash); }
+.arv-strip-board .arv-mark__svg { width: 12px; height: 12px; }
+.arv-strip-ask { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid var(--arv-line); }
+.arv-strip { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; cursor: pointer; }
+.arv-line-cell {
+  position: relative; display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; column-gap: 8px;
+  height: 24px; padding: 0 4px; border-radius: var(--arv-r-in); border: 1px solid transparent;
+}
+.arv-line-cell:hover { background: var(--arv-wash); }
+/* the line whose panel is open: marked plainly, in ink */
+.arv-line-cell.is-tapped { background: color-mix(in srgb, var(--arv-ink) 9%, transparent); border-color: color-mix(in srgb, var(--arv-ink) 22%, transparent); }
+.arv-line-cell.is-done .arv-line-cell__name { color: var(--arv-ink-2); }
+.arv-line-cell__done { justify-self: end; font: 600 9px var(--scx-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--arv-ink-3); }
+/* Ready: finished, and the next move is the operator's. Steady, no blink. */
+.arv-line-cell__done.arv-line-cell__ready { color: var(--arv-ready); }
+/* Stream lines: one line, wider. Enough of the name, then the latest step
+ * beside it, sliding in as it lands; the dots stay at the end. */
+.arv-board.is-folded.is-strip:has(.arv-strip.is-stream) { width: 560px; }
+.arv-strip.is-stream .arv-line-cell { grid-template-columns: 16px minmax(0, 168px) minmax(0, 1fr) auto; }
+.arv-strip.is-stream .arv-line-cell > .arv-dots,
+.arv-strip.is-stream .arv-line-cell > .arv-line-cell__done { grid-column: 4; grid-row: 1; }
+.arv-line-cell__step {
+  grid-column: 3; grid-row: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 10px var(--scx-mono); color: var(--arv-ink-3); animation: arv-step-in 260ms var(--ease-out, ease-out) backwards;
+}
+.arv-line-cell__step.is-said { font: 11px var(--scx-sans); color: var(--arv-ink-2); }
+@keyframes arv-step-in { from { opacity: 0; transform: translateX(6px); } }
+.arv-line-cell.is-asking { border-color: color-mix(in oklch, var(--scx-accent) 70%, transparent); }
+.arv-line-cell__harness { display: inline-grid; place-items: center; width: 16px; height: 16px; color: var(--arv-ink); }
+.arv-line-cell__name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 12px var(--scx-sans); color: var(--arv-ink); }
+/* more than a page of lines: carousel dots, the shown page lit */
+.arv-strip__dots { display: flex; justify-content: center; gap: 5px; padding: 4px 0 1px; }
+.arv-strip__dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--arv-ink); opacity: 0.18; transition: opacity 200ms; }
+.arv-strip__dots i.is-on { opacity: 0.7; }
+
+/* the field of dots: lit ones breathe in a wave, quicker and brighter the busier (DotField) */
+.arv-dots { flex: none; display: block; overflow: visible; }
+.arv-dots circle { fill: var(--arv-ink); opacity: 0.1; }
+.arv-dots circle.is-on { opacity: 0.3; animation: arv-dots-think var(--arv-dots-dur, 2s) ease-in-out infinite; }
+/* resting: the whole field breathes slowly, a wave across it, so a quiet agent never reads as gone */
+.arv-dots.is-resting circle { animation: arv-dots-rest 3.6s ease-in-out infinite; }
+.arv-dots.is-resting circle:nth-child(3n) { animation-delay: -1.2s; }
+.arv-dots.is-resting circle:nth-child(3n+1) { animation-delay: -2.4s; }
+@keyframes arv-dots-rest {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.32; }
+}
+@keyframes arv-dots-think {
+  0%, 100% { opacity: 0.22; }
+  45% { opacity: var(--arv-dots-peak, 0.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arv-dots circle.is-on { animation: none; opacity: calc(var(--arv-dots-peak, 0.85) * 0.75); }
+  .arv-dots.is-resting circle { animation: none; opacity: 0.18; }
+  .arv-line-cell__step { animation: none; }
+}
+
+.arv-cell__tip {
+  position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 5; display: none; max-width: 300px; padding: 5px 8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+  border-radius: var(--arv-r-in); background: var(--arv-pop); border: 1px solid var(--arv-edge); box-shadow: var(--arv-shadow);
+  font: 11px var(--scx-sans); color: var(--arv-ink-2);
+}
+.scx.is-top .arv-cell__tip { bottom: auto; top: calc(100% + 6px); }
+.arv-cell__tip b { font-weight: 500; color: var(--arv-ink); }
+.arv-cell__tip i { margin-left: 8px; font: normal 10px var(--scx-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--arv-ink-3); }
+.arv-line-cell:hover .arv-cell__tip { display: block; }
+.arv-empty { color: var(--arv-ink-2); }
+.arv-empty.is-open { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; box-sizing: border-box; padding: 12px 16px 14px; }
+.arv-empty__copy { display: grid; gap: 4px; min-width: 0; }
+.arv-empty__copy strong { font: 500 12px/1.2 var(--scx-sans); color: var(--arv-ink); }
+.arv-empty__copy > span { font: 11px/1.25 var(--scx-sans); color: var(--arv-ink-2); }
+.arv-empty__new { flex: none; padding: 6px 9px; border: 0.5px solid var(--cw-hair); border-radius: var(--arv-r-in); background: rgba(255, 255, 255, 0.04); color: var(--arv-ink); font: 500 11px/1.2 var(--scx-sans); cursor: pointer; }
+.arv-empty__new:hover { background: rgba(255, 255, 255, 0.09); }
+.arv-empty__new:focus-visible, .arv-empty.is-folded:focus-visible { outline: 2px solid var(--cw-acc); outline-offset: 2px; }
+.arv-empty.is-folded { display: block; width: 100%; padding: 4px 2px; border: 0; background: none; text-align: left; font: 11px/1.4 var(--scx-sans); cursor: pointer; }
+.arv-error { margin-top: 4px; font-size: 9px; color: var(--arv-ink-2); }
+
+/* who a plate is (Ident): project mark, harness coin, agent */
+.arv-id { display: flex; align-items: center; gap: 6px; min-width: 0; }
+/* An agent out's label, its code in the runtime's roster (figure-labels.ts), "OS 003": the same at its figure, on its row and chip, in its panels. Quiet mono, a hairline, no fill. */
+.arv-tag {
+  --scx-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  flex: none; display: inline-block; padding: 0 4px; border: 1px solid color-mix(in srgb, var(--arv-ink) 14%, transparent); border-radius: var(--arv-r-mark, 3px);
+  font: 400 10px/13px var(--scx-mono); letter-spacing: 0.04em; white-space: nowrap; color: var(--arv-ink-2); font-variant-numeric: tabular-nums;
+}
+.arv-said .arv-tag { margin-right: 6px; }
+/* At the figure: its roster number alone, below it (figureLabelSpot), no plate at rest. It sits on the
+ * desktop picture, not on the board: its ink is the host's read of the picture under it (labelInk), dark
+ * over a light picture; light with a tight dark shadow otherwise, and when the host has no read. */
+.arv-figtag {
+  --scx-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  position: absolute; z-index: 1; height: 12px; pointer-events: none; text-align: center;
+  font: 400 10px/12px var(--scx-mono); letter-spacing: 0.1em; white-space: nowrap; font-variant-numeric: tabular-nums;
+  color: rgba(241, 238, 230, 1);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.55), 0 1px 1px rgba(0, 0, 0, 0.6);
+  transition: color 240ms ease-out, text-shadow 240ms ease-out;
+}
+.arv-figtag.is-ink-dark { color: rgba(22, 22, 24, 1); text-shadow: 0 0 2px rgba(255, 255, 255, 0.44); }
+/* The hover plate: drawn round the number where it is, so the label never moves. The plate is then what
+ * the number sits on, and at half of near-black it reads below 0.18 over all but near-white pictures:
+ * the number turns to the light ink with it. */
+.arv-figtag::before {
+  content: ""; position: absolute; z-index: -1; inset: -1px -4px; pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 4px; background: rgba(14, 15, 17, 0.5);
+  opacity: 0; transition: opacity 240ms ease-out;
+}
+.ce-placed.is-pointed .arv-figtag::before { opacity: 1; }
+.ce-placed.is-pointed .arv-figtag.is-ink-dark { color: rgba(241, 238, 230, 1); text-shadow: 0 0 2px rgba(0, 0, 0, 0.55), 0 1px 1px rgba(0, 0, 0, 0.6); }
+.ce-placed.is-covered .arv-figtag { visibility: hidden; }
+/* Mid-chase the art turns and runs: its chest number would mirror with it. */
+.ce-placed.is-chasing .chest-no, .ce-placed.is-covered .chest-no { visibility: hidden; }
+.arv-pmark { flex: none; }
+svg.arv-pmark { border-radius: var(--arv-r-mark) !important; }
+.arv-pmark.is-none { width: 18px; height: 18px; border-radius: var(--arv-r-mark); background: var(--arv-wash); }
+.arv-name { min-width: 0; max-width: 190px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 600 12px var(--scx-sans); color: var(--arv-ink); }
+
+/* ---------- in-place tools ---------- */
+.arv-row.is-expanded { background: color-mix(in srgb, var(--arv-ink) 3.5%, transparent); }
+.arv-detail { padding: 6px 0 10px 42px; border-bottom: 1px solid color-mix(in srgb, var(--arv-ink) 5%, transparent); background: color-mix(in srgb, var(--arv-ink) 2%, transparent); }
+.arv-detail__task { margin-bottom: 6px; font: 500 11px var(--scx-sans); color: var(--arv-ink); }
+
+.arv-turns { display: grid; gap: 4px; margin: 0 0 8px; padding: 0; list-style: none; }
+.arv-turns li { max-width: 92%; font: 11px/1.4 var(--scx-sans); color: color-mix(in srgb, var(--arv-ink) 80%, transparent); }
+.arv-turns li.is-you { justify-self: end; color: color-mix(in srgb, var(--arv-ink) 60%, transparent); }
+.arv-turns li.is-you::before { content: "you · "; color: color-mix(in srgb, var(--arv-ink) 35%, transparent); }
+.arv-note { font: 10px var(--scx-mono); color: color-mix(in srgb, var(--arv-ink) 45%, transparent); }
+.arv-note.is-error { color: var(--arv-ink-2); }
+
+.arv-input {
+  box-sizing: border-box; width: calc(100% - 8px); height: 26px; padding: 0 9px; border-radius: var(--arv-r-in);
+  border: 1px solid color-mix(in srgb, var(--arv-ink) 12%, transparent); background: var(--arv-field); color: var(--arv-ink);
+  font: 11px var(--scx-sans); outline: none;
+}
+.arv-input:focus { border-color: color-mix(in srgb, var(--arv-ink) 28%, transparent); }
+.arv-input::placeholder { color: color-mix(in srgb, var(--arv-ink) 35%, transparent); }
+
+.arv-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 7px; }
+.arv-links button {
+  display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 8px; border-radius: var(--arv-r-in); cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--arv-ink) 10%, transparent); background: none; color: color-mix(in srgb, var(--arv-ink) 75%, transparent); font: 10px var(--scx-sans);
+}
+.arv-links button:hover, .arv-links button.is-on { background: color-mix(in srgb, var(--arv-ink) 6%, transparent); color: var(--arv-ink); }
+.arv-links button.is-primary { border-color: color-mix(in srgb, var(--arv-ink) 20%, transparent); color: var(--arv-ink); }
+.arv-links kbd { margin: 0; padding: 0 3px; min-width: 0; font-size: 9px; line-height: 13px; }
+
+.arv-facts { display: grid; gap: 2px; margin: 0 0 8px; }
+.arv-facts div { display: flex; gap: 8px; font: 10px var(--scx-mono); }
+.arv-facts dt { width: 76px; color: color-mix(in srgb, var(--arv-ink) 45%, transparent); }
+.arv-facts dd { margin: 0; color: color-mix(in srgb, var(--arv-ink) 80%, transparent); }
+
+.arv-new { display: grid; gap: 6px; padding: 8px 0 10px; border-bottom: 1px solid color-mix(in srgb, var(--arv-ink) 8%, transparent); }
+.arv-new .arv-input { width: 100%; }
+.arv-new__to { display: flex; align-items: center; gap: 8px; font: 10px var(--scx-mono); color: color-mix(in srgb, var(--arv-ink) 50%, transparent); }
+.arv-new__to select {
+  height: 22px; padding: 0 6px; border-radius: var(--arv-r-in); border: 1px solid color-mix(in srgb, var(--arv-ink) 12%, transparent); background: var(--arv-field);
+  color: var(--arv-ink); font: 11px var(--scx-mono);
+}
+.arv-new.is-sent { font: 11px var(--scx-sans); color: color-mix(in srgb, var(--arv-ink) 75%, transparent); }
+.arv-new.is-sent b { font-weight: 500; color: var(--arv-ink); }
+.arv-turns li { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+
+/* ---------- settings ---------- */
+/* Sections, each a name over a card of rows. One row per setting: its name
+ * (and a line on what it does) on the left, the choice on the right as one
+ * segmented track; a hairline between rows. */
+.arv-set { display: grid; gap: 14px; padding: 2px 0 4px; }
+.arv-set__sec { display: grid; gap: 6px; min-width: 0; }
+.arv-set__sec > h4 { margin: 0; padding: 0 2px; font: 600 9.5px var(--scx-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--arv-ink-3); }
+.arv-set__card { border: 1px solid var(--arv-line); border-radius: calc(var(--arv-r-in) + 3px); background: var(--arv-wash); }
+.arv-set__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 7px 10px; box-sizing: border-box; }
+.arv-set__row + .arv-set__row { border-top: 1px solid var(--arv-line); }
+.arv-set__key { flex: 0 1 auto; min-width: 0; font: 500 12px/1.3 var(--scx-sans); color: var(--arv-ink); }
+.arv-set__key small { display: block; margin-top: 2px; font: 400 10.5px/1.35 var(--scx-sans); color: var(--arv-ink-3); }
+/* Project codes: each project's name and its two or three letters, quiet mono. */
+.arv-set__codes { display: grid; gap: 4px; justify-items: end; }
+.arv-set__code { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font: 400 11px/1.3 var(--scx-sans); color: var(--arv-ink-2); }
+.arv-set__code > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Stacked under their row's name, the codes take the card's width: a project on each line, its name at the left
+ * (one line, cut short; the whole name on hover) and its letters at the right. */
+.arv-set__row.is-stacked .arv-set__codes, .arv-set__row.is-stacked .arv-set__codeline { justify-items: stretch; }
+.arv-set__row.is-stacked .arv-set__code { display: flex; justify-content: space-between; }
+.arv-set__code input {
+  width: 4.2ch; padding: 2px 4px; box-sizing: content-box;
+  border: 1px solid var(--arv-line); border-radius: 4px; background: transparent;
+  font: 400 11px/1.3 var(--scx-mono, ui-monospace, monospace); color: var(--arv-ink); text-align: center; text-transform: uppercase;
+}
+.arv-set__code input::placeholder { color: var(--arv-ink-3); }
+.arv-set__code input:focus-visible { outline: 1px solid var(--arv-ink-3); outline-offset: 1px; }
+.arv-set__code input[aria-invalid="true"] { border-color: var(--arv-ink-2); }
+/* A code the runtime refused: its sentence, which names the holder, under the field. Ink only. */
+.arv-set__codeline { display: grid; justify-items: end; gap: 2px; }
+.arv-set__refused { max-width: 30ch; font: 400 10.5px/1.35 var(--scx-sans); color: var(--arv-ink); text-align: right; }
+.arv-set__note { margin: 0; padding: 10px; font: 11px/1.4 var(--scx-sans); color: var(--arv-ink-2); }
+.arv-set__card > :is(.arv-set__note, .arv-imp) + :is(.arv-set__row, .arv-set__note, .arv-imp),
+.arv-set__card > .arv-set__row + :is(.arv-set__note, .arv-imp) { border-top: 1px solid var(--arv-line); }
+/* The import of a page's old numbers (RosterImport.tsx): the runtime's dry run as hairline rows, then a confirm. No accent: it is reserved for asks. */
+.arv-set__row.is-stacked { flex-direction: column; align-items: stretch; gap: 8px; padding-block: 9px; }
+.arv-imp__acts { flex: none; display: inline-flex; align-items: center; gap: 10px; }
+.arv-imp__acts.is-confirm { display: flex; justify-content: flex-start; padding: 8px 10px 10px; }
+.arv-imp__link { padding: 0; border: 0; background: none; cursor: pointer; font: 500 11px var(--scx-sans); color: var(--arv-ink-2); }
+.arv-imp__link:hover:not(:disabled) { color: var(--arv-ink); }
+.arv-imp__link:focus-visible { outline: 2px solid color-mix(in srgb, var(--arv-ink) 45%, transparent); outline-offset: 2px; }
+.arv-imp__busy { flex: none; font: 400 11px var(--scx-sans); color: var(--arv-ink-3); }
+.arv-imp .arv-set__btn:disabled, .arv-imp__link:disabled { cursor: default; opacity: 0.5; }
+.arv-imp__failed { color: var(--arv-ink); }
+.arv-imp__list { display: grid; gap: 6px; padding: 8px 10px 0; }
+.arv-imp__sum { margin: 0; font: 400 11px/1.4 var(--scx-sans); color: var(--arv-ink-2); }
+.arv-imp__list h5 { margin: 6px 0 0; font: 600 9.5px var(--scx-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--arv-ink-3); }
+.is-business .arv-imp__list h5 { font: 600 11px var(--scx-sans); letter-spacing: 0; text-transform: none; color: var(--arv-ink-2); }
+.arv-imp__list ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--arv-line); }
+.arv-imp__list li {
+  display: grid; grid-template-columns: 6.5ch minmax(0, 1fr) auto; align-items: baseline; column-gap: 10px;
+  padding: 5px 0; border-bottom: 1px solid var(--arv-line); font: 400 11px/1.35 var(--scx-sans); color: var(--arv-ink);
+}
+.arv-imp__was { font: 400 11px var(--scx-mono, ui-monospace, monospace); color: var(--arv-ink-2); white-space: nowrap; }
+.arv-imp__who { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.arv-imp__who i { font-style: normal; color: var(--arv-ink-3); }
+.arv-imp__then { font: 400 11px var(--scx-mono, ui-monospace, monospace); color: var(--arv-ink); text-align: right; white-space: nowrap; }
+.arv-imp__list li.is-refused .arv-imp__then { font-family: var(--scx-sans); color: var(--arv-ink-2); white-space: normal; max-width: 24ch; }
+.arv-imp__list li.is-refused .arv-imp__who { color: var(--arv-ink-2); }
+.arv-imp__note { grid-column: 2 / -1; font: 400 10.5px/1.35 var(--scx-sans); color: var(--arv-ink-2); }
+.arv-seg {
+  flex: none; display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 2px; padding: 2px;
+  border-radius: calc(var(--arv-r-in) + 2px); background: color-mix(in srgb, var(--arv-ink) 6%, transparent);
+}
+.arv-seg button {
+  height: 24px; padding: 0 10px; border: 0; border-radius: var(--arv-r-in); background: none; cursor: pointer;
+  font: 500 11px var(--scx-sans); color: var(--arv-ink-2); transition: background 120ms ease, color 120ms ease;
+}
+.arv-seg button:hover { color: var(--arv-ink); }
+.arv-seg button.is-on { color: var(--arv-ink); background: color-mix(in srgb, var(--arv-ink) 15%, transparent); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+.arv-seg button:focus-visible, .arv-corners button:focus-visible, .arv-set__btn:focus-visible { outline: 2px solid color-mix(in srgb, var(--arv-ink) 45%, transparent); outline-offset: 1px; }
+/* Position: the screen's four corners and a notch at the middle of each edge, the board's lit. */
+.arv-corners { flex: none; display: grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 20px); gap: var(--space-2xs); padding: var(--space-2xs); border-radius: calc(var(--arv-r-in) + var(--radius-xs)); background: color-mix(in srgb, var(--arv-ink) 6%, transparent); }
+.arv-corners button { display: flex; height: 20px; padding: 4px; border: 0; border-radius: var(--arv-r-in); background: none; cursor: pointer; }
+.arv-corners button i { width: 9px; height: 6px; border-radius: 1.5px; background: var(--arv-ink-3); }
+.arv-corners button:hover i { background: var(--arv-ink-2); }
+.arv-corners button.is-on { background: color-mix(in srgb, var(--arv-ink) 15%, transparent); }
+.arv-corners button.is-on i { background: var(--arv-ink); }
+.arv-corners .is-top-right, .arv-corners .is-bottom-right { justify-content: flex-end; }
+.arv-corners .is-bottom-left, .arv-corners .is-bottom-right { align-items: flex-end; }
+.arv-corners .is-top-left { grid-area: 1 / 1; } .arv-corners .is-top-right { grid-area: 1 / 3; }
+.arv-corners .is-bottom-left { grid-area: 3 / 1; } .arv-corners .is-bottom-right { grid-area: 3 / 3; }
+.arv-corners [class*="is-notch-"] { grid-area: auto; }
+.arv-corners .is-notch-top { grid-area: 1 / 2; justify-content: center; }
+.arv-corners .is-notch-bottom { grid-area: 3 / 2; justify-content: center; align-items: flex-end; }
+.arv-corners .is-notch-left { grid-area: 2 / 1; align-items: center; }
+.arv-corners .is-notch-right { grid-area: 2 / 3; justify-content: flex-end; align-items: center; }
+.arv-corners :is(.is-notch-top, .is-notch-bottom) i { width: 12px; height: 4px; }
+.arv-corners :is(.is-notch-left, .is-notch-right) i { width: 4px; height: 8px; }
+/* Floating (anywhere on the screen) takes the empty middle: the picker stays three by three. */
+.arv-corners .is-floating { grid-area: 2 / 2; justify-content: center; align-items: center; }
+.arv-set__btn {
+  flex: none; height: 26px; padding: 0 12px; border-radius: var(--arv-r-in); border: 1px solid color-mix(in srgb, var(--arv-ink) 14%, transparent);
+  background: color-mix(in srgb, var(--arv-ink) 5%, transparent); cursor: pointer; font: 500 11px var(--scx-sans); color: var(--arv-ink);
+}
+.arv-set__btn:hover { background: color-mix(in srgb, var(--arv-ink) 10%, transparent); }
+.arv-set kbd { padding: 0 4px; border: 1px solid color-mix(in srgb, var(--arv-ink) 14%, transparent); border-radius: var(--arv-r-mark); font: 10px var(--scx-mono); color: var(--arv-ink-2); }
+/* Business: the app's own type, sentence case. */
+.is-business .arv-set__sec > h4 { font: 600 11px var(--scx-sans); letter-spacing: 0; text-transform: none; color: var(--arv-ink-2); }
+.arv-dim { color: color-mix(in srgb, var(--arv-ink) 42%, transparent); }
+
+/* ---------- a sheet beside the board (Settings, New) ----------
+ * The details panel's material and opening (.tap-panel, tap-in.css), with a
+ * title and a body that scrolls past the room beside the board. */
+.arv-sheet { display: flex; flex-direction: column; min-height: 0; }
+.arv-sheet__head { flex: none; display: flex; align-items: center; min-height: 42px; padding: 0 40px 0 14px; border-bottom: 1px solid var(--arv-line); }
+.arv-sheet__head h3 { margin: 0; font: 600 13px var(--scx-sans); color: var(--arv-ink); }
+.arv-sheet .tap-x { top: 11px; right: 10px; }
+.arv-sheet__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px 12px 14px; scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--arv-ink) 14%, transparent) transparent; }
+.arv-sheet .arv-new { padding-top: 0; border-bottom: 0; }
+
+/* ---------- Scoutbot beside the board ---------- */
+.arv-bot {
+  order: -1; margin-bottom: 8px;
+  --ce-pop: var(--co-card, #121316); --ce-ink: var(--co-ink, var(--arv-ink)); --ce-ink-2: var(--co-muted, color-mix(in srgb, var(--arv-ink) 60%, transparent));
+  --ce-line: var(--co-hair, color-mix(in srgb, var(--arv-ink) 8%, transparent)); --ce-pop-line: var(--co-hair-strong, color-mix(in srgb, var(--arv-ink) 14%, transparent));
+  --ce-accent: var(--co-accent, var(--scx-accent)); --ce-ease: cubic-bezier(0.33, 0, 0.2, 1);
+  font: 12px/1.38 var(--co-sans, var(--scx-sans)); color: var(--ce-ink);
+}
+.scx.is-top .arv-bot { order: 1; margin: 8px 0 0; }
+.arv-bot .ce-pop { position: relative; bottom: auto; left: auto; top: auto; }
+/* On a notch Scoutbot is the notch grown (board-sheet.ts sheetPlacement): its flat face, square and unlined where it meets the board, the notch's round at the far end. */
+.arv-bot.is-notch { --arv-r-out: 12px; position: fixed; z-index: 2; margin: 0; pointer-events: auto; }
+.arv-bot.is-notch .ce-pop.sbt-pop {
+  border: 1px solid var(--arv-edge); border-radius: var(--arv-r-out); background: #0d0e10; backdrop-filter: none;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55); animation: none;
+}
+.arv-bot.is-notch.from-top .ce-pop.sbt-pop { border-top: 0; border-start-start-radius: 0; border-start-end-radius: 0; }
+.arv-bot.is-notch.from-bottom .ce-pop.sbt-pop { border-bottom: 0; border-end-start-radius: 0; border-end-end-radius: 0; }
+.arv-bot.is-notch.from-left .ce-pop.sbt-pop { border-left: 0; border-start-start-radius: 0; border-end-start-radius: 0; }
+.arv-bot.is-notch.from-right .ce-pop.sbt-pop { border-right: 0; border-start-end-radius: 0; border-end-end-radius: 0; }
+
+/* ---------- attached plates (storyline layer 3) ---------- */
+.arv-desk {
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  /* The desk sits beside .scx, not in it: its strips and their detail read the board's tokens from here. */
+  --scx-ink: var(--ink, #e6e8ea);
+  --scx-ink-2: color-mix(in srgb, var(--scx-ink) 64%, transparent);
+  --scx-ink-3: color-mix(in srgb, var(--scx-ink) 42%, transparent);
+  --scx-accent: var(--accent, oklch(0.72 0.15 160));
+  --scx-hair: color-mix(in srgb, var(--scx-ink) 8%, transparent);
+  --scx-line: color-mix(in srgb, var(--scx-ink) 11%, transparent);
+  --scx-wash: color-mix(in srgb, var(--scx-ink) 4%, transparent);
+  --scx-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  --scx-sans: var(--font-sans, -apple-system, "SF Pro Text", system-ui, sans-serif);
+}
+.arv-desk [data-hit] { pointer-events: auto; }
+.arv-plate {
+  position: absolute; box-sizing: border-box; padding: 3px 6px; border-radius: var(--arv-r-in);
+  background: var(--arv-face); border: 1px solid color-mix(in srgb, var(--arv-ink) 10%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--arv-ink) 6%, transparent), 0 8px 18px rgba(0, 0, 0, 0.45);
+  font-family: var(--scx-mono); color: var(--arv-ink);
+  animation: arv-plate-in var(--arv-enter, 160ms) var(--arv-ease, ease-out);
+}
+.arv-plate.is-tab { border-radius: var(--arv-r-in) var(--arv-r-in) 0 0; border-bottom: 0; padding: 3px 7px; }
+/* A strip is a pill, as the notch's chips are: round ends, the height of its row. Open, it is a card. */
+.arv-plate.is-card { padding: 0 var(--space-sm, 8px) 0 4px; border-radius: var(--radius-pill); }
+.arv-plate.is-open { padding: 6px 8px 4px; z-index: 5; border-radius: var(--arv-r-out); }
+.arv-plate.is-drag { opacity: 0.9; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55); animation: none; }
+.arv-plate.is-covered { opacity: 0.35; }
+.arv-plate.is-asking { border-color: color-mix(in srgb, var(--scx-accent) 55%, transparent); }
+/* Hover is a change in the line, never a glow or a plate. */
+.arv-plate { transition: border-color 140ms ease; }
+.arv-plate:not(.is-open):not(.is-asking):hover { border-color: color-mix(in srgb, var(--arv-ink) 24%, transparent); }
+.arv-plate__row { display: flex; align-items: center; gap: 7px; min-height: 26px; cursor: grab; font-family: var(--scx-sans); white-space: nowrap; }
+.arv-plate__row .arv-id { flex: none; max-width: 150px; }
+.arv-plate__row .arv-name { font-size: 12px; font-weight: 500; }
+.arv-plate__st { flex: none; margin-left: auto; font: 9px var(--scx-mono); letter-spacing: 0.08em; color: color-mix(in srgb, var(--arv-ink) 55%, transparent); }
+.arv-plate__st.is-asking { color: var(--scx-accent); }
+/* An open card's head: who, its state, its gear and a close; the marks light up, nothing behind them does. */
+.arv-plate__row.is-head { gap: 6px; }
+.arv-plate__icon { flex: none; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; background: none; color: color-mix(in srgb, var(--arv-ink) 42%, transparent); cursor: pointer; transition: color 120ms ease; }
+.arv-plate__icon:hover, .arv-plate__icon[aria-pressed="true"] { color: var(--arv-ink); }
+.arv-plate__icon:focus-visible { outline: 1px solid color-mix(in srgb, var(--arv-ink) 50%, transparent); outline-offset: 1px; }
+.arv-plate__link { padding: 0; border: 0; background: none; color: color-mix(in srgb, var(--arv-ink) 62%, transparent); font: 10px var(--scx-sans); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--arv-ink) 22%, transparent); text-underline-offset: 2px; cursor: pointer; }
+.arv-plate__link:hover, .arv-plate__link:focus-visible { color: var(--arv-ink); text-decoration-color: currentColor; outline: none; }
+.arv-plate__cell.is-end { flex-basis: 100%; justify-content: flex-end; }
+.arv-plate.is-drag .arv-plate__row { cursor: grabbing; }
+.arv-plate__now { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 11px; color: color-mix(in srgb, var(--arv-ink) 72%, transparent); }
+.arv-plate.is-asking .arv-plate__now { color: var(--scx-accent); }
+.arv-plate__ask { padding: 2px 0 5px; }
+.arv-plate__detail { margin: 6px 0 0; padding: 0; list-style: none; }
+.arv-plate__detail .arv-detail { padding: 6px 0 4px; border: 0; background: none; }
+@keyframes arv-plate-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .arv-plate { animation: none; } }
+
+/* The hover summary (HoverSummary.tsx): a row of the board's material, no controls, no pointer.
+ * Who and where, its state and since when in the row's mono; then its ask (the verb the one accent) or its latest line. */
+.arv-hover {
+  /* It shows beside the board as well as on the desk: the scx type and accent are set here, not inherited. */
+  --scx-accent: var(--accent, #f2b24a);
+  --scx-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  --scx-sans: var(--font-sans, -apple-system, "SF Pro Text", system-ui, sans-serif);
+  position: fixed; z-index: 40; box-sizing: border-box; width: max-content; max-width: 300px; margin: 0; padding: 6px 9px 7px;
+  border-radius: var(--arv-r-in); border: 1px solid var(--arv-line); background: var(--arv-pop); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  pointer-events: none; font-family: var(--scx-sans); color: var(--arv-ink); animation: arv-hover-in 120ms ease-out;
+}
+.arv-hover p { margin: 0; }
+.arv-hover__head { display: flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; }
+/* the name gives way first: it ends in an ellipsis inside the box, never runs past it */
+.arv-hover__name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 500 12px/1.4 var(--scx-sans); color: var(--arv-ink); }
+.arv-hover__tag { flex: none; font: 10px/1.4 var(--scx-mono); letter-spacing: 0.04em; color: var(--arv-ink-2); }
+.arv-hover__where { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 400 12px/1.4 var(--scx-sans); color: var(--arv-ink-3); }
+.arv-hover__st { flex: none; margin-left: auto; padding-left: 12px; font: 10px var(--scx-mono); color: var(--arv-ink-3); }
+.arv-hover__st i { font-style: normal; }
+.arv-hover__st.is-asking { color: var(--scx-accent); }
+.arv-hover__st.is-asking i { color: var(--arv-ink-3); }
+.arv-hover__line { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 11.5px/1.4 var(--scx-sans); color: var(--arv-ink-2); }
+.arv-hover__line b { font-weight: 400; color: var(--scx-accent); }
+@keyframes arv-hover-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .arv-hover { animation: none; } }
+
+/* New message: one destination picker, with project context attached to each agent. */
+.arv-compose { gap: var(--space-md); padding: var(--space-sm) 0 var(--space-lg); font-family: var(--scx-sans); }
+.arv-compose__field { position: relative; display: grid; gap: var(--space-sm); }
+.arv-compose__label { font-size: var(--text-md); color: var(--arv-ink-2); }
+.arv-compose__recipients { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); min-width: 0; }
+.arv-compose__recipients input { flex: 1; min-width: 120px; width: 100%; border: 0; border-bottom: 1px solid var(--arv-line); padding: var(--space-sm) 0; background: none; color: var(--arv-ink); font: var(--text-lg) var(--scx-sans); }
+.arv-compose__chip { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); max-width: 100%; padding: var(--space-xs) var(--space-sm); border-radius: var(--arv-r-in); background: var(--arv-wash); font-size: var(--text-md); overflow-wrap: anywhere; }
+.arv-compose__chip b { font-weight: 500; }
+.arv-compose__project { color: var(--arv-ink-2); }
+.arv-compose__chip button { width: 20px; height: 20px; padding: 0; border: 0; background: none; color: var(--arv-ink-2); font: inherit; cursor: pointer; }
+.arv-compose__chip button:hover { color: var(--arv-ink); }
+.arv-compose__suggest { max-height: 160px; overflow-y: auto; overscroll-behavior: contain; position: absolute; left: 0; right: 0; top: 100%; z-index: 4; margin: var(--space-xs) 0 0; padding: var(--space-xs); list-style: none; border-radius: var(--arv-r-in); background: var(--arv-pop); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.arv-compose__suggest button { display: flex; align-items: center; gap: var(--space-sm); width: 100%; padding: var(--space-sm); border: 0; border-radius: var(--arv-r-in); background: none; color: var(--arv-ink); text-align: left; font: var(--text-lg) var(--scx-sans); cursor: pointer; }
+.arv-compose__suggest button[aria-selected="true"] { background: var(--arv-wash); }
+.arv-compose__destination { display: grid; gap: var(--space-2xs); min-width: 0; overflow-wrap: anywhere; }
+.arv-compose__destination b { font-weight: 500; }
+.arv-compose__destination small { font-size: var(--text-sm); color: var(--arv-ink-2); }
+.arv-compose__empty { font-size: var(--text-md); color: var(--arv-ink-2); }
+/* New session or Agent: the destination leads, on the board's own segmented track. */
+.arv-compose__dest { justify-self: start; justify-content: flex-start; }
+.arv-compose__dest button:disabled { cursor: default; }
+/* The app's runtime chip (harness, model, thinking level), under the project. */
+.arv-compose__runtime { display: flex; align-items: center; min-width: 0; }
+/* The Board look draws in its own tokens; the picker reads the app's. Business is the app's theme already. */
+.arv-layer.is-board .arv-compose__runtime, .s-rt-panel.arv-rt-panel.is-board {
+  --ink: var(--arv-ink); --muted: var(--arv-ink-2); --dim: var(--arv-ink-3);
+  --surface: var(--arv-pop); --scout-line: var(--arv-edge);
+}
+.arv-compose__body { box-sizing: border-box; width: 100%; min-height: 96px; padding: var(--space-md) 0; resize: vertical; border: 0; background: none; color: var(--arv-ink); font: var(--text-xl)/var(--leading-normal) var(--scx-sans); }
+.arv-compose__body::placeholder, .arv-compose__recipients input::placeholder { color: var(--arv-ink-2); }
+.arv-compose__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--arv-line); font-size: var(--text-sm); color: var(--arv-ink-2); }
+.arv-compose__send { display: inline-flex; flex: none; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); border-radius: var(--arv-r-in); border: 1px solid var(--arv-line); background: none; color: var(--arv-ink); font: 500 var(--text-md) var(--scx-sans); cursor: pointer; }
+.arv-compose__send:hover:not(:disabled) { background: var(--arv-wash); }
+.arv-compose__send:disabled { opacity: 0.45; cursor: default; }
+.arv-compose__send kbd { margin: 0; padding: 0; min-width: 0; border: 0; background: none; color: inherit; font: var(--text-sm) var(--scx-mono); }
+.arv-compose input:focus-visible, .arv-compose textarea:focus-visible, .arv-compose button:focus-visible { outline: 2px solid var(--scx-accent); outline-offset: 2px; }
+@media (pointer: coarse) { .arv-compose button { min-height: 44px; } .arv-compose__chip button { min-width: 32px; } }
+/* Files dropped on New or on the composer, or pasted into it. Click one to take it off. */
+.arv-compose { position: relative; }
+.arv-compose .rk-drop { border-radius: var(--arv-r-in); }
+.arv-compose__files { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 8px; }
+.arv-compose__file {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 26px; padding: 0 6px 0 4px;
+  border-radius: var(--arv-r-in); border: 1px solid color-mix(in srgb, var(--arv-ink) 10%, transparent);
+  background: color-mix(in srgb, var(--arv-ink) 5%, transparent); color: var(--arv-ink); font: 11px var(--scx-mono); cursor: pointer;
+}
+.arv-compose__file img { width: 20px; height: 20px; border-radius: var(--radius-xs); object-fit: cover; }
+.arv-compose__file span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arv-compose__file i { font-style: normal; color: color-mix(in srgb, var(--arv-ink) 45%, transparent); }
+.arv-compose__file:hover i { color: var(--arv-ink); }
+.arv-compose__file.is-busy { padding: 0 8px; cursor: default; color: color-mix(in srgb, var(--arv-ink) 50%, transparent); }
+
+/* Edge mode: a row drags off the board onto a window or the desk. */
+.arv-row.is-pullable { cursor: pointer; }
+.arv-widget-board.can-move [data-board-grip] { cursor: grab; }
+.arv-widget-board.can-move [data-board-grip] > span.cw-mark { cursor: inherit; }
+.arv-widget-board.can-move [data-board-grip]:active { cursor: grabbing; }
+.arv-widget-board :is(.arv-rows, .cw-rows) { cursor: default; }
+.arv-widget-board :is(.arv-row, .cw-row) { cursor: pointer; }
+html.is-pulling-row, html.is-pulling-row * { cursor: grabbing !important; user-select: none; }
+html.is-row-pull-ready, html.is-row-pull-ready * { cursor: move !important; }
+.arv-pull-cue {
+  position: fixed; z-index: 20; pointer-events: none;
+  transform: translate(-50%, -100%); max-width: 180px; padding: var(--space-xs) var(--space-sm);
+  border: 0.5px solid var(--arv-edge); border-radius: var(--arv-r-in);
+  background: var(--arv-pop); color: var(--arv-ink); font: 11px/1.35 var(--scx-sans);
+}
+.arv-pull-cue.is-ready { border-color: var(--arv-ink); }
+/* Moving the board: the whole display holds the pointer until it lands. */
+html.is-moving-board, html.is-moving-board * { cursor: grabbing !important; user-select: none; }
+
+/* Desk strips use the figures' page parts: drop guides and put-away ghosts (window-chase.ts). */
+.arv-desk__layer {
+  position: absolute; inset: 0;
+  /* Figures on the desk are CompanionEdge's own parts (edge.css): the tokens .ce-root gives them there. */
+  --ce-pop: var(--co-card, #121316); --ce-ink: var(--co-ink, var(--arv-ink)); --ce-ink-2: var(--co-muted, color-mix(in srgb, var(--arv-ink) 60%, transparent));
+  --ce-line: var(--co-hair, color-mix(in srgb, var(--arv-ink) 8%, transparent)); --ce-pop-line: var(--co-hair-strong, color-mix(in srgb, var(--arv-ink) 14%, transparent));
+  --ce-accent: var(--scx-accent); --ce-accent-ink: oklch(0.24 0.05 160); --ce-ease: cubic-bezier(0.33, 0, 0.2, 1);
+}
+/* And the resets .ce-root gives them. */
+.arv-desk__layer .ce-placed, .arv-desk__layer .ce-placed *, .arv-desk__layer .ce-placed *::before, .arv-desk__layer .ce-placed *::after { box-sizing: border-box; }
+.arv-desk__layer .ce-placed {
+  font: 12px/1.38 var(--co-sans, var(--scx-sans)); color: var(--ce-ink); cursor: pointer;
+  user-select: none; -webkit-font-smoothing: antialiased;
+}
+.arv-desk__layer .ce-placed.is-dragging { cursor: grabbing; }
+.arv-desk__layer .ce-placed:focus-visible { outline: 1px solid color-mix(in srgb, var(--ce-ink) 55%, transparent); outline-offset: 2px; }
+.arv-guides { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.arv-guide__line { stroke: color-mix(in srgb, var(--arv-ink) 55%, transparent); stroke-width: 1; }
+.arv-guide__fall { stroke: color-mix(in srgb, var(--arv-ink) 55%, transparent); stroke-width: 1; stroke-dasharray: 3 3; }
+.arv-guide__spot { fill: color-mix(in srgb, var(--arv-ink) 55%, transparent); }
+.arv-ghosts { position: absolute; inset: 0; pointer-events: none; }
+.arv-ghosts .ce-ghost { pointer-events: none; will-change: transform, opacity; transition: none; animation: none; }
+
+/* An open strip's own settings: one instrument row, as on a figure's popover. */
+.arv-plate__set { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 2px 0 4px; padding-top: 6px; border-top: 1px solid color-mix(in srgb, var(--arv-ink) 7%, transparent); }
+.arv-plate__cell { display: flex; align-items: center; gap: 6px; font: 10px var(--scx-mono); color: color-mix(in srgb, var(--arv-ink) 50%, transparent); }
+.arv-plate__cell i { font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; }
+.arv-plate__step { display: inline-flex; border: 1px solid color-mix(in srgb, var(--arv-ink) 10%, transparent); border-radius: var(--arv-r-in); overflow: hidden; }
+.arv-plate__step button { padding: 2px 7px; border: 0; background: none; color: color-mix(in srgb, var(--arv-ink) 60%, transparent); font: 10px var(--scx-sans); cursor: pointer; }
+.arv-plate__step button[aria-checked="true"] { background: color-mix(in srgb, var(--arv-ink) 10%, transparent); color: var(--arv-ink); }
+.arv-plate__cell select { padding: 1px 4px; border: 1px solid color-mix(in srgb, var(--arv-ink) 10%, transparent); border-radius: var(--arv-r-in); background: transparent; color: color-mix(in srgb, var(--arv-ink) 75%, transparent); font: 10px var(--scx-sans); }
+.arv-plate__step b { padding: 2px 6px; border-left: 0.5px solid color-mix(in srgb, var(--arv-ink) 10%, transparent); border-right: 0.5px solid color-mix(in srgb, var(--arv-ink) 10%, transparent); font: 500 10px var(--scx-mono); color: var(--arv-ink); }
+.arv-plate__step button:disabled { opacity: 0.35; cursor: default; }
+/* Set for: this agent, its project, or every figure; it governs the rows under it, on its own hairline. */
+.arv-plate__cell.is-scope { flex-basis: 100%; padding-top: 6px; border-top: 1px solid color-mix(in srgb, var(--arv-ink) 7%, transparent); }
+/* Where a value comes from, or what wins over it: quiet, in the panel's sans. */
+.arv-plate__from { font: 10px var(--scx-sans); color: color-mix(in srgb, var(--arv-ink) 45%, transparent); }
+/* Who draws the figure: Auto, its own sprite, or a crew member, as a row of coins. */
+.arv-plate__cell.is-cast { flex-basis: 100%; flex-wrap: wrap; align-items: center; }
+.arv-plate__cast { display: flex; flex-wrap: wrap; gap: 3px; }
+.arv-plate__cast button { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 50%; background: none; cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; }
+.arv-plate__cast button:hover { border-color: color-mix(in srgb, var(--arv-ink) 28%, transparent); }
+.arv-plate__cast button[aria-checked="true"] { border-color: color-mix(in srgb, var(--arv-ink) 55%, transparent); background: color-mix(in srgb, var(--arv-ink) 10%, transparent); }
+.arv-plate__cast button.is-auto { width: auto; padding: 0 9px; border-radius: var(--arv-r-in); border-color: color-mix(in srgb, var(--arv-ink) 12%, transparent); color: color-mix(in srgb, var(--arv-ink) 70%, transparent); font: 10px var(--scx-sans); }
+.arv-plate__cast button.is-auto[aria-checked="true"] { border-color: color-mix(in srgb, var(--arv-ink) 55%, transparent); color: var(--arv-ink); }
+.arv-plate__cast button:focus-visible { outline: 2px solid var(--arv-ink); outline-offset: 1px; }
+
+/* Talking to an attached agent (FigureTalk.tsx): Tap in's own parts, as rows on hairlines. */
+.arv-talk { display: flex; flex-direction: column; padding: 0 0 4px; border-top: 1px solid var(--arv-line); font-family: var(--scx-sans); }
+.arv-talk > .tap-said, .arv-talk > .tap-quiet, .arv-talk > .tap-ask, .arv-talk > .tap-steps, .arv-talk > .tap-you { margin-top: 8px; }
+.arv-talk > .tap-err { margin: 8px 0 0; }
+.arv-talk__said { max-height: 140px; overflow: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.arv-talk__you { margin: 8px 0 0; font-size: 11.5px; color: var(--arv-ink-2); }
+.arv-talk__wait { margin: 4px 0 0; font: 10px var(--scx-mono); }
+/* The reply box draws its own edge: the foot needs no rule above it, only room. */
+.arv-talk__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 12px; }
+.arv-talk__foot .tap-reply { flex: 1 1 100%; }
+.arv-talk__way { font-size: 11px; color: var(--arv-ink-2); }
+.arv-talk > .arv-plate__set { margin-top: 8px; }
+
+/* A figure's right-click menu: rows, no checks to make room for. */
+.cw-menu.is-figure a.cw-menu__item { box-sizing: border-box; color: inherit; text-decoration: none; }
+.cw-menu.is-figure .cw-menu__item:disabled { opacity: 0.45; cursor: default; }
+.cw-menu__item.is-go { color: var(--scx-accent, oklch(0.72 0.15 160)); }
+.cw-menu__confirm { display: block; }
+.cw-menu__confirm .cw-menu__head { margin-top: 2px; }
+
+/* A figure's popover: the open strip, beside the figure (placedPopover). */
+.arv-plate.is-pop { overflow: auto; overscroll-behavior: contain; scrollbar-width: none; z-index: 6; }
+/* In a popover the figure is what drags; its row only closes it. */
+.arv-plate.is-pop .arv-plate__row { cursor: default; }
+
+
+/* Pressing a row, strip or figure is a click or a drag, never a text selection
+ * (WebKit starts one on the press that the host then turns into a drag).
+ * What you read and type stays selectable: the opened detail and inputs. */
+.scx.arv, .arv-desk { -webkit-user-select: none; user-select: none; }
+.arv-detail, .arv-detail *, .scx.arv input, .scx.arv textarea, .arv-desk input, .arv-desk textarea, .scx.arv [contenteditable], .arv-desk [contenteditable] { -webkit-user-select: text; user-select: text; }
+
+/* Motion (board-motion.ts): one clock. Opening is two moves from the corner
+ * the board hangs from, drawn by board-unfold.ts: the folded card widens along
+ * its edge, then the board rises with a small pop; the head, labels and rows
+ * come in nearest the corner first as it rises, each row's flaps riffling as
+ * it lands. Folding is the same two moves backwards: drop, then narrow. */
+
+/* What comes in rises a few points away from the corner, after its place in the wave (--arv-d). */
+.scx.arv { --arv-rise: 4px; }
+.scx.arv.is-top { --arv-rise: -4px; }
+.arv-board.is-open .arv-head,
+.arv-board.is-open .arv-rows > li,
+.arv-board.is-folded .arv-rows > li { animation: arv-in var(--arv-enter) var(--arv-ease) var(--arv-d, 0ms) backwards; }
+@keyframes arv-in { from { opacity: 0; transform: translateY(var(--arv-rise)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .arv-board.is-open .arv-head, .arv-board.is-open .arv-rows > li, .arv-board.is-folded .arv-rows > li { animation: none; }
+}
+
+/* Approved companion widget — Studio companion-widget. */
+.cw-widget {
+  --arv-ink: #f1eee6; --cw-ink: #f6f3ec; --cw-ink-2: rgba(241, 238, 230, 0.66); --cw-ink-3: rgba(241, 238, 230, 0.46);
+  --cw-hair: rgba(255, 255, 255, 0.12); --cw-acc: #f2b24a; --scx-accent: #f2b24a;
+  --scx-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace); --scx-sans: var(--font-sans, -apple-system, "SF Pro Text", system-ui, sans-serif);
+  position: relative; box-sizing: border-box; overflow: hidden; border-radius: 12px; color: var(--cw-ink);
+  background: linear-gradient(180deg, #16171a, #0d0e10); border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 18px 40px rgba(0, 0, 0, 0.55);
+  font: 12px/1 var(--scx-sans); font-variant-numeric: tabular-nums;
+  transition: width var(--cw-size-ms) var(--cw-size-ease), height var(--cw-size-ms) var(--cw-size-ease), border-radius var(--cw-size-ms) var(--cw-size-ease);
+}
+.cw-widget::before { content: ""; position: absolute; inset: 0 0 auto; height: 40%; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent); }
+.cw-widget.is-s { border-radius: 17px; }
+.cw-inner { position: absolute; right: 0; bottom: 0; transition: width var(--cw-size-ms) var(--cw-size-ease); }
+.cw-panel { min-width: 0; overflow: hidden; }
+
+/* Enter: from the corner (the notch: from its edge, --cw-in-from), one board step apart, on the snap spring. */
+.cw-in { animation: cw-in var(--cw-snap-ms) var(--cw-snap-ease) both; }
+@keyframes cw-in { from { opacity: 0; transform: translate(var(--cw-in-from, 6px, 8px)) scale(0.97); } }
+.cw-widget.is-reduced .cw-in { animation: none; }
+
+/* S: the mark alone when nothing runs; with sessions, a row of chips beside it, one per session */
+.cw-s { display: flex; align-items: center; gap: 3px; height: 32px; padding: 0 4px; width: max-content; }
+.cw-s .cw-mark { width: 24px; height: 24px; }
+.cw-s .cw-mark svg { width: 14px; height: 14px; }
+/* S: Settings leads, Scout's face sits in the middle, the grow button ends it. */
+.cw-s__mid { display: contents; }
+.cw-s .cw-mark.cw-face { width: 26px; height: 26px; }
+.cw-s .cw-mark.cw-face svg { width: 22px; height: 22px; }
+.cw-s.has-live .cw-face { margin: 0 2px; }
+/* One signal for an ask on the strip: the face breathes (.cw-mark.is-asking) and wears its asking look. It does
+   not also hop and ping, which on a strip that never leaves the screen reads as blinking (as .sbd-mark). */
+.cw-s .cw-face .sbt-pose { animation: none; }
+/* Upright on the strip: at 22 points a 4 degree tilt puts every edge between pixels, which reads as blur on a 1x display. */
+.cw-s .cw-face .sbt-bot { transform: none; }
+.cw-s .cw-face .sbt-dot__ring { display: none; }
+.cw-chip { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: rgba(255, 255, 255, 0.07); color: var(--cw-ink); font: 500 9px var(--scx-mono); letter-spacing: 0; }
+.cw-chip:hover, .cw-chip.is-tapped { background: rgba(255, 255, 255, 0.14); }
+.cw-chip.is-done { color: var(--cw-ink-3); background: rgba(255, 255, 255, 0.035); }
+.cw-chip.is-asking { color: var(--cw-acc); box-shadow: inset 0 0 0 1px rgba(242, 178, 74, 0.55); }
+.cw-chip.is-more { color: var(--cw-ink-2); background: none; box-shadow: inset 0 0 0 0.5px var(--cw-hair); }
+.cw-chip:focus-visible { outline: 2px solid var(--cw-acc); }
+/* S ends with the controls M and L carry top right, set off by a hairline. */
+.cw-s .cw-acts { margin-left: 3px; padding-left: 5px; box-shadow: inset 0.5px 0 0 var(--cw-hair); }
+.cw-s .cw-acts.is-lead { margin: 0 2px 0 0; padding: 0 4px 0 0; box-shadow: inset -0.5px 0 0 var(--cw-hair); }
+.cw-s .cw-ico { width: 22px; height: 22px; }
+.cw-chip__init { font: 600 9px var(--scx-mono); letter-spacing: 0.02em; }
+/* A chip whose agent is out: its harness and its label, a pill. */
+.cw-chip.has-tag { grid-auto-flow: column; gap: 4px; width: auto; padding: 0 7px 0 5px; border-radius: 11px; }
+.cw-chip__tag { font: 400 9px/1 var(--scx-mono); letter-spacing: 0.04em; color: var(--cw-ink-2); font-variant-numeric: tabular-nums; }
+
+/* The mark: the one control, centered. It breathes on the ask pulse. */
+.cw-mark { display: grid; place-items: center; width: 26px; height: 26px; border: 0; padding: 0; border-radius: 50%; background: none; color: var(--cw-ink); cursor: pointer; position: relative; }
+.cw-mark svg { width: 18px; height: 18px; }
+.cw-mark:hover { background: rgba(255, 255, 255, 0.06); }
+.cw-top .cw-mark { width: 20px; height: 20px; color: var(--cw-ink-2); }
+.cw-top .cw-mark svg { width: 12px; height: 12px; }
+.cw-mark.is-asking { color: var(--cw-acc); animation: cw-breath var(--cw-pulse-ms) ease-in-out infinite; }
+@keyframes cw-breath { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.12); } }
+.cw-widget.is-reduced .cw-mark.is-asking { animation: none; }
+/* Its choices or Scoutbot are open: a hairline ring, no glow. */
+.cw-mark:is([aria-expanded="true"], [aria-pressed="true"]) { box-shadow: inset 0 0 0 1px var(--cw-hair); background: rgba(255, 255, 255, 0.06); }
+/* Scoutbot has requests waiting: the dot sits on the mark's shoulder. */
+.cw-mark .cw-ico__dot { top: -1px; right: -1px; width: 5px; height: 5px; }
+.cw-top > button.cw-mark { cursor: pointer; }
+
+/* M and L panel */
+.cw-panel { display: grid; }
+.cw-panel.is-m { width: 100%; }
+.cw-panel.is-l { width: 100%; }
+.cw-head { display: flex; justify-content: space-between; align-items: center; height: 30px; padding: 0 12px; }
+.cw-brand { font: 600 10px var(--scx-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--cw-ink-2); }
+.cw-acts { display: flex; gap: 6px; }
+.cw-pill { font: 500 10px var(--scx-sans); color: var(--cw-ink-2); border: 0.5px solid var(--cw-hair); border-radius: 999px; padding: 3px 9px; background: rgba(255, 255, 255, 0.02); cursor: pointer; }
+
+/* M: the instrument, four equal columns on shared baselines */
+/* M's gauges sit quiet under the sessions: one line each (label, value), a hairline bar under it; the window and reset are in the tooltip. */
+.cw-inst { display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: inset 0 0.5px 0 var(--cw-hair); }
+/* M's gauges: the name on top (a stale reading's age at its right), then the bar with the value beside it,
+   so a cell never puts name, age and value on one line */
+.cw-col { padding: 7px 10px; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 10px 12px; row-gap: 4px; column-gap: 6px; align-items: center; min-width: 0; }
+.cw-col .cw-lab { grid-column: 1 / -1; gap: 4px; color: var(--cw-ink-3); overflow: hidden; white-space: nowrap; }
+.cw-col .cw-age { font: 500 9px/10px var(--scx-mono); letter-spacing: 0; text-transform: none; }
+.cw-col .cw-val { grid-column: 2; justify-content: flex-end; min-width: 3.4ch; font: 500 10px/12px var(--scx-mono); color: var(--cw-ink-2); letter-spacing: 0; }
+.cw-col .cw-val small { font-size: 9px; color: var(--cw-ink-3); margin-left: 1px; }
+.cw-col .cw-track, .cw-col .cw-ticks { grid-column: 1; height: 2px; }
+.cw-col .cw-track b { background: var(--cw-ink-2); box-shadow: none; }
+.cw-col .cw-track.is-high b { background: var(--cw-acc); }
+.cw-col .cw-ticks i.is-on { background: var(--cw-ink-2); }
+/* a whole pixel: a half-pixel rule drops out where a column starts between device pixels */
+.cw-col + .cw-col { box-shadow: inset 1px 0 0 color-mix(in srgb, var(--cw-hair) 60%, transparent); }
+.cw-lab { font: 500 9px/10px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-2); display: flex; justify-content: space-between; }
+.cw-lab i { font-style: normal; color: var(--cw-ink-3); }
+.cw-ask { color: var(--cw-acc); font-weight: 500; }
+.cw-val { font: 500 15px/18px var(--scx-sans); color: var(--cw-ink); letter-spacing: -0.01em; display: inline-flex; align-items: baseline; }
+.cw-val small { font: 500 10px var(--scx-mono); color: var(--cw-ink-2); margin-left: 2px; letter-spacing: 0; }
+.cw-val.sm { font-size: 13px; }
+
+.cw-track { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.09); overflow: hidden; }
+.cw-track b { display: block; height: 100%; transform-origin: left center; border-radius: 2px;
+  background: linear-gradient(180deg, #fbf8f1 0%, #cfcbc2 100%); }
+.cw-ticks { display: grid; gap: 1px; height: 3px; }
+.cw-ticks i { background: rgba(255, 255, 255, 0.12); border-radius: 0.5px; transition: background var(--cw-snap-ms) var(--cw-snap-ease); }
+.cw-ticks i.is-on { background: linear-gradient(180deg, #fbf8f1, #cfcbc2); }
+
+/* rows: the board's language, aligned to the same 10px edges */
+.cw-rows { list-style: none; margin: 0; padding: 5px 0; }
+.cw-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; column-gap: 8px; height: 26px; padding: 0 10px; }
+.cw-panel.is-l .cw-row { grid-template-columns: 14px minmax(0, 1fr) auto 36px; height: 28px; padding: 0 12px; }
+/* M: a live session on two lines, marks and title over the last thing it did */
+/* Its rows sit 6px in from the window's edge, so a hovered or tapped row is a
+ * plate with its own corners inside the window, not a band across it; the
+ * content keeps the 10px edges. */
+.cw-panel.is-m .cw-rows { padding: 5px 6px; }
+/* sign | name ... time / step ... dots: the right column is one width in every row, so times and dots line up down the list */
+.cw-panel.is-m .cw-row { grid-template-columns: 24px minmax(0, 1fr) 34px; grid-template-rows: 16px 14px; row-gap: 3px; column-gap: 8px; height: auto; padding: 6px 4px; cursor: pointer; border-radius: 4px; }
+.cw-panel.is-m .cw-row:hover, .cw-panel.is-m .cw-row:focus-visible { background: rgba(255, 255, 255, 0.04); outline: none; }
+.cw-panel.is-m .cw-row.is-tapped { background: rgba(255, 255, 255, 0.07); }
+/* M's list scrolls with no bar. An edge with rows past it fades; the last line pages to them. */
+.cw-panel.is-m .cw-rows { position: relative; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.cw-panel.is-m .cw-rows::-webkit-scrollbar { display: none; }
+.cw-panel.is-m .cw-rows.has-below { mask-image: linear-gradient(180deg, #000 calc(100% - 12px), transparent); }
+.cw-panel.is-m .cw-rows.has-above { mask-image: linear-gradient(0deg, #000 calc(100% - 12px), transparent); }
+.cw-panel.is-m .cw-rows.has-above.has-below { mask-image: linear-gradient(180deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
+.cw-more { display: block; width: 100%; padding: 3px 10px 5px; border: 0; background: none; text-align: left; cursor: pointer;
+  font: 500 9px/12px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-3); }
+.cw-more:hover { color: var(--cw-ink); }
+.cw-row__step { grid-column: 2; grid-row: 2; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 10px/14px var(--scx-mono); color: var(--cw-ink-3); animation: arv-step-in 260ms var(--ease-out, ease-out) backwards; }
+.cw-row__step.is-said { font: 11px/14px var(--scx-sans); color: var(--cw-ink-2); }
+.cw-row__step.is-ask { font: 11px/14px var(--scx-sans); color: var(--cw-acc); }
+.cw-widget.is-reduced .cw-row__step { animation: none; }
+.cw-row__ago { grid-column: 3; grid-row: 1; justify-self: end; font: 10px/16px var(--scx-mono); color: var(--cw-ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cw-row__dots { grid-column: 3; grid-row: 2; justify-self: end; display: flex; align-items: center; height: 14px; }
+/* M's dots carry more than the board's: a firmer grid, and lit dots that swing wider */
+.cw-row .arv-dots circle { opacity: 0.16; }
+.cw-row .arv-dots circle.is-on { animation: cw-dots-think var(--arv-dots-dur, 2s) ease-in-out infinite; }
+@keyframes cw-dots-think {
+  0%, 100% { opacity: 0.38; }
+  45% { opacity: var(--arv-dots-peak, 0.95); }
+}
+.cw-widget.is-reduced .cw-row .arv-dots circle.is-on { animation: none; opacity: var(--arv-dots-peak, 0.85); }
+.cw-row__n { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--cw-ink); }
+.cw-row__n > :first-child { flex: none; color: var(--cw-ink-2); }
+.cw-row__name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* who the row is, in plain type on the row's two lines: the project's code by the name, the roster number by the step */
+.cw-sign { grid-column: 1; grid-row: 1 / span 2; display: grid; grid-template-rows: 16px 14px; row-gap: 3px; align-items: center; justify-items: center;
+  font: 500 10px/1 var(--scx-mono); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; color: var(--cw-ink); }
+/* a code longer than the column ends in an ellipsis, so every row keeps one left edge; the title spells it */
+.cw-sign b { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: inherit; }
+.cw-sign b + b { color: var(--cw-ink-3); font-weight: 400; }
+.cw-sign.is-unknown { color: var(--cw-ink-3); }
+/* the call sign in type (CallSign): legibility first, the board's ink, no project hue */
+.arv-tile > .arv-callsign { filter: none; opacity: 1; }
+.arv-callsign { display: inline-block; font: 600 10px/1 var(--scx-mono); letter-spacing: 0.02em; color: var(--cw-ink, var(--arv-ink)); font-variant-numeric: tabular-nums; }
+.arv-callsign b { font-weight: inherit; }
+/* a code past four letters widens the tile up to seven; a longer one ends in an ellipsis (the tile's title spells it) */
+.arv-callsign.is-stacked { display: grid; grid-auto-rows: 11px; min-width: 26px; max-width: 46px; text-align: center; }
+.arv-callsign.is-stacked b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.arv-callsign.is-stacked b + b { color: var(--cw-ink-2, var(--arv-ink-2)); }
+.arv-sign { margin-right: 6px; vertical-align: 0; color: var(--cw-ink-2, var(--arv-ink-2)); }
+.cw-row.is-done .cw-row__n { color: var(--cw-ink-2); }
+.cw-row__t { font: 10px var(--scx-mono); color: var(--cw-ink-3); text-align: right; }
+.cw-panel.is-m .cw-row__t { grid-column: 3; grid-row: 2; justify-self: end; line-height: 14px; }
+.cw-empty { padding: 10px 10px; font-size: 12px; color: var(--cw-ink-2); }
+
+/* L: a two-column provider grid; counts share this block, not a separate band. */
+.cw-usage { display: grid; gap: 8px; padding: 9px 12px; box-shadow: inset 0 0.5px 0 var(--cw-hair); }
+.cw-counts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; font: 500 9px/12px var(--scx-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--cw-ink-2); }
+.cw-counts > span { display: inline-flex; align-items: baseline; gap: 5px; }
+.cw-counts .cw-roll { color: var(--cw-ink); }
+.cw-counts .cw-ask .cw-roll { color: inherit; }
+.cw-quotas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px; }
+.cw-qcell { min-width: 0; display: grid; gap: 5px; align-content: start; }
+.cw-qcell__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cw-up { font: 500 11px/14px var(--scx-sans); color: var(--cw-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-qcell .cw-val { font-size: 13px; line-height: 14px; }
+.cw-qcell .cw-val small { font-size: 9px; }
+.cw-windows { display: flex; gap: 8px; }
+.cw-window { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.cw-uw { font: 500 9px/10px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-3); }
+/* A reading old enough to name its age: the age is said, and the number steps back. */
+.cw-age { font: 500 9px/12px var(--scx-mono); letter-spacing: 0.04em; color: var(--cw-ink-3); }
+.cw-col.is-stale .cw-val, .cw-qcell.is-stale .cw-val { color: var(--cw-ink-3); }
+.cw-panel.is-l .cw-track { height: 2px; }
+.cw-panel.is-l .cw-track b { background: var(--cw-ink); box-shadow: none; }
+.cw-panel.is-l .cw-track.is-high b { background: var(--cw-acc); }
+
+/* Keep the header edge clean and soften only the scroll area's first/last 6px. */
+.cw-head { box-shadow: inset 0 -0.5px 0 var(--cw-hair); }
+.cw-panel.is-l > .cw-rows { max-height: 280px; overflow-y: auto; }
+.cw-panel.is-l > :is(.cw-rows, .arv-rows) {
+  mask-image: linear-gradient(to bottom, transparent, #000 6px, #000 calc(100% - 6px), transparent);
+  padding-block: 6px;
+  scroll-padding-block: 6px;
+}
+.cw-panel.is-l .arv-flaps[aria-label="WORKING"] .arv-flap { color: var(--cw-acc); }
+.cw-panel.is-l .cw-row.is-working .cw-row__h svg { display: none; }
+.cw-panel.is-l .cw-row.is-working .cw-row__h::before { content: ""; width: 3px; height: 3px; border-radius: 50%; background: var(--cw-acc); }
+
+.cw-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 24px; padding: 0 10px; box-shadow: inset 0 -0.5px 0 var(--cw-hair); }
+.cw-panel.is-l .cw-top { padding: 0 12px; }
+.cw-top > span { font: 500 9px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-2); }
+.cw-top > span:last-child { text-align: right; }
+.cw-top > span.cw-mark { cursor: default; }
+.cw-top > span.cw-mark:hover { background: none; }
+/* the controls: New, Settings, grow, as small icons at the top line's right end */
+.cw-top > .cw-acts { justify-self: end; margin-right: -4px; }
+
+/* The board's controls, in every size: icons with no box at rest, a 4px plate on hover or while open. */
+.cw-acts { display: inline-flex; align-items: center; gap: 1px; }
+.cw-ico { width: 22px; height: 22px; }
+.cw-chip__init { font: 600 9px var(--scx-mono); letter-spacing: 0.02em; }
+/* A chip whose agent is out: its harness and its label, a pill. */
+.cw-chip.has-tag { grid-auto-flow: column; gap: 4px; width: auto; padding: 0 7px 0 5px; border-radius: 11px; }
+.cw-chip__tag { font: 400 9px/1 var(--scx-mono); letter-spacing: 0.04em; color: var(--cw-ink-2); font-variant-numeric: tabular-nums; }
+
+/* The mark: the one control, centered. It breathes on the ask pulse. */
+.cw-mark { display: grid; place-items: center; width: 26px; height: 26px; border: 0; padding: 0; border-radius: 50%; background: none; color: var(--cw-ink); cursor: pointer; position: relative; }
+.cw-mark svg { width: 18px; height: 18px; }
+.cw-mark:hover { background: rgba(255, 255, 255, 0.06); }
+.cw-top .cw-mark { width: 20px; height: 20px; color: var(--cw-ink-2); }
+.cw-top .cw-mark svg { width: 12px; height: 12px; }
+.cw-mark.is-asking { color: var(--cw-acc); animation: cw-breath var(--cw-pulse-ms) ease-in-out infinite; }
+@keyframes cw-breath { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.12); } }
+.cw-widget.is-reduced .cw-mark.is-asking { animation: none; }
+/* Its choices or Scoutbot are open: a hairline ring, no glow. */
+.cw-mark:is([aria-expanded="true"], [aria-pressed="true"]) { box-shadow: inset 0 0 0 1px var(--cw-hair); background: rgba(255, 255, 255, 0.06); }
+/* Scoutbot has requests waiting: the dot sits on the mark's shoulder. */
+.cw-mark .cw-ico__dot { top: -1px; right: -1px; width: 5px; height: 5px; }
+.cw-top > button.cw-mark { cursor: pointer; }
+
+/* M and L panel */
+.cw-panel { display: grid; }
+.cw-panel.is-m { width: 100%; }
+.cw-panel.is-l { width: 100%; }
+.cw-head { display: flex; justify-content: space-between; align-items: center; height: 30px; padding: 0 12px; }
+.cw-brand { font: 600 10px var(--scx-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--cw-ink-2); }
+.cw-acts { display: flex; gap: 6px; }
+.cw-pill { font: 500 10px var(--scx-sans); color: var(--cw-ink-2); border: 0.5px solid var(--cw-hair); border-radius: 999px; padding: 3px 9px; background: rgba(255, 255, 255, 0.02); cursor: pointer; }
+
+/* M: the instrument, four equal columns on shared baselines */
+/* M's gauges sit quiet under the sessions: one line each (label, value), a hairline bar under it; the window and reset are in the tooltip. */
+.cw-inst { display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: inset 0 0.5px 0 var(--cw-hair); }
+/* M's gauges: the name on top (a stale reading's age at its right), then the bar with the value beside it,
+   so a cell never puts name, age and value on one line */
+.cw-col { padding: 7px 10px; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 10px 12px; row-gap: 4px; column-gap: 6px; align-items: center; min-width: 0; }
+.cw-col .cw-lab { grid-column: 1 / -1; gap: 4px; color: var(--cw-ink-3); overflow: hidden; white-space: nowrap; }
+.cw-col .cw-age { font: 500 9px/10px var(--scx-mono); letter-spacing: 0; text-transform: none; }
+.cw-col .cw-val { grid-column: 2; justify-content: flex-end; min-width: 3.4ch; font: 500 10px/12px var(--scx-mono); color: var(--cw-ink-2); letter-spacing: 0; }
+.cw-col .cw-val small { font-size: 9px; color: var(--cw-ink-3); margin-left: 1px; }
+.cw-col .cw-track, .cw-col .cw-ticks { grid-column: 1; height: 2px; }
+.cw-col .cw-track b { background: var(--cw-ink-2); box-shadow: none; }
+.cw-col .cw-track.is-high b { background: var(--cw-acc); }
+.cw-col .cw-ticks i.is-on { background: var(--cw-ink-2); }
+/* a whole pixel: a half-pixel rule drops out where a column starts between device pixels */
+.cw-col + .cw-col { box-shadow: inset 1px 0 0 color-mix(in srgb, var(--cw-hair) 60%, transparent); }
+.cw-lab { font: 500 9px/10px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-2); display: flex; justify-content: space-between; }
+.cw-lab i { font-style: normal; color: var(--cw-ink-3); }
+.cw-ask { color: var(--cw-acc); font-weight: 500; }
+.cw-val { font: 500 15px/18px var(--scx-sans); color: var(--cw-ink); letter-spacing: -0.01em; display: inline-flex; align-items: baseline; }
+.cw-val small { font: 500 10px var(--scx-mono); color: var(--cw-ink-2); margin-left: 2px; letter-spacing: 0; }
+.cw-val.sm { font-size: 13px; }
+
+.cw-track { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.09); overflow: hidden; }
+.cw-track b { display: block; height: 100%; transform-origin: left center; border-radius: 2px;
+  background: linear-gradient(180deg, #fbf8f1 0%, #cfcbc2 100%); }
+.cw-ticks { display: grid; gap: 1px; height: 3px; }
+.cw-ticks i { background: rgba(255, 255, 255, 0.12); border-radius: 0.5px; transition: background var(--cw-snap-ms) var(--cw-snap-ease); }
+.cw-ticks i.is-on { background: linear-gradient(180deg, #fbf8f1, #cfcbc2); }
+
+/* rows: the board's language, aligned to the same 10px edges */
+.cw-rows { list-style: none; margin: 0; padding: 5px 0; }
+.cw-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; column-gap: 8px; height: 26px; padding: 0 10px; }
+.cw-panel.is-l .cw-row { grid-template-columns: 14px minmax(0, 1fr) auto 36px; height: 28px; padding: 0 12px; }
+/* M: a live session on two lines, marks and title over the last thing it did */
+/* Its rows sit 6px in from the window's edge, so a hovered or tapped row is a
+ * plate with its own corners inside the window, not a band across it; the
+ * content keeps the 10px edges. */
+.cw-panel.is-m .cw-rows { padding: 5px 6px; }
+/* sign | name ... time / step ... dots: the right column is one width in every row, so times and dots line up down the list */
+.cw-panel.is-m .cw-row { grid-template-columns: 24px minmax(0, 1fr) 34px; grid-template-rows: 16px 14px; row-gap: 3px; column-gap: 8px; height: auto; padding: 6px 4px; cursor: pointer; border-radius: 4px; }
+.cw-panel.is-m .cw-row:hover, .cw-panel.is-m .cw-row:focus-visible { background: rgba(255, 255, 255, 0.04); outline: none; }
+.cw-panel.is-m .cw-row.is-tapped { background: rgba(255, 255, 255, 0.07); }
+/* M's list scrolls with no bar. An edge with rows past it fades; the last line pages to them. */
+.cw-panel.is-m .cw-rows { position: relative; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.cw-panel.is-m .cw-rows::-webkit-scrollbar { display: none; }
+.cw-panel.is-m .cw-rows.has-below { mask-image: linear-gradient(180deg, #000 calc(100% - 12px), transparent); }
+.cw-panel.is-m .cw-rows.has-above { mask-image: linear-gradient(0deg, #000 calc(100% - 12px), transparent); }
+.cw-panel.is-m .cw-rows.has-above.has-below { mask-image: linear-gradient(180deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
+.cw-more { display: block; width: 100%; padding: 3px 10px 5px; border: 0; background: none; text-align: left; cursor: pointer;
+  font: 500 9px/12px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-3); }
+.cw-more:hover { color: var(--cw-ink); }
+.cw-row__step { grid-column: 2; grid-row: 2; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 10px/14px var(--scx-mono); color: var(--cw-ink-3); animation: arv-step-in 260ms var(--ease-out, ease-out) backwards; }
+.cw-row__step.is-said { font: 11px/14px var(--scx-sans); color: var(--cw-ink-2); }
+.cw-row__step.is-ask { font: 11px/14px var(--scx-sans); color: var(--cw-acc); }
+.cw-widget.is-reduced .cw-row__step { animation: none; }
+.cw-row__ago { grid-column: 3; grid-row: 1; justify-self: end; font: 10px/16px var(--scx-mono); color: var(--cw-ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cw-row__dots { grid-column: 3; grid-row: 2; justify-self: end; display: flex; align-items: center; height: 14px; }
+/* M's dots carry more than the board's: a firmer grid, and lit dots that swing wider */
+.cw-row .arv-dots circle { opacity: 0.16; }
+.cw-row .arv-dots circle.is-on { animation: cw-dots-think var(--arv-dots-dur, 2s) ease-in-out infinite; }
+@keyframes cw-dots-think {
+  0%, 100% { opacity: 0.38; }
+  45% { opacity: var(--arv-dots-peak, 0.95); }
+}
+.cw-widget.is-reduced .cw-row .arv-dots circle.is-on { animation: none; opacity: var(--arv-dots-peak, 0.85); }
+.cw-row__n { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12px; line-height: 16px; color: var(--cw-ink); }
+.cw-row__n > :first-child { flex: none; color: var(--cw-ink-2); }
+.cw-row__name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* who the row is, in plain type on the row's two lines: the project's code by the name, the roster number by the step */
+.cw-sign { grid-column: 1; grid-row: 1 / span 2; display: grid; grid-template-rows: 16px 14px; row-gap: 3px; align-items: center; justify-items: center;
+  font: 500 10px/1 var(--scx-mono); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; color: var(--cw-ink); }
+/* a code longer than the column ends in an ellipsis, so every row keeps one left edge; the title spells it */
+.cw-sign b { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: inherit; }
+.cw-sign b + b { color: var(--cw-ink-3); font-weight: 400; }
+.cw-sign.is-unknown { color: var(--cw-ink-3); }
+/* the call sign in type (CallSign): legibility first, the board's ink, no project hue */
+.arv-tile > .arv-callsign { filter: none; opacity: 1; }
+.arv-callsign { display: inline-block; font: 600 10px/1 var(--scx-mono); letter-spacing: 0.02em; color: var(--cw-ink, var(--arv-ink)); font-variant-numeric: tabular-nums; }
+.arv-callsign b { font-weight: inherit; }
+/* a code past four letters widens the tile up to seven; a longer one ends in an ellipsis (the tile's title spells it) */
+.arv-callsign.is-stacked { display: grid; grid-auto-rows: 11px; min-width: 26px; max-width: 46px; text-align: center; }
+.arv-callsign.is-stacked b { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.arv-callsign.is-stacked b + b { color: var(--cw-ink-2, var(--arv-ink-2)); }
+.arv-sign { margin-right: 6px; vertical-align: 0; color: var(--cw-ink-2, var(--arv-ink-2)); }
+.cw-row.is-done .cw-row__n { color: var(--cw-ink-2); }
+.cw-row__t { font: 10px var(--scx-mono); color: var(--cw-ink-3); text-align: right; }
+.cw-panel.is-m .cw-row__t { grid-column: 3; grid-row: 2; justify-self: end; line-height: 14px; }
+.cw-empty { padding: 10px 10px; font-size: 12px; color: var(--cw-ink-2); }
+
+/* L: a two-column provider grid; counts share this block, not a separate band. */
+.cw-usage { display: grid; gap: 8px; padding: 9px 12px; box-shadow: inset 0 0.5px 0 var(--cw-hair); }
+.cw-counts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; font: 500 9px/12px var(--scx-mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--cw-ink-2); }
+.cw-counts > span { display: inline-flex; align-items: baseline; gap: 5px; }
+.cw-counts .cw-roll { color: var(--cw-ink); }
+.cw-counts .cw-ask .cw-roll { color: inherit; }
+.cw-quotas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px; }
+.cw-qcell { min-width: 0; display: grid; gap: 5px; align-content: start; }
+.cw-qcell__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.cw-up { font: 500 11px/14px var(--scx-sans); color: var(--cw-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-qcell .cw-val { font-size: 13px; line-height: 14px; }
+.cw-qcell .cw-val small { font-size: 9px; }
+.cw-windows { display: flex; gap: 8px; }
+.cw-window { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.cw-uw { font: 500 9px/10px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-3); }
+/* A reading old enough to name its age: the age is said, and the number steps back. */
+.cw-age { font: 500 9px/12px var(--scx-mono); letter-spacing: 0.04em; color: var(--cw-ink-3); }
+.cw-col.is-stale .cw-val, .cw-qcell.is-stale .cw-val { color: var(--cw-ink-3); }
+.cw-panel.is-l .cw-track { height: 2px; }
+.cw-panel.is-l .cw-track b { background: var(--cw-ink); box-shadow: none; }
+.cw-panel.is-l .cw-track.is-high b { background: var(--cw-acc); }
+
+/* Keep the header edge clean and soften only the scroll area's first/last 6px. */
+.cw-head { box-shadow: inset 0 -0.5px 0 var(--cw-hair); }
+.cw-panel.is-l > .cw-rows { max-height: 280px; overflow-y: auto; }
+.cw-panel.is-l > :is(.cw-rows, .arv-rows) {
+  mask-image: linear-gradient(to bottom, transparent, #000 6px, #000 calc(100% - 6px), transparent);
+  padding-block: 6px;
+  scroll-padding-block: 6px;
+}
+.cw-panel.is-l .arv-flaps[aria-label="WORKING"] .arv-flap { color: var(--cw-acc); }
+.cw-panel.is-l .cw-row.is-working .cw-row__h svg { display: none; }
+.cw-panel.is-l .cw-row.is-working .cw-row__h::before { content: ""; width: 3px; height: 3px; border-radius: 50%; background: var(--cw-acc); }
+
+.cw-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 24px; padding: 0 10px; box-shadow: inset 0 -0.5px 0 var(--cw-hair); }
+.cw-panel.is-l .cw-top { padding: 0 12px; }
+.cw-top > span { font: 500 9px var(--scx-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cw-ink-2); }
+.cw-top > span:last-child { text-align: right; }
+.cw-top > span.cw-mark { cursor: default; }
+.cw-top > span.cw-mark:hover { background: none; }
+/* the controls: New, Settings, grow, as small icons at the top line's right end */
+.cw-top > .cw-acts { justify-self: end; margin-right: -4px; }
+
+/* The board's controls, in every size. M and L: buttons with their names under the top line, Settings at the far end. */
+/* M and L: a quiet toolbar. Buttons are words with their icons, no box at rest, a 4px plate on hover or while open; the icons sit on the rows' 10px edge. */
+.cw-bar { display: flex; align-items: center; gap: 2px; padding: 4px; box-shadow: inset 0 -0.5px 0 var(--cw-hair); }
+.cw-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 6px; border: 0; border-radius: 4px;
+  background: none; color: var(--cw-ink-2); font: 500 11px var(--scx-sans); letter-spacing: 0; cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.cw-btn svg { flex: none; color: var(--cw-ink-3); transition: color 120ms ease; }
+.cw-btn:hover { background: rgba(255, 255, 255, 0.06); color: var(--cw-ink); }
+.cw-btn[aria-pressed="true"] { background: rgba(255, 255, 255, 0.1); color: var(--cw-ink); }
+.cw-btn[aria-pressed="true"] svg, .cw-btn:hover svg { color: var(--cw-ink); }
+.cw-btn.is-end { margin-left: auto; }
+.cw-btn.is-icon { width: 24px; padding: 0; justify-content: center; }
+.cw-btn.is-asking, .cw-btn.is-asking svg { color: var(--cw-acc); }
+.cw-badge { display: grid; place-items: center; min-width: 14px; height: 14px; padding: 0 3px; box-sizing: border-box; border-radius: 7px; background: var(--cw-acc); color: #1a1408; font: 600 9px/1 var(--scx-mono); }
+/* S: the same controls as round icons after the chips, past a hairline. */
+.cw-s__acts { display: inline-flex; align-items: center; gap: 3px; margin-left: 2px; padding-left: 5px; box-shadow: inset 0.5px 0 0 var(--cw-hair); }
+.cw-ico {
+  position: relative; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px;
+  background: none; color: var(--cw-ink-3); cursor: pointer; transition: background 120ms ease, color 120ms ease;
+}
+.cw-ico:hover { background: rgba(255, 255, 255, 0.06); color: var(--cw-ink); }
+.cw-ico[aria-pressed="true"] { background: rgba(255, 255, 255, 0.1); color: var(--cw-ink); }
+.cw-ico__dot { position: absolute; top: 0; right: 0; width: 6px; height: 6px; border-radius: 50%; background: var(--cw-acc); box-shadow: 0 0 0 1.5px #121316; }
+.cw-ico:focus-visible { outline: 2px solid var(--cw-acc); outline-offset: 1px; }
+/* A file held over New: it takes the drop. */
+.cw-ico.is-drop, .cw-mark.is-drop { background: color-mix(in srgb, var(--cw-acc) 22%, transparent); color: var(--cw-ink); box-shadow: inset 0 0 0 1px var(--cw-acc); }
+
+/* the odometer */
+.cw-roll { display: inline-flex; }
+.cw-drum { display: inline-block; height: 1em; line-height: 1em; overflow: hidden; width: 0.62em; text-align: center; }
+.cw-drum__reel { display: flex; flex-direction: column; transition: transform var(--cw-ms) var(--cw-ease); }
+.cw-drum__reel > span { height: 1em; }
+
+
+/* Keep the measured shell on its anchored corner in both native modes. */
+.arv-widget-board.arv-board { width: auto; padding: 0; border: 0; background: none; box-shadow: none; }
+.arv-widget-board .cw-widget { box-sizing: border-box; }
+.arv-widget-board .cw-inner { box-sizing: border-box; }
+.arv.is-top .cw-inner { top: 0; bottom: auto; }
+.arv.is-left .cw-inner { left: 0; right: auto; }
+.cw-panel.is-l > .arv-head { padding: 8px 12px; box-shadow: inset 0 -0.5px 0 var(--cw-hair); }
+.cw-panel.is-l > .arv-rows { padding-inline: 10px; }
+/* The stack's sheets, inside L: there is no room beside the board. */
+.cw-panel.is-l > :is(.arv-set, .arv-new) { margin: 10px 12px; }
+.cw-mark:focus-visible, .cw-more:focus-visible { outline: 2px solid var(--cw-acc); }
+@media (prefers-reduced-motion: reduce) {
+  .cw-widget *, .cw-widget *::after { animation: none !important; transition: none !important; }
+}
+
+/* A real crew can exceed a screen. Keep the board's rows scrollable, not its controls offscreen.
+ * Stack panels use display height, not their own content-sized viewport (avoids resize feedback). */
+.cw-panel.is-l > .arv-rows { max-height: max(80px, calc(var(--cw-available-height, 100vh) - 220px)); overflow-y: auto; box-sizing: border-box; }
+/* The old bottom-justified flex list shrank rows and overflowed above its scroll origin.
+ * Start at the top, retain whole row heights, and let scrolling own the overflow. */
+.scx.arv:not(.is-top) .arv-widget-board.is-open .arv-rows.is-ordered { justify-content: flex-start; }
+.cw-panel.is-l > .arv-rows > li { flex-shrink: 0; }
+.cw-panel.is-l .arv-row[data-remark="WORKING"]::before { content: ""; position: absolute; left: 0; width: 3px; height: 3px; border-radius: 50%; background: var(--cw-acc); }
+
+/* S and M: a session's right-click menu, its pop-out (L drags a row off instead). */
+.cw-menu { position: fixed; z-index: 40; box-sizing: border-box; padding: 4px; border-radius: 8px;
+  background: linear-gradient(180deg, #1a1b1e, #111214); border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 28px rgba(0, 0, 0, 0.45);
+  color: #f6f3ec; font: 12px/1.2 var(--font-sans, -apple-system, "SF Pro Text", system-ui, sans-serif);
+  animation: cw-menu-in 120ms cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes cw-menu-in { from { opacity: 0; transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .cw-menu { animation: none; } }
+.cw-menu__title { margin: 2px 8px 4px; font: 10px/1.4 var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace); color: rgba(241, 238, 230, 0.56);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cw-menu__item { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 4px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cw-menu__item:hover, .cw-menu__item:focus-visible { background: rgba(255, 255, 255, 0.09); outline: none; }
+.cw-menu__error { margin: 4px 8px 2px; font-size: 10px; line-height: 1.35; color: rgba(241, 238, 230, 0.66); }
+.cw-menu__sep { height: 1px; margin: 4px 6px; border: 0; background: rgba(255, 255, 255, 0.1); }
+.cw-menu__head { margin: 4px 8px 2px; font-size: 10px; line-height: 1.4; color: rgba(241, 238, 230, 0.5); }
+.cw-menu__item.is-check { position: relative; padding-left: 22px; }
+.cw-menu__item.is-check[aria-checked="true"]::before { content: ""; position: absolute; left: 9px; top: 50%; width: 6px; height: 3px;
+  border: solid currentColor; border-width: 0 0 1.5px 1.5px; transform: translateY(-70%) rotate(-45deg); }
+/* A desk menu has checkmarks: every line starts past their column, as in a native menu. */
+.cw-menu.is-desk .cw-menu__item, .cw-menu.is-desk .cw-menu__head, .cw-menu.is-desk .cw-menu__title { padding-left: 22px; }
+.cw-menu.is-desk .cw-menu__head, .cw-menu.is-desk .cw-menu__title { margin-left: 0; }
+
+/* ---------- the companion's choices (a click on the mark) ----------
+ * A few things to do now, beside the board on the details panel's material.
+ * Thin and quiet: regular weight, hairlines, the widget's one accent. */
+.cw-choices { --scx-accent: #f2b24a; display: flex; flex-direction: column; min-height: 0; }
+.cw-choices__head { flex: none; display: flex; align-items: center; min-height: 30px; padding: 0 36px 0 12px; border-bottom: 1px solid var(--arv-line);
+  font: 10px var(--scx-mono); letter-spacing: 0.02em; color: var(--arv-ink-3); }
+.cw-choices .tap-x { top: 5px; right: 6px; }
+.cw-choices__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.cw-choice { margin: 0; padding: 10px 12px; border-bottom: 1px solid var(--arv-line); }
+.cw-choice:last-child { border-bottom: 0; }
+.cw-choice .tap-quiet { margin: 4px 0 0; }
+.cw-choice > .tap-ask { margin-top: 6px; }
+.cw-choice > .tap-err { margin: 6px 0 0; }
+.cw-choice__who { margin: 0; font-size: 11px; color: var(--arv-ink-3); }
+.cw-choice__who b { font-weight: 400; color: var(--arv-ink-2); }
+.cw-choice__said { display: -webkit-box; margin: 3px 0 0; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 11.5px; line-height: 1.4; color: var(--arv-ink-2); }
+.cw-choice.is-reply .tap-reply { margin-top: 8px; }
+.cw-choice__dim { color: var(--arv-ink-3); }
+.cw-choice__go, .cw-choice__line { display: block; width: 100%; margin: 0; padding: 4px 6px; border: 0; border-radius: var(--arv-r-in); background: none;
+  color: var(--arv-ink); font: 400 12px/1.4 var(--scx-sans); text-align: left; cursor: pointer; }
+.cw-choice__go { margin: -4px -6px; width: calc(100% + 12px); }
+.cw-choice__line { margin: 4px -6px 0; width: calc(100% + 12px); }
+.cw-choice__line b { font-weight: 400; }
+.cw-choice__line .cw-choice__said { margin-top: 1px; -webkit-line-clamp: 1; }
+.cw-choice__go:hover, .cw-choice__go:focus-visible, .cw-choice__line:hover, .cw-choice__line:focus-visible { background: color-mix(in srgb, var(--arv-ink) 7%, transparent); outline: none; }
+.cw-choice__quiet { margin: 6px 0 0; padding: 0; border: 0; background: none; color: var(--arv-ink-3); font: 400 11px var(--scx-sans); cursor: pointer;
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--arv-ink) 18%, transparent); text-underline-offset: 2px; }
+.cw-choice__quiet:hover, .cw-choice__quiet:focus-visible { color: var(--arv-ink-2); outline: none; }
+.cw-choices__foot { flex: none; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 8px 12px 10px; border-top: 1px solid var(--arv-line); }
+.cw-choices__foot .cw-choice__quiet { margin: 0; }
+.cw-choices__all { margin-left: auto !important; }
+.cw-clear { display: flex; flex-direction: column; gap: 4px; }
+.cw-clear.is-armed { flex: 1 1 100%; }
+.cw-clear__q { margin: 0; font-size: 11.5px; color: var(--arv-ink); }
+.cw-clear__note, .cw-clear__said { margin: 0; font-size: 10.5px; line-height: 1.4; color: var(--arv-ink-3); }
+.cw-clear__said.is-refused { color: var(--arv-ink-2); }
+.cw-clear__acts { display: flex; gap: 6px; margin-top: 2px; }
+
+/* Menus open outside the widget: they carry its one accent. */
+.cw-menu { --scx-accent: #f2b24a; }
+.cw-menu__dim { color: rgba(241, 238, 230, 0.56); }
+.cw-menu__note { margin: 0 8px 4px; font-size: 10px; line-height: 1.4; color: rgba(241, 238, 230, 0.46); }
+.cw-menu__clear .cw-menu__error { margin-top: 2px; }
+
+/* A figure's card: Stop work asks first, in a line. */
+.arv-talk__confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; font-size: 11px; color: var(--arv-ink-2); }
+
+/* ---------- the engage panel (a click on an agent) ----------
+ * Its last few turns, compact, newest at the bottom: who in mono, the line
+ * clamped to two rows (the whole of it on hover). Then the reply line and a
+ * quiet link to its Details. No settings here; they live in the Details. */
+.arv-talk__lines { display: flex; flex-direction: column; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
+.arv-talk__lines li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; align-items: baseline; }
+.arv-talk__who { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 12px/1.4 var(--scx-sans); color: var(--arv-ink-3); }
+.arv-talk__line { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font: 400 12px/1.4 var(--scx-sans); color: var(--arv-ink); overflow-wrap: anywhere; }
+.arv-talk__lines li.is-you .arv-talk__line { color: var(--arv-ink-2); }
+.arv-talk__lines li:last-child .arv-talk__line { -webkit-line-clamp: 4; }
+.arv-talk__details { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--arv-ink-3); }
+.arv-talk__details:hover, .arv-talk__details:focus-visible { color: var(--arv-ink); }
+
+/* A file dragged onto an agent: one thin line round it while it would take the drop. No fill, no glow. */
+.ce-placed.is-drop { outline: 1px solid color-mix(in oklch, var(--ce-ink, var(--arv-ink)) 70%, transparent); outline-offset: 3px; border-radius: 8px; }
+/* A light line inside the face for a dark desktop, a dark one outside it for a light one. */
+.arv-plate.is-drop { border-color: color-mix(in srgb, var(--arv-ink) 70%, transparent); outline: 1px solid rgba(0, 0, 0, 0.55); outline-offset: 2px; }
+
+/* The choices card: an agent's name opens its engage panel in the card; Back returns. */
+.cw-choice__name { padding: 0; border: 0; background: none; color: var(--arv-ink-2); font: inherit; cursor: pointer;
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--arv-ink) 18%, transparent); text-underline-offset: 2px; }
+.cw-choice__name:hover, .cw-choice__name:focus-visible { color: var(--arv-ink); text-decoration-color: currentColor; outline: none; }
+.cw-choices__back { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--arv-ink-3); font: inherit; cursor: pointer; }
+.cw-choices__back b { font-weight: 400; color: var(--arv-ink-2); }
+.cw-choices__back:hover, .cw-choices__back:focus-visible { color: var(--arv-ink); outline: none; }
+.cw-choices__body.is-engaged { padding: 0 12px 10px; }
+.cw-choices__body.is-engaged .arv-talk { border-top: 0; }
+.cw-choices__body[hidden], .cw-choices__foot[hidden] { display: none; }
+.cw-menu__key { float: right; margin-left: 12px; padding: 0; border: 0; background: none; font: 10px var(--scx-mono); color: var(--arv-ink-3); }
+
+/* M and L: New and Hide at the left of the top line, on the rows' edge. */
+.cw-top > .cw-acts.is-start { justify-self: start; margin-left: -4px; margin-right: 0; }
+.cw-hide svg { width: 13px; height: 13px; }
+/* Usage and ordering share the line above the rows. The order controls keep their width. */
+.cw-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 24px;
+  padding-inline: 6px;
+}
+.cw-gauges {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  flex: 1;
+  min-width: 0;
+}
+.cw-gauge {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding-inline: 2px;
+  border-radius: var(--arv-r-in);
+  font: 500 9px/1 var(--scx-mono);
+  white-space: nowrap;
+  color: var(--cw-ink-2);
+}
+.cw-gauge:focus-visible { outline: 1px solid var(--cw-acc); }
+.cw-gauge__ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  --cw-quota-ring: var(--cw-ink-2);
+}
+.cw-gauge__ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--cw-quota-ring) var(--cw-quota-used), var(--cw-hair) 0);
+  mask-image: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  pointer-events: none;
+}
+.cw-gauge__ring.is-high { --cw-quota-ring: var(--cw-acc); }
+.cw-gauge__value { font-size: 8px; color: var(--cw-ink); }
+.cw-gauge.is-stale .cw-gauge__value { color: var(--cw-ink-2); }
+.cw-gauge__reset { overflow: hidden; text-overflow: ellipsis; }
+.cw-quota-card {
+  width: 216px;
+  max-width: calc(100vw - 16px);
+  padding: 12px;
+  border-radius: var(--arv-r-out);
+  background: var(--arv-face);
+}
+.cw-quota-card__head, .cw-quota-card__body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cw-quota-card__head { align-items: center; }
+.cw-quota-card__provider { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cw-quota-card__head strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.cw-quota-card__head > span:last-child, .cw-quota-card__body span, .cw-quota-card__foot { font-size: 10px; color: var(--arv-ink-2); }
+.cw-quota-card__body {
+  margin-top: 8px;
+  padding-top: 8px;
+  box-shadow: inset 0 1px 0 var(--arv-line);
+}
+.cw-quota-card__body > div { display: grid; grid-template-rows: auto 24px auto; align-items: center; align-content: start; gap: 2px; }
+.cw-quota-card__body strong, .cw-quota-card__body b { font-family: var(--scx-mono); font-variant-numeric: tabular-nums; }
+.cw-quota-card__body strong { font-size: 22px; line-height: 1; }
+.cw-quota-card__body strong.is-high { color: #f2b24a; }
+.cw-quota-card__body b { font-size: 13px; }
+.cw-quota-card__foot { margin-top: 8px; padding-top: 8px; box-shadow: inset 0 1px 0 var(--arv-line); }
+.cw-order { display: inline-flex; flex: none; align-items: center; gap: 1px; }
+.cw-gauges + .cw-order { padding-inline-start: 4px; box-shadow: inset 0.5px 0 0 var(--cw-hair); }
+.cw-order .cw-ico svg { width: 13px; height: 13px; }
+/* Grouped by project: a quiet heading over each group's first row, in M and on the open board. */
+.cw-group { padding: 6px 4px 1px; font: 500 10px var(--scx-sans); color: var(--cw-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; list-style: none; }
+.cw-group:first-child { padding-top: 2px; }
+.arv-group { padding: 6px 4px 1px; font: 500 10px var(--scx-sans); color: var(--arv-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The stack: Scoutbot inside the open board, where Settings and New open too. */
+.arv-bot.is-inside { order: 0; margin: 0; padding: 4px 8px 8px; }
+
+/* A row's step longer than the row fades out at the edge instead of ending in
+   "…". The step fills its grid column, so a short one never reaches the fade. */
+.cw-row__step {
+  text-overflow: clip;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+
+/* The notch (notch-model.ts): the board itself, hung from the middle of a screen edge.
+ * The side against the edge is square and meets it with concave shoulders; the content
+ * stays centered, so the board opens out of the edge evenly to both sides. */
+.scx.arv.is-notch { padding: 0; --nt-face: #0d0e10; }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom) .cw-inner { left: 50%; right: auto; translate: -50% 0; }
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-inner { top: 50%; bottom: auto; translate: 0 -50%; }
+.arv.is-notch .cw-widget { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55); background: var(--nt-face); border-color: transparent; }
+/* One flat face, shoulders and all: no gradient, no sheen and no outline. Each made a seam where a shoulder's curve
+ * meets the body, a shade lighter than the shoulder beside it. */
+.arv.is-notch .cw-widget::before { display: none; }
+.arv.is-notch-top .cw-widget { border-top: 0; border-start-start-radius: 0; border-start-end-radius: 0; }
+.arv.is-notch-bottom .cw-widget { border-bottom: 0; border-end-start-radius: 0; border-end-end-radius: 0; }
+.arv.is-notch-left .cw-widget { border-left: 0; border-start-start-radius: 0; border-end-start-radius: 0; }
+.arv.is-notch-right .cw-widget { border-right: 0; border-start-end-radius: 0; border-end-end-radius: 0; }
+/* A panel out of the notch (tap-in.css .tap-panel.is-notch) continues it: the board squares the corners on that side. */
+.arv.is-notch-top.has-panel .cw-widget { border-end-start-radius: 0; border-end-end-radius: 0; }
+.arv.is-notch-bottom.has-panel .cw-widget { border-start-start-radius: 0; border-start-end-radius: 0; }
+.arv.is-notch-left.has-panel .cw-widget { border-start-end-radius: 0; border-end-end-radius: 0; }
+.arv.is-notch-right.has-panel .cw-widget { border-start-start-radius: 0; border-end-start-radius: 0; }
+/* ...and draws no line where they meet: the strip's face already ends in the panel's colour. */
+.arv.is-notch-top.has-panel .cw-widget { border-bottom-color: transparent; }
+.arv.is-notch-bottom.has-panel .cw-widget { border-top-color: transparent; }
+.arv.is-notch-left.has-panel .cw-widget { border-right-color: transparent; }
+.arv.is-notch-right.has-panel .cw-widget { border-left-color: transparent; }
+/* On a side edge the folded strip turns with the edge: it runs down it, Settings at the top, Scout's face in the
+ * middle, grow at the bottom, the chips between. */
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-s { flex-direction: column; height: auto; padding: 5px 4px; gap: 4px; }
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-s .cw-acts.is-lead { margin: 0 0 2px; padding: 0; }
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-s .cw-acts { margin: 2px 0 0; padding: 0; }
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-s.has-live .cw-face { margin: 2px 0; }
+/* A thin line: each chip is its harness icon alone, no label pill. The label shows in the panel that comes out. */
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-chip.has-tag { width: 22px; padding: 0; border-radius: 50%; }
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-chip__tag { display: none; }
+/* Something out of it: the line grows along the edge to the panel's height, Settings holding the top end and grow
+ * the bottom, the icons centred between, as the top notch holds its ends when it widens. */
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-s { min-height: var(--cw-hold-h, 0px); }
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-s .cw-acts.is-lead { margin-bottom: auto; }
+.arv.is-notch:is(.is-notch-left, .is-notch-right) .cw-s .cw-acts:not(.is-lead) { margin-top: auto; }
+/* Over the menu bar: one face all the way up. The top line fills the menu bar's strip, its
+ * controls in it; around a camera it splits, the mark moving left, nothing under the housing.
+ * S has no top line: its chips start below the strip. */
+.arv.is-notch.is-hang .cw-top { height: max(24px, var(--nt-bar)); }
+.arv.is-notch.is-hang.has-cam .cw-top { grid-template-columns: 1fr var(--nt-cam) 1fr; }
+.arv.is-notch.is-hang.has-cam .cw-top > .cw-acts.is-start { grid-column: 1; grid-row: 1; }
+.arv.is-notch.is-hang.has-cam .cw-top > .cw-mark { grid-column: 1; grid-row: 1; justify-self: end; }
+.arv.is-notch.is-hang.has-cam .cw-top > .cw-acts:not(.is-start) { grid-column: 3; grid-row: 1; }
+/* Folded, the strip is the menu bar's row, one line tall: it grows a second line only when it opens.
+ * No camera: the strip as it is. A camera: its two halves sit either side of the housing. */
+.cw-s__half { display: contents; }
+.arv.is-notch.is-hang .cw-widget.is-s .cw-s { height: max(var(--nt-bar), 26px); }
+.arv.is-notch.is-hang.has-cam .cw-widget.is-s .cw-s { display: grid; grid-template-columns: 1fr auto var(--nt-cam) 1fr; }
+.arv.is-notch.is-hang.has-cam .cw-s__mid { display: flex; grid-column: 2; }
+.arv.is-notch.is-hang.has-cam .cw-s__half { display: flex; align-items: center; gap: inherit; }
+/* Each half fills its side: the chips hug the housing, Settings holds the left end and grow the right end, so
+ * neither control drifts when the notch is held wider than its chips. */
+.arv.is-notch.is-hang.has-cam .cw-s__half.is-lead { grid-column: 1; justify-self: stretch; justify-content: flex-end; }
+.arv.is-notch.is-hang.has-cam .cw-s__half.is-tail { grid-column: 4; justify-self: stretch; justify-content: flex-start; }
+.arv.is-notch.is-hang .cw-s .cw-acts.is-lead { margin-right: auto; }
+.arv.is-notch.is-hang .cw-s .cw-acts:not(.is-lead) { margin-left: auto; }
+/* Held wide (a panel or a sheet hangs from a top or bottom notch): the strip spans the panel's width, so the two
+ * share their edges. Settings holds the left end and grow the right end, Scout's face sits in the middle, and each
+ * half's chips sit beside the face. Around a camera the halves already sit either side of the housing. */
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom) .cw-widget.is-s .cw-s.is-held { box-sizing: border-box; min-width: var(--cw-hold-w, 0px); }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom):not(.has-cam) .cw-widget.is-s .cw-s.is-held { display: grid; grid-template-columns: 1fr auto 1fr; }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom):not(.has-cam) .cw-s.is-held .cw-s__mid { display: flex; grid-column: 2; }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom):not(.has-cam) .cw-s.is-held .cw-s__half { display: flex; align-items: center; gap: inherit; min-width: 0; }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom):not(.has-cam) .cw-s.is-held .cw-s__half.is-lead { grid-column: 1; justify-content: flex-end; }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom):not(.has-cam) .cw-s.is-held .cw-s__half.is-tail { grid-column: 3; justify-content: flex-start; }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom) .cw-s.is-held .cw-acts.is-lead { margin-right: auto; }
+.arv.is-notch:is(.is-notch-top, .is-notch-bottom) .cw-s.is-held .cw-acts:not(.is-lead) { margin-left: auto; }
+/* The notch draws no rules inside itself: no hairline beside Settings or grow, none under the open board's top
+ * line. Spacing sets them apart. Scoutbot's face carries no asking dot here either; the asking chip says it. */
+.arv.is-notch .cw-s .cw-acts, .arv.is-notch .cw-s .cw-acts.is-lead { box-shadow: none; }
+.arv.is-notch .cw-top, .arv.is-notch .cw-panel.is-l > .arv-head, .arv.is-notch .cw-head { box-shadow: none; }
+.arv.is-notch .cw-face .sbt-dot { display: none; }
+/* Opened: as tall as its rows, past a short floor so a row coming or going does not jolt it; the rest scrolls. */
+.arv.is-notch .cw-panel.is-l > .arv-rows { min-height: min(24vh, 220px); max-height: min(56vh, 620px); }
+
+.arv.is-notch .arv-widget-board::before, .arv.is-notch .arv-widget-board::after { content: ""; position: absolute; width: 10px; height: 10px; pointer-events: none; }
+.arv.is-notch-top .arv-widget-board::before { top: 0; right: 100%; background: radial-gradient(circle at 0 100%, transparent 9.5px, var(--nt-face) 10px); }
+.arv.is-notch-top .arv-widget-board::after { top: 0; left: 100%; background: radial-gradient(circle at 100% 100%, transparent 9.5px, var(--nt-face) 10px); }
+.arv.is-notch-bottom .arv-widget-board::before { bottom: 0; right: 100%; background: radial-gradient(circle at 0 0, transparent 9.5px, var(--nt-face) 10px); }
+.arv.is-notch-bottom .arv-widget-board::after { bottom: 0; left: 100%; background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--nt-face) 10px); }
+.arv.is-notch-left .arv-widget-board::before { left: 0; bottom: 100%; background: radial-gradient(circle at 100% 0, transparent 9.5px, var(--nt-face) 10px); }
+.arv.is-notch-left .arv-widget-board::after { left: 0; top: 100%; background: radial-gradient(circle at 100% 100%, transparent 9.5px, var(--nt-face) 10px); }
+.arv.is-notch-right .arv-widget-board::before { right: 0; bottom: 100%; background: radial-gradient(circle at 0 0, transparent 9.5px, var(--nt-face) 10px); }
+.arv.is-notch-right .arv-widget-board::after { right: 0; top: 100%; background: radial-gradient(circle at 0 100%, transparent 9.5px, var(--nt-face) 10px); }
+
+/* The notch's motion (notch-model.ts): everything comes out of the edge and goes back into it.
+ * --nt-out: where content starts, a few points toward the edge; --nt-origin: the edge's middle;
+ * --nt-away: the whole board, shadow and all, past the edge. */
+.arv.is-notch-top { --cw-in-from: 0, -6px; --nt-origin: 50% 0; --nt-away: translateY(calc(-100% - 64px)); }
+.arv.is-notch-bottom { --cw-in-from: 0, 6px; --nt-origin: 50% 100%; --nt-away: translateY(calc(100% + 64px)); }
+.arv.is-notch-left { --cw-in-from: -6px, 0; --nt-origin: 0 50%; --nt-away: translateX(calc(-100% - 64px)); }
+.arv.is-notch-right { --cw-in-from: 6px, 0; --nt-origin: 100% 50%; --nt-away: translateX(calc(100% + 64px)); }
+/* Opening: the shape leads, and the open board follows it out of the edge instead of being uncovered by it. */
+.arv.is-notch .cw-panel.is-l { transform-origin: var(--nt-origin); animation: nt-in var(--cw-snap-ms) var(--cw-snap-ease) calc(var(--cw-size-ms) * 0.2) backwards; }
+@keyframes nt-in { from { opacity: 0; transform: scale(0.96); } }
+/* Folding: the open board goes back into the edge first, quickly; then the shape springs back to its strip. */
+.arv.is-notch .arv-widget-board.is-closing .cw-panel { opacity: 0; transform: scale(0.97); transform-origin: var(--nt-origin); animation: none;
+  transition: opacity var(--nt-fold) var(--arv-ease-in), transform var(--nt-fold) var(--arv-ease-in); }
+/* Hidden by the host: into the edge. Shown again: out of it, always as the folded strip.
+ * The arrival moves the board's margin, never a transform: a transform (or will-change) on the board
+ * makes it the box its fixed menus and hover cards are placed in, so they jump with it, and dropping
+ * the layer at the end blanks the board for a frame. The retract may use one: the panel hides after it. */
+.arv.is-notch .arv-widget-board { transform-origin: var(--nt-origin); }
+.arv.is-notch .arv-widget-board.is-away { transform: var(--nt-away); transition: transform var(--nt-retract) var(--arv-ease-in); }
+.arv.is-notch .arv-widget-board.is-arriving { animation: var(--nt-arrive) var(--nt-arrive-ease) both; }
+.arv.is-notch-top .arv-widget-board.is-arriving { animation-name: nt-arrive-top; }
+.arv.is-notch-bottom .arv-widget-board.is-arriving { animation-name: nt-arrive-bottom; }
+.arv.is-notch-left .arv-widget-board.is-arriving { animation-name: nt-arrive-left; }
+.arv.is-notch-right .arv-widget-board.is-arriving { animation-name: nt-arrive-right; }
+@keyframes nt-arrive-top { from { margin-top: calc(-1 * (var(--space-8xl) + var(--space-2xl))); } }
+@keyframes nt-arrive-bottom { from { margin-bottom: calc(-1 * (var(--space-8xl) + var(--space-2xl))); } }
+@keyframes nt-arrive-left { from { margin-left: calc(-1 * (var(--space-8xl) + var(--space-2xl))); } }
+@keyframes nt-arrive-right { from { margin-right: calc(-1 * (var(--space-8xl) + var(--space-2xl))); } }
+@media (prefers-reduced-motion: reduce) {
+  .arv.is-notch .cw-panel.is-l, .arv.is-notch .arv-widget-board.is-arriving { animation: none; }
+  .arv.is-notch .arv-widget-board.is-away, .arv.is-notch .arv-widget-board.is-closing .cw-panel { transition: none; }
+}
+
+/* Waiting for the host's first state (ArrivalsBoard): laid out, not drawn. */
+.arv-layer.is-waiting { visibility: hidden; }
+
+/* ── M: the quiet one-liner (Studio companion-board-layout, B + C) ──────────
+ * One line per session, on hairlines, edge to edge: sign, title, step, time,
+ * then its dot field (a finished turn says "done" there). Quiet, nothing
+ * working or asking, the titles step back and the dots keep breathing. */
+.cw-panel.is-m .cw-rows { padding: 0; }
+.cw-panel.is-m .cw-row {
+  grid-template-columns: 48px fit-content(52%) minmax(0, 1fr) 26px 36px; grid-template-rows: 18px;
+  row-gap: 0; column-gap: 8px; padding: 7px 10px; border-radius: 0;
+}
+.cw-panel.is-m .cw-row + .cw-row { box-shadow: inset 0 0.5px 0 var(--cw-hair); }
+.cw-panel.is-m .cw-sign { grid-row: 1; grid-auto-flow: column; grid-template-rows: 18px; row-gap: 0; column-gap: 4px; justify-content: start; }
+.cw-panel.is-m .cw-row__n { grid-column: 2; grid-row: 1; line-height: 18px; }
+/* One sign per row: an unknown harness's monogram would repeat the sign beside it. */
+.cw-panel.is-m .cw-row__n > .cw-chip__init { display: none; }
+.cw-panel.is-m .cw-row__step { grid-column: 3; grid-row: 1; font: 11px/18px var(--scx-sans); color: var(--cw-ink-3); }
+.cw-panel.is-m .cw-row__step.is-ask { color: var(--cw-acc); }
+.cw-panel.is-m .cw-row__ago { grid-column: 4; grid-row: 1; line-height: 18px; }
+.cw-panel.is-m .cw-row :is(.cw-row__dots, .cw-row__t) { grid-column: 5; grid-row: 1; align-self: center; justify-self: end; line-height: 18px; }
+/* Ready: finished, and the next move is the operator's. Its word, steady, in the Ready colour. */
+.cw-row.is-ready .cw-row__t { color: var(--arv-ready); }
+/* An ask says so in amber; it needs no dot field. */
+.cw-panel.is-m .cw-row.is-asking .cw-row__dots { visibility: hidden; }
+/* The last line is a line of text, not a label. */
+.cw-panel.is-m .cw-more { padding: 4px 10px 7px; font: 11px/14px var(--scx-sans); letter-spacing: 0; text-transform: none; }
+.cw-widget.is-quiet .cw-row__name { color: var(--cw-ink-2); }
+.cw-widget.is-quiet .cw-row__n > svg { opacity: 0.6; }
+.cw-widget.is-quiet .cw-row__step { color: color-mix(in srgb, var(--cw-ink-3) 80%, transparent); }
+
+/* Scoutbot on the board's top edge, as a figure: no plate, no ring, its feet on the edge. It is the mark,
+ * so the bar has nothing to hold at rest: the bar and the line under it open on hover (or focus), and stay
+ * while one of the bar's own toggles is on. */
+.cw-perch {
+  --cw-perch: 40px;
+  position: absolute; z-index: 3; left: 50%; bottom: calc(100% - 5px); display: grid; place-items: end center;
+  width: var(--cw-perch); height: var(--cw-perch); margin-left: calc(var(--cw-perch) / -2); padding: 0; border: 0;
+  background: none; color: inherit; cursor: pointer; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  transition: transform 120ms ease;
+}
+.cw-perch:hover, .cw-perch.is-drop { transform: translateY(-1px) scale(1.04); }
+.cw-perch:focus-visible { outline: 2px solid var(--cw-acc, #f2b24a); outline-offset: 2px; border-radius: var(--radius-md); }
+.cw-widget.has-perch .cw-top .cw-mark { visibility: hidden; }
+.cw-widget.has-perch :is(.cw-top, .cw-tools) {
+  height: 0; min-height: 0; opacity: 0; overflow: hidden; box-shadow: none;
+  transition: height 160ms ease, opacity 120ms ease;
+}
+.cw-widget.has-perch:is(:hover, :focus-within, :has(.cw-top .cw-acts [aria-pressed="true"])) :is(.cw-top, .cw-tools),
+.cw-perch:hover + .cw-widget.has-perch :is(.cw-top, .cw-tools) { height: 24px; opacity: 1; }
+.cw-widget.has-perch:is(:hover, :focus-within, :has(.cw-top .cw-acts [aria-pressed="true"])) .cw-top,
+.cw-perch:hover + .cw-widget.has-perch .cw-top { box-shadow: inset 0 -0.5px 0 var(--cw-hair); }
+.cw-widget.is-reduced.has-perch :is(.cw-top, .cw-tools) { transition: none; }
+@media (prefers-reduced-motion: reduce) { .cw-perch { transition: none; } }
+
+/* Scoutbot on the desk (DeskScoutbot): dragged off the board's edge, standing where the host placed it.
+ * Upright, no plate or ring, like any desk figure; its card and panel sit beside it. */
+.arv-bot.is-desk { display: contents; --sbt-accent: var(--scx-accent, #f2b24a); }
+.arv-deskbot {
+  position: absolute; padding: 0; border: 0; background: none; color: inherit; cursor: grab;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35)); transition: opacity 160ms ease;
+}
+.arv-deskbot.is-dragging { cursor: grabbing; filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.35)); }
+.arv-deskbot.is-covered { opacity: 0.35; }
+.arv-deskbot:focus-visible { outline: 2px solid var(--scx-accent, #f2b24a); outline-offset: 2px; border-radius: var(--radius-md); }
+.arv-deskbot__body { position: absolute; left: 50%; display: grid; place-items: end center; }
+.arv-deskbot__panel { position: absolute; z-index: 2; }
+.arv-deskbot__panel .ce-pop { position: relative; bottom: auto; left: auto; top: auto; }

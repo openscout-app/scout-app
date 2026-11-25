@@ -1,7 +1,8 @@
-import { showAsset } from "./leads.ts";
-import { namedRepos, pullRefs, type PullRef } from "./feed-refs.ts";
+import type { FeedQuotaEvent } from "../../shared/api/feed-sources.ts";
+import { namedRepos, pullRefs, type PullRef } from "../../shared/feed-refs.ts";
 import type {
   FeedHome,
+  FeedTurnSummary,
   FeedLive,
   FeedPostDetail,
   FeedPostHead,
@@ -15,11 +16,13 @@ import type {
 import type { ActivityPost } from "./activity.ts";
 import { placePosts, taskFromPost, type RuntimePost } from "./agent-posts.ts";
 import { dayKey, dayStart, previousDay } from "./days.ts";
-import { type Slot, runningSlot, threadSignature, finishedSlot } from "./slots.ts";
+import { type Slot, runningSlot, quotaSlot, threadSignature, finishedSlot } from "./slots.ts";
 import { emptyContext, projectThreads, type FeedContext } from "./project.ts";
 import { hiddenBy } from "../../shared/api/feed-hides.ts";
 import { openFeed } from "./schema.ts";
+import { feedLine } from "./text.ts";
 import { homeSlots, rankDays, type RankedSlot, type SlotRank } from "./views.ts";
+import { turnSummaryKey, type TurnSummaries, type TurnSummaryRequest } from "../turn-summary.ts";
 
 export const FEED_WINDOW_MS = 14 * 86_400_000;
 const json = JSON.stringify;
@@ -52,7 +55,14 @@ const HEAD = "id, at, day, title, caption, refs, head, placement, updated_seq";
 const POST = "state <> 'removed' AND candidate IS NOT NULL";
 
 export class FeedTable {
-  private readonly db = openFeed();
+  private readonly db;
+  private readonly summaries?: TurnSummaries | null;
+  constructor(options: { path?: string; summaries?: TurnSummaries | null; originHost?: string } = {}) {
+    this.db = openFeed(options.path ?? ":memory:");
+    this.summaries = options.summaries;
+    if (options.originHost !== undefined) this.bindOrigin(options.originHost);
+  }
+
   get originHost(): string {
     const host = this.meta("origin_host");
     if (!host) throw new Error("Cannot write Feed slots without a runtime node id");
@@ -67,7 +77,7 @@ export class FeedTable {
       const prior = this.meta("origin_host");
       if (prior === host) return;
       if (prior) {
-        // Never keep slots if the configured runtime now has a different identity.
+        // A disposable file copied from another host is not a source of local work.
         const epoch = Math.max(this.version + 1, Date.now() * 1024);
         this.db.exec("DELETE FROM feed_slots; DELETE FROM inputs; DELETE FROM pull_facts; DELETE FROM meta");
         this.set("floor", epoch);
@@ -139,6 +149,42 @@ export class FeedTable {
     return false;
   }
 
+  /** Quota crossings have their own payload on /sources, not FeedPostHead.
+   * The same slot table holds them, but they never enter post ranking. */
+  writeQuota(events: FeedQuotaEvent[], now: number) {
+    this.db.transaction(() => {
+      const next = this.version + 1;
+      const keep = events.filter((e) => e.crossedAt >= now - FEED_WINDOW_MS);
+      let changed = false;
+      const origin = this.originHost;
+      const ids: string[] = [];
+      for (const event of keep) {
+        const slot = quotaSlot(origin, event);
+        ids.push(slot.id);
+        const moved = this.putSlot(slot, "", next);
+        changed ||= moved;
+      }
+      const removed = this.db
+        .query(
+          `UPDATE feed_slots SET state='removed', removed_at=?, updated_seq=?, head=NULL, title='', caption=NULL, refs='[]'
+          WHERE kind='quota' AND state<>'removed' AND id NOT IN (SELECT value FROM json_each(?))`,
+        )
+        .run(now, next, json(ids));
+      if (changed || removed.changes) this.set("seq", next);
+      this.set("quotaMark", now);
+    })();
+  }
+  get quotaMark() {
+    return Number(this.meta("quotaMark") ?? 0);
+  }
+  quota(now: number): FeedQuotaEvent[] {
+    return this.db
+      .query<{ head: string }, [number]>(
+        "SELECT head FROM feed_slots WHERE kind='quota' AND state<>'removed' AND at>=? ORDER BY at DESC,id",
+      )
+      .all(now - FEED_WINDOW_MS)
+      .map((r) => JSON.parse(r.head));
+  }
   /** The only write path. Advance the runtime watermark in the same commit as its slots. */
   apply(change: Change) {
     return this.db
@@ -146,7 +192,9 @@ export class FeedTable {
         const origin = this.originHost;
         const next = this.version + 1;
         const changed: string[] = [],
-          removed: string[] = [];
+          removed: string[] = [],
+          requests: TurnSummaryRequest[] = [];
+        const dirty = new Set<string>();
         const before = change.expireBefore ?? 0;
         let edits = this.db.query("DELETE FROM inputs WHERE at < ?").run(before).changes;
         for (const id of change.remove ?? [])
@@ -157,7 +205,15 @@ export class FeedTable {
           const at = t.state === "working" ? t.updatedAt : t.finishedAt;
           if (at < before) continue;
           const words = t.title + "\n" + (t.reply ?? "");
+          const prior = this.db
+            .query<
+              { reply: string | null; state: string },
+              [string]
+            >("SELECT json_extract(payload,'$.replyId') AS reply,json_extract(payload,'$.state') AS state FROM inputs WHERE source='task' AND id=?")
+            .get(t.id);
           const wrote = put.run("task", t.id, at, json(t), json(namedRepos(words)), json(pullRefs(words))).changes;
+          if (wrote && t.state !== "working" && (!prior || prior.state === "working" || prior.reply !== t.replyId))
+            dirty.add(t.id);
           edits += wrote;
         }
         for (const p of change.posts ?? [])
@@ -181,7 +237,7 @@ export class FeedTable {
 
         if (edits) {
           const placed = placePosts(this.inputs<WebFeedTask>("task"), this.inputs<RuntimePost>("post"));
-          const { threads, current, postContext, aliases } = projectThreads(
+          const { threads, current, postContext } = projectThreads(
             origin,
             [...placed.tasks, ...placed.alone.map(taskFromPost)],
             ctx,
@@ -203,15 +259,6 @@ export class FeedTable {
           const previousPage = new Set(pageKeys());
           const hides = new Map(ctx.hides.map((h) => [h.id, h.at]));
           const moves = new Map((ctx.moves ?? []).map((m) => [m.id, m]));
-          // A thread that joined a promoted session id keeps the newest hide and move made under its earlier ids.
-          for (const [id, earlier] of aliases) {
-            for (const alias of earlier) {
-              const hid = hides.get(alias);
-              if (hid !== undefined && hid > (hides.get(id) ?? -Infinity)) hides.set(id, hid);
-              const move = moves.get(alias);
-              if (move && move.at > (moves.get(id)?.at ?? -Infinity)) moves.set(id, { ...move, id });
-            }
-          }
           const upsert = (row: Slot, key: string) => {
             if (this.putSlot(row, key, next)) changed.push(row.id);
           };
@@ -227,14 +274,15 @@ export class FeedTable {
             if (!finished) continue;
             // A hidden thread leaves like any removed slot, so every reader drops it on its next delta;
             // it is written again once it has something newer than the hide, or the hide is undone.
-            if (hides.has(id) && hiddenBy(hides, id, finishedSlot(thread, postContext, current).at)) {
+            if (hides.has(id) && hiddenBy(hides, id, finishedSlot(thread, postContext, current, this.summaries).row.at)) {
               if (held) prior.set(id, held);
               continue;
             }
             const move = moves.get(id) ?? null;
             const signature = threadSignature(thread, postContext, current, move);
             if (held?.input_key === signature) continue;
-            const row = finishedSlot(thread, postContext, current, move);
+            const { row, request, workId } = finishedSlot(thread, postContext, current, this.summaries, move);
+            if (request && dirty.has(workId)) requests.push(request);
             if (held?.candidate !== row.candidate || held?.day !== row.day) {
               rerank.add(row.day);
               if (held?.candidate) rerank.add(held.day);
@@ -246,7 +294,7 @@ export class FeedTable {
             this.db
               .query(
                 `UPDATE feed_slots SET state='removed', updated_seq=?, removed_at=?, title='', caption=NULL, refs='[]',
-            head=NULL, detail=NULL, candidate=NULL, files=NULL WHERE id=?`,
+            head=NULL, detail=NULL, candidate=NULL, summary_request=NULL, summary=NULL, files=NULL WHERE id=?`,
               )
               .run(next, change.mark ?? Date.now(), id);
             removed.push(id);
@@ -283,9 +331,45 @@ export class FeedTable {
           this.db.query("DELETE FROM feed_slots WHERE removed_at < ?").run(before);
         }
         if (change.mark != null) this.set("mark", change.mark);
-        return { changed: changed.sort(), removed: removed.sort() };
+        return { changed: changed.sort(), removed: removed.sort(), requests };
       })
       .immediate();
+  }
+
+  request(id: string): TurnSummaryRequest | null {
+    const row = this.db
+      .query<{ summary_request: string | null }, [string]>("SELECT summary_request FROM feed_slots WHERE id=?")
+      .get(id);
+    return row?.summary_request ? JSON.parse(row.summary_request) : null;
+  }
+  summary(id: string): FeedTurnSummary | null {
+    const row = this.db
+      .query<{ summary: string | null }, [string]>("SELECT summary FROM feed_slots WHERE id=?")
+      .get(id);
+    return row?.summary ? JSON.parse(row.summary) : null;
+  }
+  /** Ignore a late completion for superseded evidence. Never start a model here. */
+  summaryReady(id: string, key: string) {
+    const request = this.request(id);
+    if (!request || turnSummaryKey(request.turnId, request.evidence) !== key) return;
+    const summary = this.summaries?.peek([request])[id];
+    if (!summary) return;
+    this.db.transaction(() => {
+      const next = this.version + 1;
+      const title = feedLine(summary.gist);
+      if (!title) return;
+      const hide = Number(summary.need?.kind === "none");
+      const placement = "CASE WHEN ? AND placement='back_to_you' THEN 'stream' ELSE placement END";
+      if (
+        this.db
+          .query(
+            `UPDATE feed_slots SET title=?,summary=?, placement=${placement}, updated_seq=?
+        WHERE id=? AND (title<>? OR summary IS NOT ? OR placement<>${placement})`,
+          )
+          .run(title, json(summary), hide, next, id, title, json(summary), hide).changes
+      )
+        this.set("seq", next);
+    })();
   }
 
   head(id: string) {
@@ -301,26 +385,9 @@ export class FeedTable {
       .get(id);
     return row ? { ...JSON.parse(row.detail), version: row.updated_seq } : null;
   }
-  /** Only references on a current Feed row may be used for a secondary read. */
-  hasConversation(id: string): boolean {
-    return Boolean(this.db.query(`SELECT 1 FROM feed_slots WHERE ${POST}
-      AND json_extract(head,'$.conversationId')=? LIMIT 1`).get(id));
-  }
-  /** The final reply recorded on this work's invocation, never the last message by its author. */
-  sourceTurn(workId: string, conversationId: string) {
-    return this.db.query<{ replyId: string | null; ownerId: string | null }, [string,string]>(`
-      SELECT json_extract(payload,'$.replyId') AS replyId, json_extract(payload,'$.ownerId') AS ownerId
-      FROM inputs WHERE source='task' AND id=? AND json_extract(payload,'$.conversationId')=?`).get(workId,conversationId);
-  }
-  sessionOwners(id: string) {
-    return this.db.query<{ harness: string | null; agentId: string | null }, [string]>(`SELECT DISTINCT
-      json_extract(head,'$.agent.harness') AS harness, json_extract(head,'$.owner.agentId') AS agentId
-      FROM feed_slots WHERE ${POST} AND json_extract(head,'$.owner.sessionId')=?`).all(id);
-  }
-  hasShow(id: string): boolean {
-    return Boolean(this.db.query(`SELECT 1 FROM feed_slots,json_each(detail,'$.leads') AS lead
-      WHERE ${POST} AND json_extract(lead.value,'$.ref.source')='show'
-      AND json_extract(lead.value,'$.ref.asset')=? LIMIT 1`).get(showAsset(id)));
+  pull(key: string): WebFeedPull | null {
+    const row = this.db.query<{ payload: string }, [string]>("SELECT payload FROM pull_facts WHERE key=?").get(key);
+    return row ? JSON.parse(row.payload) : null;
   }
   file(id: string) {
     return (
@@ -347,6 +414,14 @@ export class FeedTable {
         []
       >(`SELECT day,json_extract(head,'$.project') AS project,json_extract(head,'$.agent.harness') AS harness FROM feed_slots WHERE ${POST}`)
       .all();
+  }
+  handbackHeads() {
+    return this.db
+      .query<HeadRow, []>(
+        `SELECT ${HEAD} FROM feed_slots WHERE ${POST} AND json_extract(head,'$.forYou') IS NOT NULL ORDER BY at DESC,id`,
+      )
+      .all()
+      .map((r) => headOf(r));
   }
   live(since: number | null): FeedLive | null {
     const version = this.version;

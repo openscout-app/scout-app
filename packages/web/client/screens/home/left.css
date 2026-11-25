@@ -1,0 +1,270 @@
+/* ── BaseLeftRail: consistent rail rendered when a page doesn't take over ── */
+
+.base-rail {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.base-rail-prepend {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+.base-rail-section {
+  padding-top: var(--space-md);
+}
+
+.base-rail-section:first-of-type {
+  padding-top: var(--space-xs);
+}
+
+.base-rail-section-label {
+  padding: var(--space-2xs) var(--space-lg) var(--space-2xs);
+}
+
+.base-rail-section-trailing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.base-rail-see-all {
+  border: 0;
+  padding: var(--space-3xs) var(--space-2xs);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--voice-track, var(--tracking-lg));
+  text-transform: var(--voice-case, uppercase);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s, color 0.1s;
+}
+
+.base-rail-see-all:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+}
+
+.base-rail-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg) var(--space-md);
+}
+
+.base-rail-loading span {
+  display: block;
+  width: 82%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  animation: base-rail-loading-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.base-rail-loading span:nth-child(2n) {
+  width: 61%;
+}
+
+@keyframes base-rail-loading-pulse {
+  from { opacity: 0.45; }
+  to { opacity: 0.9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .base-rail-loading span { animation: none; }
+}
+
+/* Recent agents: one row per session. In the rail, harness and name lead and
+   what it was asked and where it ran stack beneath; in a panel wide enough,
+   the row takes What's moving's columns (when, harness, who, where, line). */
+
+.base-rail-section--sessions {
+  container: recent-sessions / inline-size;
+}
+
+.base-rail-session {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "mark name when"
+    ".    topic topic"
+    ".    where model";
+  column-gap: var(--space-sm);
+  row-gap: var(--space-3xs);
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: var(--space-xs) var(--space-lg);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--motion-duration-hover) ease;
+}
+
+.base-rail-session--no-topic {
+  grid-template-areas:
+    "mark name when"
+    ".    where model";
+}
+
+.base-rail-session:hover {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.base-rail-session:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: -2px;
+}
+
+.base-rail-session-when {
+  grid-area: when;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.base-rail-session-mark {
+  grid-area: mark;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in srgb, var(--ink) 70%, var(--dim));
+}
+
+.base-rail-session-name,
+.base-rail-session-topic,
+.base-rail-session-project {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.base-rail-session-name {
+  grid-area: name;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+
+/* the ask in its own words, plain sans as What's moving draws its line */
+.base-rail-session-topic {
+  grid-area: topic;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--ink) 80%, transparent);
+}
+
+.base-rail-session-topic.is-live {
+  color: var(--ink);
+}
+
+.base-rail-session-where {
+  grid-area: where;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.base-rail-session-project,
+.base-rail-session-model {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--dim);
+}
+
+/* the project keeps its name; a long branch gives way first */
+.base-rail-session-project {
+  flex: 0 0 auto;
+  max-width: 60%;
+}
+
+.base-rail-session-branch {
+  gap: 3px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-2xs);
+  padding: 1px 5px;
+}
+
+.base-rail-session-branch > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.base-rail-session-model {
+  grid-area: model;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+@container recent-sessions (min-width: 640px) {
+  .base-rail-session,
+  .base-rail-session--no-topic {
+    grid-template-columns: 44px 16px minmax(120px, 220px) minmax(120px, 280px) minmax(0, 1fr) auto;
+    grid-template-areas: "when mark name where topic model";
+    column-gap: var(--space-lg);
+    padding-block: var(--space-sm);
+  }
+}
+
+/* Jump-offs row */
+
+.base-rail-section--jumps {
+  border-bottom: none;
+  padding-bottom: var(--space-lg);
+}
+
+.base-rail-jumps {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-md) 0;
+}
+
+.base-rail-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: -0.003em;
+  text-align: left;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.base-rail-jump:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.base-rail-jump-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.base-rail-jump:hover .base-rail-jump-icon {
+  color: var(--ink);
+}

@@ -1,0 +1,18 @@
+.scout-setup-milestone[data-verified] {
+  animation: scout-milestone-settle 500ms ease-out;
+}
+.scout-setup-milestone[data-verified] .scout-setup-milestone-symbol {
+  animation: scout-milestone-symbol 160ms ease-out;
+}
+@keyframes scout-milestone-settle {
+  from { background-color: color-mix(in srgb, var(--hud-accent) 12%, transparent); }
+  to { background-color: transparent; }
+}
+@keyframes scout-milestone-symbol {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scout-setup-milestone[data-verified],
+  .scout-setup-milestone[data-verified] .scout-setup-milestone-symbol { animation: none; }
+}

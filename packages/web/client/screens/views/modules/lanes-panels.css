@@ -1,0 +1,79 @@
+/* Ops › Lanes as panels: the deck, the lane read whole beside it, and the
+   roster. The screen's own CSS draws them (agent-lanes.css, agent-lane-card.css,
+   ctx-panel.css) and the lane cards keep their look and motion; this only fits
+   them to a panel body, by the panel's width (@container), never the window's. */
+
+.vw-lanes,
+.vw-lane,
+.vw-lanes-roster {
+  height: 100%;
+  min-height: 0;
+}
+
+.vw-lanes,
+.vw-lane {
+  display: flex;
+  flex-direction: column;
+}
+
+/* the deck's sheets and the roll call place themselves against this */
+.vw-lanes {
+  position: relative;
+}
+
+.vw-lanes > .s-agent-lanes {
+  flex: 1;
+}
+
+/* With no Lane panel beside it, the lane sheet opens over the deck as on the
+   page, within the panel: never wider than it. */
+.vw-lanes .s-slide--right {
+  max-width: 100%;
+}
+
+/* The fleet roll call sits in the deck's corner, square like the panel it is in. */
+.vw-lanes .fleet-roll-call {
+  right: var(--space-md);
+  bottom: var(--space-md);
+  width: min(360px, calc(100% - 2 * var(--space-md)));
+  border-radius: 0;
+}
+
+/* The lane sheet in flow: the panel's own scroll port is the sheet's body,
+   so the anchors stay pinned over it as on the page. */
+.s-lane-sheet--panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface, var(--bg));
+  color: var(--ink);
+}
+
+.s-lane-sheet--panel .s-lane-sheet-header {
+  flex-wrap: wrap;
+  padding-inline: var(--space-lg);
+}
+
+.s-lane-sheet--panel .s-lane-sheet-header-cta {
+  flex-wrap: wrap;
+}
+
+.s-lane-sheet--panel .s-lane-sheet-body {
+  padding-inline: var(--space-lg);
+}
+
+/* Narrow: the actions take their own row under the name. */
+@container (max-width: 460px) {
+  .s-lane-sheet--panel .s-slide-spacer {
+    display: none;
+  }
+
+  .s-lane-sheet--panel .s-lane-sheet-header-cta {
+    width: 100%;
+  }
+
+  .s-lane-sheet--panel .s-lane-sheet-anchors {
+    padding-inline: var(--space-md);
+  }
+}

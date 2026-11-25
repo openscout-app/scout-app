@@ -119,35 +119,6 @@
 
 /* Steer: a plain box under the post's words. */
 
-/* Evidence and history disclosure: keeps Outcome, Artifacts, and Diff first. */
-.pd-evidence {
-  border-top: 1px solid var(--scout-line);
-  padding-top: 12px;
-}
-.pd-evidenceSummary {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
-  color: var(--fd-soft);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  list-style: none;
-}
-.pd-evidenceSummary::-webkit-details-marker { display: none; }
-.pd-evidenceSummary::before {
-  content: "▸";
-  display: inline-block;
-  margin-right: 6px;
-  color: var(--fd-faint);
-  transition: transform 120ms ease;
-}
-.pd-evidence[open] > .pd-evidenceSummary::before { transform: rotate(90deg); }
-.pd-evidenceSummary:hover { color: var(--fd-ink); }
-.pd-evidenceMeta { color: var(--fd-faint); font-family: var(--hud-font-mono); font-size: var(--text-xs); font-weight: 400; }
-.pd-evidenceBody { display: flex; flex-direction: column; gap: 16px; padding-top: 14px; }
-
 @container pd (max-width: 560px) {
   .pd-step { grid-template-columns: minmax(0, 1fr); }
   .pd-stepWhen { grid-row: auto; }

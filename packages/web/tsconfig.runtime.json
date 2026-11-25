@@ -1,0 +1,21 @@
+// Shared runtime-safe options. Never put declaration-only aliases here.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "customConditions": ["bun"],
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "types": ["bun-types"],
+    "paths": { "@hudsonkit": ["./node_modules/hudsonkit"], "@hudsonkit/*": ["./node_modules/hudsonkit/dist/*"] }
+  },
+  "include": ["client/**/*.ts", "client/**/*.tsx", "server/**/*.ts", "test-support/**/*.ts", "vite.config.ts"],
+  "exclude": ["server/**/*.test.ts"]
+}

@@ -1,0 +1,783 @@
+/* Scout Settings — take A · Quiet (design/studio/views/scout-settings-revamp.tsx)
+ *
+ * One page for the web app, the Scout app's embed, and the menu's Settings
+ * window. Each page states its purpose in one line, then groups hairline cards
+ * of rows: a title, one sentence, and the control on the right. Type is
+ * Scout's: the system sans (SF Pro) for title and interface, set light, and
+ * SF Mono for labels and states.
+ *
+ * Frame: the sidebar is a card laid on the window frame and the content is
+ * the page itself, with no stage edge of its own. Both start at the same top
+ * (below the title-bar strip when the host reserves one), and the sidebar's
+ * "Settings" and the page title sit on one baseline (--sq-head-base).
+ *
+ * Colors come from the active Scout theme, so palette and accent choices
+ * apply here as they do everywhere else. */
+
+.sq-win {
+  --sq-side: color-mix(in srgb, var(--ink) 4%, var(--bg));
+  --sq-paper: var(--bg);
+  --sq-card: var(--surface);
+  --sq-ink: var(--ink);
+  --sq-soft: var(--muted);
+  --sq-label: var(--dim);
+  --sq-rule: var(--scout-line);
+  --sq-rule-strong: var(--scout-line-strong);
+  --sq-wash: color-mix(in srgb, var(--ink) 6%, transparent);
+  /* Sharp draws live state in its one accent; other looks keep green. */
+  --sq-live: var(--state-live, var(--green));
+  --sq-accent: var(--hud-accent);
+  --sq-danger: var(--red);
+  --sq-display: var(--font-accent-title, var(--font-sans));
+  --sq-sans: var(--font-sans);
+  --sq-mono: var(--font-mono);
+  --sq-top: 0px;
+  /* Content top to the shared heading baseline. */
+  --sq-head-base: var(--scout-page-head-base, 44px);
+
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  background: var(--sq-paper);
+  color: var(--sq-ink);
+  font-family: var(--sq-sans);
+  font-size: 13.5px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+/* A page backdrop shows around the cards (scout/sidebar/frame.css, the page). */
+html[data-scout-page-backdrop]:not([data-scout-page-backdrop="solid"]) :is(.sq-win, .sq-main) { background: transparent; }
+.sq-win[data-inset] { --sq-top: 28px; }
+.sq-win * { box-sizing: border-box; }
+.sq-win :focus-visible { outline: 2px solid var(--sq-ink); outline-offset: 2px; }
+
+/* ── sidebar: a card laid over the stage ─────────────────────────────────
+ * Studio: design/studio/views/scout-settings-nav.tsx, take C. The nav is a
+ * floating card inset a hairline (3px) from the app sidebar and the window
+ * edge, full height: top light, 0.5px edge, grouped rows, the lit row on a soft plate with
+ * its glyph in the accent. No brand foot — the version lives on About. */
+
+.sq-side {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 232px;
+  flex: none;
+  min-height: 0;
+  /* Full height in every window. Where the host reserves a title-bar strip
+     (data-inset), the card holds it as padding — the window controls sit in
+     the card's top, as in a Finder sidebar — rather than starting below it. */
+  margin: 3px 0 3px 3px;
+  padding-top: var(--sq-top);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ink) 4%, transparent), transparent 120px),
+    var(--sq-side);
+  box-shadow:
+    inset 0 0 0 0.5px var(--sq-rule-strong),
+    0 12px 28px -14px color-mix(in srgb, black 55%, transparent);
+  overflow: hidden;
+}
+/* In the app's page card the card is the only frame (app.css, "The page card"),
+   so the nav is a column of the page, flush with the card and parted from the
+   page by one rule, as in the menu helper (menu-settings.css). The floating
+   card above stays for hosts that have no page card of their own. */
+html[data-scout-sidebar-chrome] [data-pane="center"] .sq-side {
+  margin: 0;
+  border-radius: 0;
+  border-right: 1px solid var(--sq-rule);
+  background: var(--sq-side);
+  box-shadow: none;
+}
+html[data-scout-sidebar-chrome] [data-pane="center"] .sq-side-title {
+  margin-top: calc(var(--sq-head-base) - 1cap);
+}
+
+.sq-side-title {
+  /* Trimmed to cap height, so its bottom is its baseline; the card sits 3px
+     down the frame, hence the 3px less. */
+  margin: calc(var(--sq-head-base) - 3px - 1cap) 16px 10px;
+  text-box: trim-both cap alphabetic;
+  font: 600 15px/1.2 var(--sq-display);
+  letter-spacing: -0.01em;
+  color: var(--sq-ink);
+}
+.sq-nav { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; scrollbar-width: none; padding-bottom: 8px; }
+.sq-nav-group { padding-top: 4px; }
+.sq-nav-group[data-end] { margin-top: 12px; }
+.sq-nav-group-label { padding: 10px 16px 4px; font: 500 11px var(--sq-sans); color: var(--sq-label); }
+.sq-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+  margin: 0 6px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  color: var(--sq-ink);
+  font: 450 13px var(--sq-sans);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sq-nav-row:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.sq-nav-row[aria-current="page"] {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  box-shadow: inset 0 0 0 0.5px var(--sq-rule-strong);
+  font-weight: 500;
+}
+.sq-nav-icon { width: 15px; height: 15px; flex: none; color: var(--sq-soft); }
+.sq-nav-row[aria-current="page"] .sq-nav-icon { color: var(--sq-accent); }
+.sq-nav-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sq-nav-key { font: 10px var(--sq-mono); color: var(--sq-label); opacity: 0; }
+.sq-nav-row:hover .sq-nav-key { opacity: 0.8; }
+
+.sq-foot { padding: 4px 0 10px; }
+.sq-update {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% - 20px);
+  margin: 0 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--sq-accent) 14%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--sq-accent) 45%, transparent);
+  color: var(--sq-ink);
+  font: 500 12.5px var(--sq-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.sq-update:hover { background: color-mix(in srgb, var(--sq-accent) 20%, transparent); }
+.sq-update:disabled { opacity: 0.6; cursor: default; }
+.sq-update svg { width: 16px; height: 16px; flex: none; color: var(--sq-accent); }
+.sq-update span { flex: 1; min-width: 0; }
+.sq-update small { display: block; font: 10.5px var(--sq-mono); color: var(--sq-label); }
+.sq-mark { width: 16px; height: 16px; color: var(--sq-ink); flex: none; }
+
+/* ── the stage card ──────────────────────────────────────────────────────── */
+
+.sq-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding-top: var(--sq-top);
+  overflow-y: auto;
+  background: var(--sq-paper);
+  scrollbar-gutter: stable;
+}
+.sq-page { max-width: 680px; padding: 0 44px 72px; animation: sq-rise 280ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes sq-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sq-page { animation: none; } }
+.sq-head { display: flex; align-items: baseline; gap: 16px; }
+/* Trimmed like the sidebar title, so both baselines land on --sq-head-base. */
+.sq-title { flex: 1; margin: calc(var(--sq-head-base) - 1cap) 0 0; text-box: trim-both cap alphabetic; font: 300 26px/1.1 var(--sq-display); letter-spacing: -0.01em; color: var(--sq-ink); }
+.sq-promise { margin: 12px 0 0; font-size: 14px; line-height: 1.45; color: var(--sq-soft); }
+.sq-sections { display: flex; flex-direction: column; gap: 28px; margin-top: 32px; }
+.sq-save { font: 500 10.5px/1 var(--sq-mono); letter-spacing: var(--voice-track, 0.12em); text-transform: var(--voice-case, uppercase); color: var(--sq-label); }
+.sq-save[data-state="error"] { color: var(--sq-danger); }
+
+/* ── groups and rows ─────────────────────────────────────────────────────── */
+
+.sq-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 0 2px;
+  font: 500 10.5px/1 var(--sq-mono);
+  letter-spacing: var(--voice-track, 0.16em);
+  text-transform: var(--voice-case, uppercase);
+  color: var(--sq-label);
+}
+.sq-mac-tag {
+  margin-left: auto;
+  padding: 3px 6px;
+  border: 1px solid var(--sq-rule);
+  border-radius: var(--radius-sm);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+}
+.sq-card { overflow: hidden; border: 1px solid var(--sq-rule); border-radius: var(--radius-lg); background: var(--sq-card); }
+.sq-note { margin: 8px 0 0; padding: 0 2px; font-size: 12px; line-height: 1.55; color: var(--sq-soft); }
+.sq-note[data-tone="error"] { color: var(--sq-danger); }
+.sq-empty { padding: 16px; font-size: 12.5px; color: var(--sq-soft); }
+
+.sq-row { display: flex; align-items: center; gap: 24px; min-height: 54px; padding: 12px 16px; }
+.sq-card > * + * { border-top: 1px solid var(--sq-rule); }
+.sq-row[data-dim] { opacity: 0.5; }
+.sq-row[data-stack] { flex-direction: column; align-items: stretch; gap: 10px; }
+.sq-row-text { flex: 1; min-width: 0; }
+.sq-row-title { font-size: 13.5px; font-weight: 500; color: var(--sq-ink); overflow-wrap: anywhere; }
+.sq-row-detail { margin-top: 2px; font-size: 12px; line-height: 1.45; color: var(--sq-soft); overflow-wrap: anywhere; }
+.sq-row-control { display: flex; align-items: center; gap: 10px; flex: none; }
+.sq-row[data-stack] .sq-row-control { flex: auto; align-self: stretch; width: 100%; min-width: 0; }
+
+.sq-fact { display: flex; justify-content: space-between; gap: 24px; padding: 11px 16px; font-size: 13px; }
+.sq-fact > span:first-child { flex: none; color: var(--sq-soft); }
+.sq-fact > span:last-child { min-width: 0; text-align: right; overflow-wrap: anywhere; }
+.sq-mono { font-family: var(--sq-mono); font-size: 11.5px; }
+.sq-value { font: var(--font-weight-body) 12px var(--sq-mono); color: var(--sq-soft); }
+
+/* ── controls ────────────────────────────────────────────────────────────── */
+
+.sq-toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-pill);
+  background: var(--sq-wash);
+  cursor: pointer;
+  transition: background-color 200ms, border-color 200ms;
+}
+.sq-toggle > span {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: max(var(--radius-pill) - 3px, 0px);
+  background: var(--sq-card);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sq-toggle[aria-checked="true"] { background: var(--sq-ink); border-color: var(--sq-ink); }
+.sq-toggle[aria-checked="true"] > span { transform: translateX(16px); }
+.sq-toggle:disabled { opacity: 0.45; cursor: default; }
+
+.sq-select-wrap { position: relative; display: inline-flex; color: var(--sq-label); }
+.sq-select-wrap svg { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.sq-select {
+  width: 184px;
+  height: 28px;
+  padding: 0 26px 0 10px;
+  appearance: none;
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--sq-paper);
+  color: var(--sq-ink);
+  font: var(--font-weight-body) 12.5px var(--sq-sans);
+  text-overflow: ellipsis;
+}
+.sq-select:disabled { opacity: 0.5; }
+
+.sq-input,
+.sq-textarea {
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--sq-paper);
+  color: var(--sq-ink);
+  font: var(--font-weight-body) 13px var(--sq-sans);
+}
+.sq-input { width: 184px; height: 28px; padding: 0 10px; }
+.sq-input[data-narrow] { width: 140px; }
+.sq-input.sq-mono,
+.sq-textarea.sq-mono { font-family: var(--sq-mono); font-size: 12px; }
+.sq-textarea { width: 100%; padding: 8px 10px; line-height: 1.5; resize: vertical; }
+.sq-input:focus,
+.sq-textarea:focus { outline: none; border-color: var(--sq-ink); }
+
+.sq-range { display: inline-flex; align-items: center; gap: 10px; }
+.sq-range input { width: 144px; accent-color: var(--sq-ink); }
+.sq-range output { min-width: 40px; font: var(--font-weight-body) 11.5px var(--sq-mono); color: var(--sq-soft); text-align: right; }
+
+.sq-button {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--sq-paper);
+  color: var(--sq-ink);
+  font: 500 12.5px var(--sq-sans);
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.sq-button:hover { border-color: var(--sq-label); }
+.sq-button:disabled { opacity: 0.5; cursor: default; }
+.sq-button[data-quiet] { border-color: transparent; background: transparent; color: var(--sq-soft); padding: 0 6px; }
+.sq-button[data-quiet]:hover { color: var(--sq-ink); }
+.sq-button[data-danger] { color: var(--sq-danger); }
+.sq-button[data-primary] { border-color: var(--sq-ink); background: var(--sq-ink); color: var(--sq-paper); }
+.sq-button[data-primary]:hover { opacity: 0.9; }
+
+.sq-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 10.5px/1 var(--sq-mono);
+  letter-spacing: var(--voice-track, 0.12em);
+  text-transform: var(--voice-case, uppercase);
+  color: var(--sq-label);
+  white-space: nowrap;
+}
+.sq-status > span { width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--sq-label); }
+.sq-status[data-ok] { color: var(--sq-live); }
+.sq-status[data-ok] > span { border-color: var(--sq-live); background: var(--sq-live); }
+.sq-status[data-bad] { color: var(--sq-danger); }
+.sq-status[data-bad] > span { border-color: var(--sq-danger); }
+
+.sq-hues { display: flex; gap: 10px; }
+.sq-hue {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+.sq-hue[aria-checked="true"] { box-shadow: 0 0 0 2px var(--sq-card), 0 0 0 2.5px var(--sq-ink); }
+
+.sq-cast { width: 100%; min-width: 0; margin: 0 -4px; }
+.sq-cast .s-settings-cast-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 152px), 1fr));
+}
+
+/* ── visual choices ──────────────────────────────────────────────────────
+ * Appearance choices show themselves. Each tile draws its specimen in its own
+ * theme frame; the chosen one gets a firmer outline and a check, never a fill,
+ * so the specimen keeps its own colors. */
+
+.sq-tiles {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--sq-tiles, 3), minmax(0, 1fr));
+  gap: 8px;
+}
+.sq-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  padding: 6.5px 6.5px 8.5px;
+  border: 0.5px solid var(--sq-rule-strong);
+  border-radius: var(--radius-lg);
+  background: var(--sq-paper);
+  color: var(--sq-soft);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms, box-shadow 160ms, color 160ms;
+}
+.sq-tile:hover { border-color: color-mix(in srgb, var(--sq-ink) 40%, transparent); color: var(--sq-ink); }
+.sq-tile[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--sq-ink) 82%, transparent);
+  color: var(--sq-ink);
+}
+.sq-tile-art {
+  display: grid;
+  place-items: center;
+  min-height: 64px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--sq-wash);
+  overflow: hidden;
+}
+.sq-tile-art > .s-settings-palette-sample { width: 100%; height: 64px; border: 0; border-radius: var(--radius-sm); }
+.sq-tile-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.sq-tile-name svg { flex: none; }
+.sq-tile-spec { padding: 0 2px; font: 10.5px/1.4 var(--sq-mono); color: var(--sq-label); }
+
+/* Accent: a row of swatches, not tiles. */
+.sq-tiles[data-variant="swatch"] { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
+.sq-tiles[data-variant="swatch"] .sq-tile {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 5.5px 10.5px 5.5px 6.5px;
+  border-radius: var(--radius-pill);
+}
+.sq-tiles[data-variant="swatch"] .sq-tile-art { min-height: 0; margin: 0; background: none; }
+.sq-tiles[data-variant="swatch"] .sq-tile-name { gap: 6px; padding: 0; }
+
+.sq-faces { display: flex; align-items: center; gap: 6px; }
+.sq-shell { display: contents; }
+.sq-shell .s-settings-shell-sample { width: 100%; max-width: 132px; }
+.sq-shell[data-shell="slack"] .s-settings-shell-sample { grid-template-columns: 15px 39px minmax(0, 1fr); }
+.sq-shell[data-shell="slack"] .s-settings-shell-sample [data-part="top"],
+.sq-shell[data-shell="slack"] .s-settings-shell-sample [data-part="rail"] { background: oklch(0.31 0.085 325); }
+.sq-shell[data-shell="slack"] .s-settings-shell-sample [data-part="list"] { background: oklch(0.37 0.09 325); }
+
+/* The live specimen opens the Appearance page: the app in miniature, drawn
+ * with every choice below. */
+.sq-specimen { margin: 0; }
+.sq-specimen .s-settings-live-preview { box-shadow: 0 12px 32px -18px rgb(0 0 0 / 0.45); }
+.sq-specimen .s-settings-live-preview-shell { min-height: 212px; grid-template-columns: 28px 132px minmax(0, 1fr); }
+.sq-specimen-caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+  padding: 0 2px;
+  font: 500 10.5px/1.4 var(--sq-mono);
+  letter-spacing: var(--voice-track, 0.08em);
+  text-transform: var(--voice-case, uppercase);
+  color: var(--sq-label);
+}
+
+.sq-portrait {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--sq-rule);
+  border-radius: var(--radius-xl);
+  background: var(--sq-wash);
+}
+
+/* ── narrow: the sidebar stays, and steps down ─────────────────────────────
+ * Sized by the window, not the viewport: the Scout app's stage is ~680px wide
+ * inside a full-width screen. Page list always visible; it narrows, then
+ * becomes an icon rail. */
+
+.sq-win { container: sq-win / inline-size; }
+
+@container sq-win (max-width: 860px) {
+  .sq-side { width: 196px; }
+  .sq-nav-key { display: none; }
+  .sq-page { padding: 0 28px 64px; }
+}
+
+@container sq-win (max-width: 600px) {
+  .sq-side { width: 52px; }
+  .sq-side-title, .sq-nav-group-label, .sq-nav-label { display: none; }
+  .sq-side { padding-top: calc(var(--sq-top) + 8px); }
+  .sq-nav-row { justify-content: center; padding: 0; margin: 1px 6px; height: 32px; }
+  .sq-update { justify-content: center; width: auto; margin: 0 6px; padding: 8px 0; }
+  .sq-update span { display: none; }
+  .sq-page { padding: 0 16px 56px; }
+  .sq-row { flex-wrap: wrap; gap: 12px; }
+  .sq-row-control { flex-wrap: wrap; }
+  .sq-tiles[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sq-specimen .s-settings-live-preview-shell { grid-template-columns: 28px minmax(0, 1fr); }
+  .sq-specimen .s-settings-live-preview-detail { display: none; }
+}
+
+/* The embed root (/embed/settings) gives the window a definite height. */
+.s-discovered-embed.sq-embed { height: 100vh; min-height: 0; }
+
+/* Full-app setup: one next action, with diagnostics available on demand. */
+.sq-win { min-width: 0; }
+.sq-compact-nav { display: none; }
+.sq-setup { min-width: 0; }
+.sq-setup-host { display: flex; align-items: center; gap: 8px; color: var(--sq-soft); font-size: 12px; overflow-wrap: anywhere; }
+.sq-setup-host svg { flex: none; }
+.sq-setup-host strong { color: var(--sq-ink); font-weight: 500; }
+.sq-setup-steps { display: flex; list-style: none; padding: 0; margin: 22px 0 0; border-bottom: 1px solid var(--sq-rule); }
+.sq-setup-steps li { display: flex; flex: 1; align-items: center; gap: 8px; padding: 0 0 14px; font-size: 12px; color: var(--sq-soft); border-bottom: 2px solid transparent; }
+.sq-setup-steps li[data-state="current"] { color: var(--sq-ink); border-color: var(--sq-accent); }
+.sq-setup-step-number { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--sq-rule-strong); border-radius: 50%; font: 11px var(--sq-mono); }
+.sq-setup-steps [data-state="current"] .sq-setup-step-number { border-color: var(--sq-accent); color: var(--sq-accent); }
+.sq-setup-steps [data-state="done"] .sq-setup-step-number { border-color: var(--sq-live); color: var(--sq-live); }
+.sq-setup-current { padding: 26px 0 24px; border-bottom: 1px solid var(--sq-rule); }
+.sq-setup-current h2 { margin: 0; font: 600 20px/1.3 var(--sq-display); letter-spacing: -0.015em; text-wrap: balance; }
+.sq-setup-current p { margin: 10px 0 18px; color: var(--sq-soft); line-height: 1.55; }
+.sq-setup-link { display: inline-flex; align-items: center; gap: 3px; color: var(--sq-ink); text-decoration: underline; text-underline-offset: 3px; min-height: 32px; }
+.sq-setup-link:hover { color: var(--sq-accent); }
+.sq-setup-form { margin-top: 18px; }
+.sq-setup-form label { display: block; margin-bottom: 7px; font-weight: 500; }
+.sq-setup-form .sq-input { width: 100%; height: 40px; font-size: 14px; }
+.sq-setup-current .sq-setup-muted, .sq-setup-muted { color: var(--sq-soft); font-size: 12px; }
+.sq-setup-current #sq-key-help { margin: 7px 0 18px; }
+.sq-setup-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.sq-setup .sq-button { min-height: 36px; gap: 6px; white-space: normal; }
+.sq-setup-current .sq-setup-error { margin: 16px 0 0; color: var(--sq-danger); }
+.sq-setup-current .sq-setup-access { padding-left: 12px; border-left: 2px solid var(--sq-rule-strong); }
+/* Solo versus Solo Pro, as capabilities. Two plain columns: what this host
+ * serves now, and what the full app adds. Shown until the app is running. */
+.sq-setup-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 24px 0 0; border: 1px solid var(--sq-rule); border-radius: 10px; background: var(--sq-rule); overflow: hidden; }
+.sq-setup-compare > div { min-width: 0; padding: 14px 16px 16px; background: var(--sq-card); }
+.sq-setup-compare h3 { margin: 0; font: 500 10.5px/1 var(--sq-mono); letter-spacing: var(--voice-track, 0.16em); text-transform: var(--voice-case, uppercase); color: var(--sq-label); }
+.sq-setup-compare [data-pro] h3 { color: var(--sq-accent); }
+.sq-setup-compare .sq-setup-muted { display: block; margin: 8px 0 0; }
+.sq-setup-compare ul { margin: 10px 0 0; padding: 0; list-style: none; }
+.sq-setup-compare li { padding: 3px 0 3px 14px; position: relative; font-size: 12.5px; color: var(--sq-ink); overflow-wrap: anywhere; }
+.sq-setup-compare li::before { content: ""; position: absolute; left: 0; top: 10px; width: 5px; height: 1px; background: var(--sq-rule-strong); }
+.sq-setup-compare [data-pro] li::before { background: var(--sq-accent); }
+.sq-setup-preserved { margin: 16px 0 24px; color: var(--sq-soft); font-size: 12px; }
+.sq-setup-details { border-top: 1px solid var(--sq-rule); font-size: 12px; }
+.sq-setup-details summary { padding: 16px 0; cursor: pointer; color: var(--sq-soft); }
+.sq-setup-details summary:hover { color: var(--sq-ink); }
+.sq-setup-details dl { margin: 0 0 20px; }
+.sq-setup-details dl > div { padding: 10px 0; border-bottom: 1px solid var(--sq-rule); }
+.sq-setup-details dt { font-weight: 500; }
+.sq-setup-details dd { margin: 4px 0 0; color: var(--sq-soft); overflow-wrap: anywhere; }
+.sq-setup-commands > div { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 8px 0; }
+.sq-setup-commands code { font: 12px var(--sq-mono); overflow-wrap: anywhere; }
+.sq-setup-details .sq-setup-actions { margin-top: 18px; }
+.sq-setup-progress { display: flex; gap: 10px; align-items: flex-start; }
+.sq-setup-progress svg { flex: none; margin-top: 3px; animation: sq-setup-spin 1.2s linear infinite; }
+@keyframes sq-setup-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sq-setup-progress svg { animation: none; } }
+@container sq-win (max-width: 600px) {
+  .sq-side { display: none; }
+  .sq-main { border: 0; border-radius: 0; margin-top: var(--sq-top); }
+  .sq-compact-nav { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--sq-rule); color: var(--sq-soft); font-size: 12px; }
+  .sq-compact-nav select { min-width: 0; flex: 1; min-height: 36px; padding: 0 10px; border: 1px solid var(--sq-rule-strong); border-radius: 6px; background: var(--sq-card); color: var(--sq-ink); font: inherit; }
+  .sq-setup-steps li { gap: 6px; }
+  .sq-setup .sq-button { min-height: 40px; }
+  .sq-setup-compare { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── state columns (System) ──────────────────────────────────────────────
+ * A state is the row's answer, so it is set flush right: every label ends on
+ * the card's right edge. It reserves a fixed slot, so an action (Restart,
+ * Trust) always sits at the same place before it and never pushes it. */
+
+/* Sized to the longest state each page can show: UNREACHABLE / NOT TRUSTED on
+   System. */
+.sq-page[data-page="system"] { --sq-state-w: 96px; }
+.sq-page[data-page="system"] .sq-row-control > .sq-status { order: 1; min-width: var(--sq-state-w); justify-content: flex-end; }
+.sq-page[data-page="system"] .sq-row-control > .sq-button:not([data-quiet]) { min-width: 72px; justify-content: center; }
+.sq-row-line { display: block; margin-bottom: 1px; }
+
+.sq-note .sq-mono { font-size: 11px; }
+.sq-note-action {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sq-ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--sq-rule-strong);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.sq-note-action:hover { text-decoration-color: currentColor; }
+.sq-note-action:disabled { color: var(--sq-soft); cursor: default; text-decoration: none; }
+
+/* ── Appearance: choices beside a live preview ────────────────────────────
+ * Wide windows keep the specimen in view while every choice scrolls past it;
+ * narrower ones stack it on top. Corners follow the chosen shape everywhere
+ * on this page, so Square is square here too. */
+
+.sq-appearance { display: flex; flex-direction: column; gap: 20px; }
+/* Narrow: both columns flatten, and the preview then Look, Color, Shape,
+   Workspace, Window read in their order. */
+.sq-appearance-col { display: contents; }
+.sq-appearance .sq-specimen { order: 0; }
+.sq-specimen-note { margin: 6px 0 0; padding: 0 2px; font-size: 12px; color: var(--sq-soft); }
+
+/* Wide: two columns side by side. Look, Color, Workspace on the left; the
+   preview heads the right, with Shape under it, so neither side runs long. */
+@container sq-win (min-width: 1100px) {
+  .sq-page[data-page="appearance"] { max-width: 1320px; }
+  .sq-appearance { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+  .sq-appearance-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .sq-appearance .sq-specimen { padding-top: 18px; }
+  .sq-specimen .s-settings-live-preview-shell { min-height: 220px; grid-template-columns: 24px 112px minmax(0, 1fr); }
+}
+
+/* Denser rows on this page: shorter specimens, tighter padding. */
+.sq-page[data-page="appearance"] .sq-row { padding: 10px 14px; }
+.sq-page[data-page="appearance"] .sq-row[data-stack] { gap: 8px; }
+.sq-page[data-page="appearance"] .sq-tiles:not([data-variant="swatch"]) .sq-tile-art { min-height: 48px; margin-bottom: 4px; }
+/* Accent swatches wrap inside the row rather than running past it. */
+.sq-row[data-stack] .sq-tiles[data-variant="swatch"] { flex: 1 1 auto; min-width: 0; }
+.sq-page[data-page="appearance"] .sq-tile-art > .s-settings-palette-sample { height: 48px; }
+
+/* Six palettes read as two rows of three, so each name and note fits one line. */
+.sq-tiles[data-count="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* Seven read as a row of four over a row of three. */
+.sq-tiles[data-count="7"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sq-tile-spec { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sq-tile-art { min-height: 72px; }
+.sq-tile-art > .s-settings-palette-sample { height: 72px; }
+
+.sq-card { border-radius: var(--radius-lg); }
+.sq-tile { border-radius: var(--radius-lg); }
+.sq-tile-art,
+.sq-tile-art > .s-settings-palette-sample { border-radius: var(--radius-sm); }
+.sq-tiles[data-variant="swatch"] .sq-tile { border-radius: var(--radius-pill); }
+.sq-specimen .s-settings-live-preview { border-radius: var(--radius-lg); }
+
+/* Type and finish specimens. */
+.sq-voice-sample { display: grid; gap: 6px; justify-items: start; padding: 0 12px; width: 100%; }
+.sq-voice-sample b { font: 600 13px/1.2 var(--hud-font-sans); color: var(--sq-ink); }
+/* Each specimen draws its own voice, whatever the active one: the real mono
+   face, not --hud-font-mono, which the Sans voice points at the sans. */
+.sq-voice-sample i { font: 500 9px/1 var(--scout-face-mono); font-style: normal; letter-spacing: 0.14em; color: var(--sq-label); }
+.sq-voice-sample[data-voice="mono"] b { font: 300 12px/1.2 var(--scout-face-mono); }
+.sq-voice-sample[data-voice="mono"] i { font-weight: 300; letter-spacing: 0.22em; }
+.sq-voice-sample[data-voice="sans"] b { font-weight: 600; }
+.sq-voice-sample[data-voice="sans"] i { font: 500 11px/1 var(--hud-font-sans); letter-spacing: 0; }
+.sq-finish-sample { position: relative; display: block; width: 72%; height: 44px; border: 1px solid var(--sq-rule-strong); background: var(--sq-card); }
+.sq-finish-sample[data-finish="ticks"] {
+  background:
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--sq-ink) 5%, transparent) 0 1px, transparent 1px 3px),
+    var(--sq-card);
+}
+.sq-finish-sample[data-finish="ticks"]::before,
+.sq-finish-sample[data-finish="ticks"]::after { content: ""; position: absolute; width: 8px; height: 8px; border: 0 solid var(--sq-ink); }
+.sq-finish-sample[data-finish="ticks"]::before { top: -1px; left: -1px; border-top-width: 1px; border-left-width: 1px; }
+.sq-finish-sample[data-finish="ticks"]::after { right: -1px; bottom: -1px; border-right-width: 1px; border-bottom-width: 1px; }
+/* Panels: three panels apart by a gap, or joined on one shared line. */
+.sq-panels-sample { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 4px; width: 72%; height: 44px; }
+.sq-panels-sample > i { border: 1px solid var(--sq-rule-strong); background: var(--sq-card); }
+.sq-panels-sample[data-panels="joined"] { gap: 0; }
+.sq-panels-sample[data-panels="joined"] > i + i { border-left: 0; }
+/* Edges: the same three panels inside the page sheet, with room around them or none. */
+.sq-edges-sample {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 4px;
+  width: 72%;
+  height: 44px;
+  padding: 4px;
+  border: 1px solid var(--sq-rule-strong);
+}
+.sq-edges-sample > i { border: 1px solid var(--sq-rule-strong); background: var(--sq-card); }
+.sq-edges-sample[data-panels="joined"] { gap: 0; }
+.sq-edges-sample[data-panels="joined"] > i + i { border-left: 0; }
+.sq-edges-sample[data-edges="flush"] { padding: 0; border-color: transparent; }
+
+/* Frame backdrop: the frame's tint over the preset, around a solid sheet. */
+.sq-backdrop-sample {
+  position: relative;
+  display: block;
+  width: 72%;
+  height: 44px;
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-md);
+  background: linear-gradient(var(--scout-frame-veil), var(--scout-frame-veil)), var(--scout-backdrop-smooth);
+  overflow: hidden;
+}
+.sq-backdrop-sample[data-backdrop="dusk"] { background: linear-gradient(var(--scout-frame-veil), var(--scout-frame-veil)), var(--scout-backdrop-dusk); }
+.sq-backdrop-sample[data-backdrop="aurora"] { background: linear-gradient(var(--scout-frame-veil), var(--scout-frame-veil)), var(--scout-backdrop-aurora); }
+.sq-backdrop-sample[data-backdrop="plain"] { background: linear-gradient(var(--scout-frame-veil), var(--scout-frame-veil)), var(--scout-backdrop-plain); }
+.sq-backdrop-sample[data-backdrop="custom"] { background: linear-gradient(var(--scout-frame-veil), var(--scout-frame-veil)), var(--scout-backdrop-custom); }
+.sq-backdrop-sample > i {
+  position: absolute;
+  inset: 9px 5px 6px 18px;
+  border: 1px solid color-mix(in srgb, var(--hud-ink) 9%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--hud-bg);
+}
+/* The sidebar tile: the sample's leading strip is the sidebar. */
+.sq-backdrop-sample--sidebar > i { inset: 9px 5px 6px 22px; }
+.sq-backdrop-sample--sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 16px;
+  border-right: 1px solid var(--scout-line);
+}
+
+/* Frame backdrop, with its Sidebar part set under it on a 1px rule. */
+.sq-backdrop-stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.sq-backdrop-part {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 1px solid var(--sq-rule-strong);
+}
+.sq-backdrop-part-title { font-size: 12.5px; font-weight: 400; color: var(--sq-ink); }
+.sq-backdrop-part-detail { margin-top: -6px; font-size: 12px; line-height: 1.45; color: var(--sq-soft); }
+
+/* Page backdrop: the page's veil over the preset, two solid panes on it. */
+.sq-page-sample {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  width: 72%;
+  height: 44px;
+  padding: 6px;
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-sm);
+  background: var(--hud-bg);
+  overflow: hidden;
+}
+.sq-page-sample[data-backdrop="smooth"] { background: linear-gradient(var(--scout-page-veil), var(--scout-page-veil)), var(--scout-backdrop-smooth); }
+.sq-page-sample[data-backdrop="dusk"] { background: linear-gradient(var(--scout-page-veil), var(--scout-page-veil)), var(--scout-backdrop-dusk); }
+.sq-page-sample[data-backdrop="aurora"] { background: linear-gradient(var(--scout-page-veil), var(--scout-page-veil)), var(--scout-backdrop-aurora); }
+.sq-page-sample[data-backdrop="custom"] { background: linear-gradient(var(--scout-page-veil), var(--scout-page-veil)), var(--scout-backdrop-custom); }
+.sq-page-sample > i {
+  flex: 1;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: var(--hud-surface, var(--hud-bg));
+}
+.sq-page-sample > i + i { flex: 0.6; }
+
+/* Your own: the field itself is the editor, one swatch in each corner. */
+.sq-backdrop-own {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.sq-backdrop-own-field {
+  position: relative;
+  display: block;
+  width: 220px;
+  height: 120px;
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-md);
+  background: var(--scout-backdrop-custom);
+  overflow: hidden;
+}
+.sq-backdrop-own-corner {
+  position: absolute;
+  display: block;
+  cursor: pointer;
+}
+.sq-backdrop-own-corner[data-corner="0"] { top: 8px; left: 8px; }
+.sq-backdrop-own-corner[data-corner="1"] { top: 8px; right: 8px; }
+.sq-backdrop-own-corner[data-corner="2"] { bottom: 8px; left: 8px; }
+.sq-backdrop-own-corner[data-corner="3"] { bottom: 8px; right: 8px; }
+.sq-backdrop-own-corner input[type="color"] {
+  display: block;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, white 70%, transparent);
+  border-radius: var(--radius-sm);
+  background: none;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  cursor: pointer;
+}
+.sq-backdrop-own-corner input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.sq-backdrop-own-corner input[type="color"]::-webkit-color-swatch { border: 0; border-radius: var(--radius-xs); }
+.sq-backdrop-own-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sq-backdrop-own-action {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--sq-rule-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--hud-ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+.sq-backdrop-own-action:hover { background: color-mix(in srgb, var(--hud-ink) 6%, transparent); }
+.sq-backdrop-own-note { font-size: 12px; color: var(--hud-muted); }
+
+/* The specimens inside the denser tiles. */
+.sq-page[data-page="appearance"] :is(.sq-finish-sample, .sq-panels-sample, .sq-edges-sample, .sq-backdrop-sample, .sq-page-sample) { height: 32px; }
+
+/* Scout Desk's own Settings pages, in a frame that grows to fit them. They wear these settings' colours and draw no
+   background of their own, so the frame is part of the page. */
+.sq-desk-frame { display: block; width: 100%; border: 0; background: transparent; color-scheme: normal; }

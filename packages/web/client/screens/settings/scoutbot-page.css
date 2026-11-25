@@ -1,0 +1,132 @@
+/* Settings › Scoutbot. Rows and hairlines from scout-settings.css; this file
+   adds the day plot, the snapshot parts and the request ledger. One ink, with
+   the accent only on the day under the pointer. */
+
+.sq-page[data-page="scoutbot"] .sq-row[data-stack] .sq-row-control { flex-direction: column; align-items: stretch; }
+
+.sq-bot-figure {
+  font: var(--font-weight-body) 15px/1.2 var(--sq-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--sq-ink);
+}
+.sq-bot-typical { display: grid; justify-items: end; gap: 2px; text-align: right; }
+.sq-bot-typical small { font: var(--font-weight-body) 11px var(--sq-mono); color: var(--sq-soft); white-space: nowrap; }
+.sq-bot-tag {
+  margin-left: 8px;
+  font: 500 10.5px/1 var(--sq-mono);
+  letter-spacing: var(--voice-track, 0.12em);
+  text-transform: var(--voice-case, uppercase);
+  color: var(--sq-label);
+  white-space: nowrap;
+}
+.sq-bot-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ── tokens by day ───────────────────────────────────────────────────────── */
+
+.sq-bot-days { padding: 14px 16px 10px; }
+.sq-bot-days-readout { display: flex; align-items: baseline; gap: 14px; min-height: 28px; }
+.sq-bot-days-figure {
+  flex: none;
+  font: var(--font-weight-body) 22px/1.1 var(--sq-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--sq-ink);
+}
+.sq-bot-days-figure small { font-size: 11px; color: var(--sq-soft); }
+.sq-bot-days-when { min-width: 0; font-size: 12px; color: var(--sq-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sq-bot-days-plot {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: stretch;
+  height: 64px;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--sq-rule-strong);
+}
+/* The whole column is the target; the bar is the mark inside it. */
+.sq-bot-day { display: flex; align-items: flex-end; justify-content: center; padding: 0 1px; }
+.sq-bot-day-bar { display: block; width: 100%; max-width: 14px; background: color-mix(in srgb, var(--sq-ink) 46%, transparent); }
+.sq-bot-day[data-active] { background: var(--sq-wash); }
+.sq-bot-day[data-active] .sq-bot-day-bar { background: var(--sq-accent); }
+/* Requests were made, and none reported tokens: a hollow mark on the baseline. */
+.sq-bot-day[data-silent] .sq-bot-day-bar {
+  height: 4px;
+  margin-bottom: 2px;
+  border: 1px solid var(--sq-label);
+  background: transparent;
+}
+.sq-bot-days-axis { display: flex; justify-content: space-between; margin-top: 4px; font: var(--font-weight-body) 10.5px var(--sq-mono); color: var(--sq-label); }
+
+/* ── the snapshot by part ────────────────────────────────────────────────── */
+
+.sq-bot-parts { padding: 8px 16px 10px; }
+.sq-bot-part {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) minmax(0, 1fr) 40px 56px;
+  align-items: center;
+  gap: 14px;
+  min-height: 26px;
+  font-size: 12.5px;
+}
+.sq-bot-part-name { color: var(--sq-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sq-bot-part-track { height: 4px; background: var(--sq-wash); }
+.sq-bot-part-track > span { display: block; height: 100%; min-width: 1px; background: color-mix(in srgb, var(--sq-ink) 46%, transparent); }
+.sq-bot-part-share,
+.sq-bot-part-size { font: var(--font-weight-body) 11.5px var(--sq-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.sq-bot-part-share { color: var(--sq-ink); }
+.sq-bot-part-size { color: var(--sq-soft); }
+
+/* A size keeps to one line; the name beside it is what gives way. */
+.sq-page[data-page="scoutbot"] .sq-fact > span:first-child { flex: initial; min-width: 0; }
+.sq-page[data-page="scoutbot"] .sq-fact > span:last-child { flex: none; white-space: nowrap; }
+
+.sq-bot-more {
+  display: block;
+  margin-top: 4px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--sq-soft);
+  font: 500 12px var(--sq-sans);
+  cursor: pointer;
+}
+.sq-bot-more:hover { color: var(--sq-ink); }
+.sq-card > .sq-bot-more { margin: 0; padding: 8px 16px; width: 100%; text-align: left; }
+
+/* ── the requests ────────────────────────────────────────────────────────── */
+
+.sq-bot-ledger-wrap { overflow-x: auto; }
+.sq-bot-ledger { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.sq-bot-ledger th {
+  padding: 8px 8px 6px;
+  font: 500 10.5px/1 var(--sq-mono);
+  letter-spacing: var(--voice-track, 0.12em);
+  text-transform: var(--voice-case, uppercase);
+  color: var(--sq-label);
+  text-align: left;
+  white-space: nowrap;
+}
+.sq-bot-ledger td { padding: 6px 8px; border-top: 1px solid var(--sq-rule); color: var(--sq-ink); white-space: nowrap; }
+/* The occasion is the one cell that may take two lines, so the figures keep theirs. */
+.sq-bot-ledger td:nth-child(2) { white-space: normal; text-wrap: balance; min-width: 96px; }
+.sq-bot-ledger th:first-child,
+.sq-bot-ledger td:first-child { padding-left: 16px; color: var(--sq-soft); }
+.sq-bot-ledger th:last-child,
+.sq-bot-ledger td:last-child { padding-right: 16px; }
+.sq-bot-ledger [data-num] { text-align: right; font-variant-numeric: tabular-nums; }
+.sq-bot-ledger td[data-quiet] { color: var(--sq-soft); text-align: right; }
+.sq-bot-ledger tr[data-state="failed"] td[data-quiet] { color: var(--sq-danger); }
+.sq-bot-via { color: var(--sq-soft); }
+
+@media (max-width: 720px) {
+  .sq-bot-part { grid-template-columns: minmax(0, 1fr) 40px 56px; }
+  .sq-bot-part-track { display: none; }
+  .sq-bot-ledger th:nth-child(3),
+  .sq-bot-ledger td:nth-child(3) { display: none; }
+  .sq-bot-days-readout { flex-direction: column; gap: 2px; }
+  .sq-bot-days-when { white-space: normal; }
+  .sq-bot-ledger td:nth-child(2) { min-width: 132px; }
+  /* The figure drops under the words it belongs to. */
+  .sq-page[data-page="scoutbot"] .sq-row:has(.sq-bot-typical) .sq-row-text { flex-basis: 100%; }
+  .sq-bot-typical { grid-auto-flow: column; justify-items: start; align-items: baseline; gap: 10px; text-align: left; }
+}

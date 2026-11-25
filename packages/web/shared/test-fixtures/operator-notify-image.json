@@ -1,0 +1,52 @@
+{
+  "id": "msg.request.02e0209b31187225b1c5b83e88bb9c74a23eb62449920c343b0f83823b5a0424",
+  "requestId": "notify-image-fixture",
+  "conversationId": "chat_notify-fixture",
+  "actorId": "agent-notify-fixture",
+  "originNodeId": "node-notify-fixture",
+  "class": "agent",
+  "body": "Ready for review",
+  "visibility": "private",
+  "policy": "durable",
+  "createdAt": 1792700000000,
+  "metadata": {
+    "clientMessageId": "msg.request.02e0209b31187225b1c5b83e88bb9c74a23eb62449920c343b0f83823b5a0424",
+    "source": "scout-notify",
+    "operatorSignal": {
+      "kind": "notify",
+      "blocking": false,
+      "replyExpectation": "none"
+    },
+    "operatorSignalId": "msg.request.02e0209b31187225b1c5b83e88bb9c74a23eb62449920c343b0f83823b5a0424",
+    "relayChannel": "dm",
+    "relayTarget": "operator",
+    "relayTargetIds": [
+      "operator"
+    ],
+    "relayMessageId": "msg.request.02e0209b31187225b1c5b83e88bb9c74a23eb62449920c343b0f83823b5a0424"
+  },
+  "mentions": [
+    {
+      "actorId": "operator",
+      "label": "@operator"
+    }
+  ],
+  "audience": {
+    "reason": "direct_message",
+    "notify": [
+      "operator"
+    ]
+  },
+  "attachments": [
+    {
+      "id": "msg.request.02e0209b31187225b1c5b83e88bb9c74a23eb62449920c343b0f83823b5a0424.attachment.0",
+      "mediaType": "image/png",
+      "blob": {
+        "sha256": "f6d6acb2dcf66d4e1b6419962726cf72cb16371556bc7dbdfd4e66e2caee2b8c",
+        "mediaType": "image/png",
+        "byteSize": 68
+      },
+      "fileName": "review.png"
+    }
+  ]
+}

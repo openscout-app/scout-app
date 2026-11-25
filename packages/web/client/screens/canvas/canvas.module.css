@@ -1,0 +1,2671 @@
+/* Canvas. From the canvas study (design/studio/views/canvas-showcase.module.css), on the app's theme: thin lines,
+   light not hue, one accent for an agent that asks you. */
+
+.page {
+  --window: var(--hud-bg);
+  --frame-line: var(--hud-border);
+  --ground: color-mix(in oklab, var(--hud-ink) 3%, var(--hud-bg));
+  --panel: var(--hud-surface);
+  --raised: color-mix(in oklab, var(--hud-ink) 5%, var(--hud-surface));
+  --hairline: var(--scout-line);
+  --edge: var(--scout-line-strong);
+  --edge-strong: color-mix(in oklab, var(--hud-ink) 22%, transparent);
+  --ink: var(--hud-ink);
+  --body: color-mix(in oklab, var(--hud-ink) 82%, var(--hud-bg));
+  --muted: var(--hud-muted);
+  --dim: color-mix(in oklab, var(--hud-ink) 48%, var(--hud-bg));
+  --faint: color-mix(in oklab, var(--hud-ink) 28%, var(--hud-bg));
+  --accent: var(--hud-accent);
+  --accent-wash: color-mix(in oklab, var(--hud-accent) 12%, transparent);
+  --accent-line: color-mix(in oklab, var(--hud-accent) 40%, transparent);
+  --sans: var(--hud-font-sans, system-ui, -apple-system, "SF Pro Text", sans-serif);
+  --mono: var(--hud-font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--window);
+  color: var(--body);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  min-height: 0;
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--dim);
+  font-size: 13px;
+}
+
+.select {
+  flex: none;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.bar .segmentGroup {
+  margin-left: 8px;
+}
+
+.areaMore {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.areaMore:hover {
+  color: var(--ink);
+  border-color: var(--edge);
+}
+
+.areaEmpty {
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 0 16px;
+  background: var(--window);
+  color: var(--dim);
+  font-size: 11px;
+  text-align: center;
+}
+
+.lbPath {
+  overflow-wrap: anywhere;
+}
+
+.inlineButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.card[data-dragging] {
+  z-index: 10;
+  transition: none;
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--window) 60%, transparent);
+}
+
+.sharedFrame[data-target] {
+  border-color: var(--edge-strong);
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+}
+
+.segmentGroup {
+  flex: none;
+  display: inline-flex;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.segment {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.segment + .segment {
+  border-left: 1px solid var(--edge);
+}
+
+.segment[aria-checked="true"] {
+  color: var(--ink);
+  background: var(--edge);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--window);
+}
+
+.crumbDim {
+  color: var(--dim);
+}
+
+.crumbMuted {
+  color: var(--muted);
+}
+
+.crumbInk {
+  color: var(--ink);
+}
+
+.chevron {
+  display: inline-grid;
+  color: var(--faint);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* the minimap and zoom, one unit over the canvas at the bottom left: the map, a 1px seam, the zoom row */
+.mapDock {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 20;
+  display: grid;
+  min-width: 156px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--panel) 94%, transparent);
+  overflow: hidden;
+}
+
+.camera {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-top: 1px solid var(--hairline);
+  background: var(--panel);
+}
+
+.camera:first-child {
+  border-top: 0;
+}
+
+.reading {
+  flex: none;
+  color: var(--dim);
+  font-size: 12px;
+}
+
+/* the window in time: earlier, its span when past, later, and back to now */
+.steps {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.steps .tool:disabled {
+  color: var(--dim);
+  background: transparent;
+  opacity: 0.45;
+  cursor: default;
+}
+
+.span {
+  padding: 0 4px;
+  color: var(--ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.past {
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.steps .toolText[data-now] {
+  margin-left: 2px;
+  border: 1px solid var(--edge);
+  color: var(--ink);
+}
+
+.emptyStack {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.emptyActions {
+  display: flex;
+  gap: 6px;
+}
+
+/* the minimap, in the dock (Minimap.tsx); shaped like the scene */
+.minimap {
+  justify-self: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.minimap:focus-visible {
+  outline: 1px solid var(--edge-strong);
+  outline-offset: -2px;
+}
+
+.minimap > svg {
+  display: block;
+  pointer-events: none;
+}
+
+.mapFrame {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 0.75;
+}
+
+.mapStrip {
+  fill: color-mix(in oklab, var(--ink) 10%, transparent);
+}
+
+.mapCard {
+  fill: color-mix(in oklab, var(--ink) 24%, transparent);
+}
+
+.mapDot {
+  fill: var(--ink);
+}
+
+.mapDot[data-asks] {
+  fill: var(--accent);
+}
+
+.mapView {
+  fill: color-mix(in oklab, var(--ink) 6%, transparent);
+  stroke: color-mix(in oklab, var(--ink) 60%, transparent);
+  stroke-width: 1;
+  cursor: grab;
+}
+
+@media (max-width: 640px) {
+  .minimap {
+    display: none;
+  }
+
+  .camera {
+    border-top: 0;
+  }
+}
+
+.tool,
+.toolText {
+  display: inline-grid;
+  place-items: center;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tool {
+  width: 26px;
+}
+
+.toolText {
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.tool:hover,
+.toolText:hover {
+  color: var(--ink);
+  background: var(--raised);
+}
+
+.pct {
+  min-width: 38px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--dim);
+}
+
+/* the roster, over the canvas at the top right (Roster.tsx): a list of agents, or folded, a pile of faces */
+.roster {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 264px;
+  max-width: calc(100% - 24px);
+  max-height: calc(100% - 24px);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.roster[data-folded] {
+  width: auto;
+}
+
+.rosterHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 2px 0 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.rosterTitle {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.rosterCount {
+  color: var(--dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rosterAction {
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.rosterAction:hover {
+  color: var(--ink);
+  background: var(--raised);
+}
+
+.rosterList {
+  margin: 0;
+  padding: 2px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+
+.rosterRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px 0 4px;
+}
+
+.rosterRow:hover {
+  background: color-mix(in oklab, var(--raised) 60%, transparent);
+}
+
+.rosterPick {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rosterCoin {
+  display: block;
+  flex: none;
+  line-height: 0;
+}
+
+.rosterCoin[data-state="quiet"] {
+  opacity: 0.45;
+}
+
+.rosterCode {
+  flex: none;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.rosterAsks {
+  flex: none;
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* State as a dot: steady ink while it works, the accent when it asks you, an outline when it is quiet. */
+.rosterDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--ink) 70%, transparent);
+}
+
+.rosterDot[data-state="asks"] {
+  background: var(--accent);
+}
+
+.rosterDot[data-state="quiet"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--edge-strong);
+}
+
+.rosterName {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--body);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rosterName[data-state="quiet"] {
+  color: var(--dim);
+}
+
+.rosterPick:hover .rosterName {
+  color: var(--ink);
+}
+
+/* The eye shows on the row it would act on, and stays out while the agent is hidden so it can be turned back on. */
+.rosterRow .tool[role="switch"] {
+  opacity: 0;
+}
+
+.rosterRow:hover .tool[role="switch"],
+.rosterRow .tool[role="switch"]:focus-visible,
+.rosterRow[data-hidden] .tool[role="switch"] {
+  opacity: 1;
+}
+
+.rosterRow[data-hidden] .rosterPick {
+  opacity: 0.45;
+}
+
+.rosterOnly {
+  height: 22px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.rosterRow:hover .rosterOnly,
+.rosterOnly:focus-visible {
+  opacity: 1;
+}
+
+.rosterOnly:hover {
+  color: var(--ink);
+  background: var(--raised);
+}
+
+.rosterRow[data-hidden] .tool {
+  color: var(--faint);
+}
+
+.rosterPile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 6px 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rosterPile:hover {
+  color: var(--ink);
+}
+
+.pileFaces {
+  display: flex;
+}
+
+.pileFace {
+  display: block;
+  line-height: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--panel);
+}
+
+.pileFace + .pileFace {
+  margin-left: -4px;
+}
+
+.pileFace[data-state="quiet"] {
+  opacity: 0.5;
+}
+
+.pileFace[data-state="asks"] {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.viewport {
+  position: relative;
+  /* clip, not hidden: a hidden box still scrolls when a card takes focus, and the camera would no longer match */
+  overflow: clip;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background-color: var(--ground);
+  background-image: radial-gradient(circle, color-mix(in oklab, var(--ink) var(--dot, 4%), transparent) 1px, transparent 1.25px);
+}
+
+.viewport:active {
+  cursor: grabbing;
+}
+
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+.world > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.sharedFrame {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--ink) 1.8%, transparent);
+}
+
+.sharedHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 16px 0;
+}
+
+.sharedTitle {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.sharedSub {
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  height: 70px;
+  white-space: nowrap;
+  transition: transform 420ms cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+}
+
+/* the operator's latest prompt, under the name: what this agent was asked to do */
+.labelAsked {
+  box-sizing: border-box;
+  max-width: 976px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--body);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+}
+
+/* what the agent said last, under its name: the sentence Projects › Agents shows */
+.labelSaid {
+  box-sizing: border-box;
+  max-width: 976px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+
+.labelSaidAge {
+  margin-right: 8px;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* grouped by work: the checkout a group of sessions worked in, over their areas */
+.frameHead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-top: 1px solid var(--edge);
+  white-space: nowrap;
+}
+
+.frameKicker {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.frameTitle {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+}
+
+/* a reaction this browser sent, on the artifact it was sent about */
+.reacted {
+  color: var(--accent);
+  font-size: 11px;
+}
+
+/* asking Scoutbot about the artifact: questions as rows, the answer under them */
+.ask {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.askQuestions {
+  display: grid;
+}
+
+.askQuestion {
+  padding: 6px 0;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--body);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.askQuestion:hover:not(:disabled),
+.askQuestion[aria-pressed="true"] {
+  color: var(--ink);
+}
+
+.askQuestion:disabled {
+  color: var(--dim);
+  cursor: default;
+}
+
+.askAnswer {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.askAsked {
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.askText {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* what was sent about the artifact from here, oldest first, then the session's reply */
+.thread {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.threadList {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.threadNote {
+  display: grid;
+  gap: var(--space-3xs);
+}
+
+.threadWho {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.threadKind {
+  color: var(--accent);
+}
+
+.threadText {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.threadNote[data-from="agent"] .threadText {
+  color: var(--body);
+}
+
+.threadLanded {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.reactTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* the four reactions, as small toggles over the composer: optional, the words alone are enough */
+.reactKinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.reactKind {
+  height: 24px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--body);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.reactKind:hover {
+  border-color: var(--edge-strong);
+  color: var(--ink);
+}
+
+.reactKind[aria-pressed="true"] {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.reactNote {
+  margin: 0;
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.reactNote[data-state="sent"] {
+  color: var(--body);
+}
+
+.reactNote[data-state="failed"] {
+  color: var(--accent);
+}
+
+.reactInput {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.reactInput:focus {
+  border-color: var(--edge-strong);
+  outline: none;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.labelTree {
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* every project: the area's project, before its worktree */
+.labelProject {
+  color: var(--body);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.world[data-layout="lanes"] .label {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 180px;
+  height: auto;
+  white-space: normal;
+}
+
+.slot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  height: 28px;
+}
+
+/* While an agent's tag rides its cursor out on a card, the row keeps it, faded: the row stays named, and nothing
+   shifts when the tag comes home. */
+.slot[data-away] > * {
+  opacity: 0.35;
+}
+
+.labelName {
+  max-width: 520px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
+.labelState {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.labelState[data-state="working"] {
+  color: var(--body);
+}
+
+.labelState[data-state="asks"] {
+  color: var(--accent);
+}
+
+.labelOn {
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.card {
+  display: grid;
+  /* one column, the card's width: a long file name or caption clips instead of widening what is under it */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 145px 1fr;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--panel);
+  cursor: pointer;
+  transition:
+    transform 420ms cubic-bezier(0.3, 0.7, 0.2, 1),
+    border-color 600ms ease,
+    box-shadow 600ms ease;
+}
+
+.card:hover {
+  border-color: var(--edge-strong);
+}
+
+.card:focus-visible {
+  outline: 1px solid var(--edge-strong);
+  outline-offset: 2px;
+}
+
+/* a file the agent showed on purpose: lit by a stronger edge, not a hue (the accent is for an agent that asks) */
+.card[data-shown] {
+  border-color: var(--edge-strong);
+}
+
+.card[data-kind="note"] {
+  grid-template-rows: 1fr auto;
+  background: var(--raised);
+}
+
+.card[data-fresh] {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 1px var(--accent-line);
+  animation: card-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    translate: 0 -10px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  background: var(--window);
+  pointer-events: none;
+}
+
+.mediaWrap {
+  position: relative;
+  height: 100%;
+}
+
+.videoChip {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--window) 78%, transparent);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 28px 1fr;
+  min-height: 0;
+  background: var(--window);
+}
+
+.fileHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--muted);
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--body);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.fileStat {
+  flex: none;
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.fileBody {
+  margin: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.noteBody {
+  margin: 0;
+  padding: 12px 12px 0;
+  color: var(--body);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.caption {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.card[data-kind="note"] .caption {
+  padding: 8px 12px 10px;
+}
+
+.captionTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.captionMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.onShared {
+  color: var(--muted);
+}
+
+.changed {
+  color: var(--accent);
+}
+
+.newTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--accent);
+}
+
+.newTag i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.presence {
+  z-index: 5;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transition: transform 950ms cubic-bezier(0.33, 0.8, 0.25, 1);
+}
+
+.presence[data-home] {
+  z-index: 3;
+}
+
+.chip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.say {
+  display: block;
+  max-width: 200px;
+  height: 24px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  color: var(--body);
+  font-size: 11px;
+  line-height: 22px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.6);
+  animation: say-in 260ms ease-out;
+}
+
+.say[data-asks] {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+@keyframes say-in {
+  from {
+    opacity: 0;
+    translate: 6px 0;
+  }
+}
+
+.mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  height: 24px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.6);
+}
+
+.markCoin {
+  display: block;
+  line-height: 0;
+}
+
+.mark[data-state="quiet"] .markCoin {
+  opacity: 0.5;
+}
+
+.markPre {
+  color: var(--muted);
+}
+
+.mark[data-state="quiet"] .markPre {
+  color: var(--dim);
+}
+
+.mark[data-state="asks"] .markPre {
+  color: var(--accent);
+  opacity: 0.75;
+}
+
+.mark[data-state="asks"] {
+  border-color: var(--accent-line);
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -2px;
+  }
+}
+
+.markCode {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mark[data-state="quiet"] .markCode {
+  color: var(--muted);
+}
+
+.mark[data-named] {
+  padding: 0 8px 0 6px;
+}
+
+.markName {
+  max-width: 112px;
+  overflow: hidden;
+  color: var(--body);
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mark[data-state="quiet"] .markName {
+  color: var(--muted);
+}
+
+.mark[data-state="asks"] .markCode {
+  color: var(--accent);
+}
+
+.cursor {
+  position: relative;
+  transform-origin: 0 0;
+  animation: drift 5.6s ease-in-out infinite;
+}
+
+.cursor[data-still] {
+  animation: none;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  33% {
+    translate: 2px 1px;
+  }
+  66% {
+    translate: -1px 2px;
+  }
+}
+
+.cursorGlyph {
+  position: absolute;
+  left: -6px;
+  top: -3px;
+  overflow: visible;
+  filter: drop-shadow(1.2px 1.2px 0 rgba(0, 0, 0, 0.18)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
+}
+
+.cursorSway {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+.cursorSway > path {
+  animation: sway 5.2s ease-in-out infinite;
+  transform-origin: 0 0;
+}
+
+.cursor[data-still] .cursorSway > path {
+  animation: none;
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  50% {
+    rotate: -2deg;
+  }
+}
+
+.cursorEdge {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.48);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.cursorFill {
+  fill: #f3ebdd;
+  stroke: rgba(0, 0, 0, 0.52);
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+}
+
+.cursorFill[data-asks] {
+  fill: var(--accent);
+}
+
+.cursorLight {
+  fill: none;
+  stroke: color-mix(in oklab, var(--ink) 38%, transparent);
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+}
+
+.cursorTag {
+  position: absolute;
+  left: 14px;
+  top: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px 0 4px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  white-space: nowrap;
+  font-size: 11px;
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.6);
+}
+
+.cursor[data-flip] .cursorTag {
+  left: auto;
+  right: 4px;
+}
+
+.cursor[data-asks] .cursorTag {
+  border-color: var(--accent-line);
+}
+
+.cursorName {
+  color: var(--ink);
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+}
+
+.cursorSay {
+  color: var(--muted);
+}
+
+.cursor[data-asks] .cursorSay,
+.cursor[data-asks] .cursorName,
+.cursor[data-asks] .markPre {
+  color: var(--accent);
+}
+
+.typing {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.typing i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: blink 1.2s ease-in-out infinite;
+}
+
+.typing i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.toast {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 20;
+  max-width: 520px;
+  padding: 8px 12px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  color: var(--body);
+  font-size: 12px;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.7);
+  animation: toast-in 220ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.lightbox {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: color-mix(in oklab, var(--window) 78%, transparent);
+  cursor: default;
+}
+
+.lbPanel {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  width: min(1120px, 100%);
+  height: min(640px, 100%);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--panel);
+  user-select: text;
+}
+
+.lbMedia {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  background: var(--window);
+}
+
+.lbMedia img,
+.lbMedia video {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* an Arc diagram: a fitted picture on its card, the player in the lightbox (ArcView.tsx draws it in a shadow root) */
+.arcBody,
+.lbArc {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lbArc {
+  align-self: stretch;
+  justify-self: stretch;
+  display: grid;
+  place-items: center;
+}
+
+.lbArc > div[role="img"] {
+  position: absolute;
+  inset: 0;
+}
+
+.arcNote {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+/* the newest save is not drawn: one line over the last valid diagram */
+.arcProblem {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  padding: 4px 10px;
+  overflow: hidden;
+  border-top: 1px solid var(--hairline);
+  background: var(--window);
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  z-index: 1;
+}
+
+/* the player keeps its chapter rail and zoom along the bottom: the line goes over the top there */
+.arcProblem[data-at="top"] {
+  top: 0;
+  bottom: auto;
+  border-top: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+/*
+ * An embed: a live view in the flow, as wide as its area. No file chrome: its head names the view and the agent
+ * driving it, and is the handle that moves it; its body is the view's own (embed.tsx).
+ */
+/* placed absolutely by `.world > *`, which also holds its edge and corner: no position of its own */
+.embed {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 36px minmax(0, 1fr);
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--panel);
+  transition:
+    transform 420ms cubic-bezier(0.3, 0.7, 0.2, 1),
+    border-color 600ms ease;
+}
+
+.embed:hover {
+  border-color: var(--edge-strong);
+}
+
+.embed[data-dragging] {
+  z-index: 10;
+  transition: none;
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--window) 60%, transparent);
+}
+
+.embedHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 6px 0 12px;
+  border-bottom: 1px solid var(--hairline);
+  cursor: grab;
+  user-select: none;
+}
+
+.embedHead:focus-visible {
+  outline: 1px solid var(--edge-strong);
+  outline-offset: -2px;
+}
+
+.embedTitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.embedLine,
+.embedSaid {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.embedLine {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.embedSaid {
+  color: var(--muted);
+}
+
+.embedMeta {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 11px;
+}
+
+/* the live mark: quiet while the view holds still, lit while its agent is editing it */
+.embedDot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dim);
+  opacity: 0.5;
+}
+
+.embedDot[data-editing] {
+  background: var(--ink);
+  opacity: 1;
+  animation: embedPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes embedPulse {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .embedDot[data-editing] { animation: none; }
+}
+
+.embed[data-resizing] {
+  z-index: 10;
+  transition: none;
+  border-color: var(--edge-strong);
+}
+
+/* quiet 16px controls at the head's end: expand in place, full screen */
+.embedControl {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.embedControl:hover,
+.embedControl:focus-visible {
+  color: var(--ink);
+  background: var(--window);
+}
+
+.embedBody {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--window);
+}
+
+.embedBody > div[role="img"] {
+  position: absolute;
+  inset: 0;
+}
+
+/*
+ * Resizing is the frequent move, so the whole bottom edge is its handle: a band that shows a 1px line on hover. The
+ * corner sizes both ways.
+ */
+.embedEdge {
+  position: absolute;
+  right: 16px;
+  bottom: 0;
+  left: 0;
+  height: 10px;
+  cursor: ns-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.embedEdge::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--edge-strong);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  content: "";
+}
+
+.embedEdge:hover::after,
+.embed[data-resizing] .embedEdge::after {
+  opacity: 1;
+}
+
+.embedCorner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--dim);
+  cursor: nwse-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.embedCorner:hover {
+  color: var(--ink);
+}
+
+/* full screen: the same embed, filling the window over the app */
+.embedFull {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 40px minmax(0, 1fr);
+  background: var(--window);
+  color: var(--body);
+}
+
+.embedHead[data-full] {
+  cursor: default;
+}
+
+/* the expanded embed's live line, under its title */
+.lbLive {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lbCode {
+  align-self: stretch;
+  justify-self: stretch;
+  margin: 0;
+  padding: 20px 24px;
+  overflow: auto;
+  color: var(--body);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.lbNote {
+  max-width: 520px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+/* the preview's side: what the artifact is and the feedback on it scroll; the composer stays at the foot, as in a chat */
+.lbSide {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  border-left: 1px solid var(--hairline);
+}
+
+.lbScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: var(--space-3xl) var(--space-2xl) var(--space-2xl) var(--space-3xl);
+  overflow-y: auto;
+}
+
+.lbCompose {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+  border-top: 1px solid var(--hairline);
+  background: var(--panel);
+}
+
+.lbClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  /* the side scrolls under it */
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.lbClose:hover {
+  color: var(--ink);
+  background: var(--raised);
+}
+
+.lbTitle {
+  margin: 0;
+  padding-right: 28px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+/* what the agent said when it showed the file, in its own words */
+.lbCaption {
+  margin: 0;
+  color: var(--body);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lbFacts {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px 10px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.lbFacts dt {
+  color: var(--dim);
+}
+
+.lbFacts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--body);
+}
+
+.lbMono {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.lbActions {
+  display: grid;
+  gap: 6px;
+}
+
+.btn {
+  height: 30px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--body);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--edge-strong);
+  color: var(--ink);
+}
+
+.btn[data-primary] {
+  border-color: var(--accent-line);
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .presence,
+  .card,
+  .label {
+    transition: none;
+  }
+  .card[data-fresh],
+  .toast {
+    animation: none;
+  }
+  .typing i {
+    animation: none;
+    opacity: 0.6;
+  }
+  .markFig,
+  .say,
+  .cursorSway > path {
+    animation: none;
+  }
+}
+
+.ovProject {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--ink) 1.2%, transparent);
+}
+
+.ovProjectHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 12px 0;
+}
+
+.ovProjectName {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.ovMeta {
+  color: var(--dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ovTree {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+.ovTreeHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ovTreeName {
+  flex: none;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.ovTreeWho {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ovThumb {
+  flex: none;
+  width: 38px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--raised);
+  cursor: pointer;
+}
+
+.ovThumb:hover {
+  border-color: var(--edge-strong);
+}
+
+.ovThumb img,
+.ovThumb video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ovTile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--ink) calc((1.8 + 11 * var(--lit, 0)) * 1%), transparent);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  transition:
+    background-color 700ms ease,
+    border-color 300ms ease;
+}
+
+button.ovTile {
+  cursor: pointer;
+}
+
+button.ovTile:hover {
+  border-color: var(--edge-strong);
+}
+
+.ovTile[data-on] {
+  border-color: var(--edge-strong);
+}
+
+.ovTile[data-asks] {
+  border-color: var(--accent-line);
+}
+
+.ovName {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ovStats {
+  display: flex;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ovTile[data-on] .ovStats {
+  color: var(--body);
+}
+
+.ovShown {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.rail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: 288px;
+  border-left: 1px solid var(--hairline);
+  background: var(--panel);
+  cursor: default;
+  overflow-y: auto;
+}
+
+.railHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 16px 10px;
+}
+
+.railTitle {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.railSub {
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.railList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.railRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--hairline);
+}
+
+.railText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.railLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.railName {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.railSay {
+  color: var(--body);
+  font-size: 12px;
+}
+
+.railRow[data-state="quiet"] .railSay {
+  color: var(--dim);
+}
+
+.railRow[data-state="asks"] .railSay {
+  color: var(--accent);
+}
+
+.railFile {
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── an agent's files strip: the repo files it worked, sized by work, lit by recency ── */
+
+.filesStrip {
+  border-top: 1px solid var(--hairline);
+}
+
+.filesStrip > * {
+  position: absolute;
+}
+
+.fileTile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--ink) calc((2.2 + 10 * var(--lit, 0)) * 1%), var(--ground));
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    background-color 700ms ease,
+    border-color 300ms ease;
+}
+
+.fileTile:hover {
+  border-color: var(--edge-strong);
+}
+
+.fileTile[data-on] {
+  border-color: var(--edge-strong);
+}
+
+.fileTile[data-asks] {
+  border-color: var(--accent-line);
+}
+
+.fileTile[data-on] .ovStats {
+  color: var(--body);
+}
+
+.fileDir {
+  overflow: hidden;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePatch {
+  flex: 1;
+  min-height: 0;
+  margin: 4px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--hairline);
+  overflow: hidden;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.filePatch > span[data-op="add"],
+.lbCode > span[data-op="add"] {
+  color: var(--ink);
+}
+
+.filePatch > span[data-op="del"],
+.lbCode > span[data-op="del"] {
+  color: var(--dim);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--ink) 25%, transparent);
+}
+
+.lbCode > span {
+  color: var(--muted);
+}
+
+/* what a worked file says it is: its opening comment, in plain type */
+.fileAbout {
+  display: -webkit-box;
+  flex: 1;
+  min-height: 0;
+  margin-top: 4px;
+  padding-top: 6px;
+  overflow: hidden;
+  border-top: 1px solid var(--hairline);
+  color: var(--body);
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+
+/* the file view: what the file is, the change the agent committed, then the file as it is now */
+.lbFile {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow: auto;
+  background: var(--window);
+}
+
+.lbAbout {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.lbSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lbSectionHead {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: var(--voice-track, 0.04em);
+  text-transform: var(--voice-case, uppercase);
+}
+
+.lbSectionHead > span {
+  overflow: hidden;
+  color: var(--body);
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.lbFile .lbCode {
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+
+.lbFile .lbNote {
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.lbSource {
+  margin: 0;
+  padding: 10px 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  color: var(--body);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  tab-size: 2;
+}
+
+/* the file now fills what the panel has left, and scrolls on its own, so a jump to a line moves only the source */
+.lbNow {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 320px;
+}
+
+.lbNow .lbSource {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.srcLine {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding-right: 12px;
+}
+
+.srcLine[data-at] {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+/* a line number opens the file in the editor at that line */
+.srcNo {
+  display: inline-block;
+  width: 5ch;
+  margin-right: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--faint, var(--dim));
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+  user-select: none;
+}
+
+.srcNo:hover,
+.srcLine[data-at] .srcNo {
+  color: var(--ink);
+}
+
+/* the app's code palette (code/ShikiPane.tsx): each token carries a dark and a light colour */
+.tok {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style, normal);
+  font-weight: var(--shiki-dark-font-weight, inherit);
+}
+
+:global([data-scout-theme-mode="light"]) .tok {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style, normal);
+  font-weight: var(--shiki-light-font-weight, inherit);
+}
+
+.lbTabs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.lbTabNote {
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* the diff: added lines lit, removed lines dim and struck, as on the tiles */
+.srcLine[data-op="add"] {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+
+.srcLine[data-op="del"] {
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+
+.srcLine[data-op="del"] .dCode {
+  opacity: 0.55;
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--ink) 25%, transparent);
+}
+
+span.srcNo {
+  cursor: default;
+}
+
+.dSign {
+  display: inline-block;
+  width: 2ch;
+  color: var(--dim);
+  user-select: none;
+}
+
+.srcLine[data-op="add"] .dSign {
+  color: var(--ink);
+}
+
+.dHunk {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  margin-top: 6px;
+  padding: 2px 12px 2px 0;
+  border-top: 1px solid var(--hairline);
+  color: var(--dim);
+}
+
+.dHunk:first-child {
+  margin-top: 0;
+  border-top: 0;
+}
+
+.dHead {
+  margin-left: 2ch;
+}
+
+/* The canvas at a glance, in Home's Feed (Minimap.tsx CanvasGlance): the minimap's outlines and blocks, cursors that
+   glide to the file their agent is on, and a ring that fades where something ships. */
+.glance {
+  --ink: var(--hud-ink);
+  --edge: var(--scout-line-strong);
+  --accent: var(--hud-accent);
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+}
+
+.glance {
+  position: relative;
+}
+
+.glance > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Labels and harness marks over the drawing, in percent of it. */
+.glanceOver {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.glanceLabel {
+  position: absolute;
+  display: flex;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: var(--space-2xs) var(--space-xs) 0;
+  overflow: hidden;
+  color: color-mix(in oklab, var(--ink) 45%, transparent);
+  font-size: 10px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.glanceLabel { container: glance-label / inline-size; }
+.glanceLabel > span { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.glanceLabel > span + span::before { content: "·"; margin-right: 6px; }
+/* The title keeps its width and the project gives way; in a narrow area the project goes, so the label never reads
+   as a row of cut-off words. */
+.glanceLabel > [data-part="title"] { flex-shrink: 0; max-width: 100%; color: color-mix(in oklab, var(--ink) 75%, transparent); }
+@container glance-label (max-width: 260px) {
+  .glanceLabel > span:not([data-part="title"]) { display: none; }
+}
+
+/* A block's file name, inside the block: two lines at most, broken anywhere, since file names have no spaces. */
+.glanceFile {
+  position: absolute;
+  box-sizing: border-box;
+  padding: var(--space-2xs) var(--space-xs);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: color-mix(in oklab, var(--ink) 38%, transparent);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 12px;
+  overflow-wrap: anywhere;
+}
+.glanceFile[data-here] { color: color-mix(in oklab, var(--ink) 70%, transparent); }
+
+/* The harness's mark rides beside its cursor, on the same glide. */
+.glanceMark {
+  position: absolute;
+  display: inline-flex;
+  margin: var(--space-md) 0 0 var(--space-md);
+  padding: 1px;
+  border-radius: 50%;
+  background: var(--hud-bg);
+  transition: left 1.1s cubic-bezier(0.25, 0.8, 0.25, 1), top 1.1s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glance:focus-visible {
+  outline: 1px solid var(--edge);
+  outline-offset: 2px;
+}
+
+.glance .mapStrip {
+  fill: color-mix(in oklab, var(--ink) 7%, transparent);
+}
+
+.glanceCursor {
+  fill: currentColor;
+  stroke: var(--hud-bg);
+  stroke-width: 1;
+  transition: transform 1.1s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glanceCursor[data-asks] {
+  color: var(--accent);
+}
+
+.glanceShip {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: glanceShip 1.6s ease-out 2 forwards;
+}
+
+.glance[data-paused] .glanceShip {
+  animation-play-state: paused;
+}
+
+@keyframes glanceShip {
+  from { opacity: 0.9; transform: scale(0.2); }
+  to { opacity: 0; transform: scale(1); }
+}
+
+/* The area under the pointer: its outline a step firmer, and a card of what its session is doing (GlanceCard). */
+.glance .glanceHot {
+  stroke: color-mix(in oklab, var(--ink) 55%, transparent);
+  stroke-width: 1;
+}
+
+.glanceCard {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: var(--hud-bg);
+  color: color-mix(in oklab, var(--ink) 60%, transparent);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.glanceCardHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.glanceCardTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.glanceCardAsks {
+  flex: none;
+  color: var(--accent);
+}
+
+.glanceCardWhere {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.glanceCardCalls {
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  border-top: 1px solid var(--edge);
+  list-style: none;
+}
+
+.glanceCardCalls > li {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.glanceCardCall {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: color-mix(in oklab, var(--ink) 82%, transparent);
+  font-family: var(--hud-font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.glanceCardCalls time {
+  flex: none;
+  color: color-mix(in oklab, var(--ink) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glanceCursor, .glanceMark { transition: none; }
+  .glanceShip { animation: none; opacity: 0.5; }
+}

@@ -1,0 +1,17 @@
+/* The ask panel's pull requests (AskCode.tsx). Same type scale as the panel's sections. */
+.swarm-code ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.swarm-code li { display: grid; gap: 3px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--card-2); }
+.swarm-code a { justify-self: start; color: var(--ink); font: 600 12.5px var(--mono); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.swarm-code a:hover { text-decoration-color: currentColor; }
+.swarm-code p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+.swarm-code__review { color: var(--ink); }
+/* What became of it, from GitHub. Weight, not hue: merged reads strongest, closed quietest. */
+.swarm-code__state.is-merged { font-weight: 600; color: var(--ink); }
+.swarm-code__state.is-closed { color: var(--ink-3); }
+
+/* On the board, while an ask is focused: dotted links to the asks that moved the same pull requests (a reply is dashed). */
+.swarm-link { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 0.1 4.5; stroke-linecap: round; color: var(--ink); }
+
+/* On the board: the pull requests an ask opened, ahead of its title. Plain text, the block itself is the control. */
+.swarm-ask__pr { flex: none; font: 600 10px var(--mono); color: inherit; }
+.swarm-caption em.is-pr { font-weight: 600; color: var(--ink); }

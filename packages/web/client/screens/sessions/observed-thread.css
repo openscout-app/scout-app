@@ -1,0 +1,7 @@
+/* A session read from its transcript, in the Scout chat's session grammar:
+   one centred column, the operator's words as a row, the work above each answer. */
+.s-observed-thread { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 760px; margin: 0 auto; padding: 8px 0 24px; }
+.s-observed-turn { display: flex; flex-direction: column; gap: 14px; }
+.s-observed-thread .s-thread-msg { margin: 0; }
+.s-observed-empty { margin: 0; color: var(--hud-dim); font-size: 12px; }
+.s-observed-harness-turn { margin: 0; color: var(--hud-dim); font: 11px var(--hud-font-mono); text-align: right; }

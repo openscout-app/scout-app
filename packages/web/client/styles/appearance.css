@@ -1,0 +1,631 @@
+/* Scout appearance profiles sit above HudsonKit's template layer. Hudson owns
+ * theme resolution and its component aliases; Scout independently chooses the
+ * palette, accent, and contrast while the Hudson template remains responsible
+ * for interface geometry and chrome behavior. Values stay as OKLCH triplets so
+ * Hudson's `oklch(var(--token))` contract remains intact. */
+
+[data-scout-theme-mode="dark"][data-scout-palette="scout"] {
+  color-scheme: dark;
+  --background: 0.118 0.004 260;
+  --foreground: 0.975 0.006 260;
+  --card: 0.205 0.005 260;
+  --card-foreground: 0.975 0.006 260;
+  --popover: 0.185 0.005 260;
+  --popover-foreground: 0.975 0.006 260;
+  --primary: 0.975 0.006 260;
+  --primary-foreground: 0.118 0.004 260;
+  --secondary: 0.25 0.006 260;
+  --secondary-foreground: 0.95 0.006 260;
+  --muted: 0.23 0.005 260;
+  --muted-foreground: 0.80 0.008 260;
+  --accent: 0.78 0.12 75;
+  --accent-foreground: 0.18 0.01 75;
+  --border: 0.40 0.007 260;
+  --input: 0.44 0.008 260;
+  --ring: 0.78 0.12 75;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette="scout"] {
+  color-scheme: light;
+  --background: 0.978 0.004 85;
+  --foreground: 0.24 0.01 80;
+  --card: 0.992 0.003 85;
+  --card-foreground: 0.24 0.01 80;
+  --popover: 0.995 0.003 85;
+  --popover-foreground: 0.24 0.01 80;
+  --primary: 0.24 0.01 80;
+  --primary-foreground: 0.99 0.003 85;
+  --secondary: 0.94 0.007 84;
+  --secondary-foreground: 0.28 0.012 80;
+  --muted: 0.94 0.006 84;
+  --muted-foreground: 0.470 0.014 80;
+  --accent: 0.54 0.12 65;
+  --accent-foreground: 0.99 0.003 85;
+  --border: 0.84 0.01 82;
+  --input: 0.78 0.012 82;
+  --ring: 0.54 0.12 65;
+}
+
+[data-scout-theme-mode="dark"][data-scout-palette="graphite"] {
+  color-scheme: dark;
+  --background: 0.14 0.0021 286.1;
+  --foreground: 0.96 0.0013 286.4;
+  --card: 0.235 0.0039 286.1;
+  --card-foreground: 0.96 0.0013 286.4;
+  --popover: 0.21 0.003 286;
+  --popover-foreground: 0.96 0.0013 286.4;
+  --primary: 0.96 0.0013 286.4;
+  --primary-foreground: 0.14 0.0021 286.1;
+  --secondary: 0.29 0.006 286;
+  --secondary-foreground: 0.94 0.002 286;
+  --muted: 0.27 0.006 286;
+  --muted-foreground: 0.79 0.0129 286.1;
+  --accent: 0.6372 0.0325 243.7;
+  --accent-foreground: 0.14 0.0021 286.1;
+  --border: 0.43 0.0119 285.8;
+  --input: 0.48 0.014 286;
+  --ring: 0.6372 0.0325 243.7;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette="graphite"] {
+  color-scheme: light;
+  --background: 0.975 0.002 286;
+  --foreground: 0.22 0.004 286;
+  --card: 0.998 0.001 286;
+  --card-foreground: 0.22 0.004 286;
+  --popover: 0.998 0.001 286;
+  --popover-foreground: 0.22 0.004 286;
+  --primary: 0.22 0.004 286;
+  --primary-foreground: 0.998 0.001 286;
+  --secondary: 0.94 0.004 286;
+  --secondary-foreground: 0.28 0.006 286;
+  --muted: 0.93 0.004 286;
+  --muted-foreground: 0.475 0.0138 285.9;
+  --accent: 0.54 0.04 244;
+  --accent-foreground: 0.998 0.001 286;
+  --border: 0.82 0.008 286;
+  --input: 0.75 0.01 286;
+  --ring: 0.54 0.04 244;
+}
+
+/* Polar borrows the restrained polar-night / frost relationship familiar to
+ * Nord users, but keeps Scout's semantic status colors and component grammar. */
+[data-scout-theme-mode="dark"][data-scout-palette="polar"] {
+  color-scheme: dark;
+  --background: 0.3244 0.0229 264.2;
+  --foreground: 0.9513 0.0074 260.7;
+  --card: 0.3792 0.029 266.5;
+  --card-foreground: 0.9513 0.0074 260.7;
+  --popover: 0.355 0.026 265;
+  --popover-foreground: 0.9513 0.0074 260.7;
+  --primary: 0.9513 0.0074 260.7;
+  --primary-foreground: 0.3244 0.0229 264.2;
+  --secondary: 0.418 0.034 265;
+  --secondary-foreground: 0.93 0.01 261;
+  --muted: 0.395 0.03 265;
+  --muted-foreground: 0.83 0.0255 259.8;
+  --accent: 0.7746 0.0622 217.5;
+  --accent-foreground: 0.28 0.025 264;
+  --border: 0.4523 0.0352 264.1;
+  --input: 0.50 0.04 264;
+  --ring: 0.7746 0.0622 217.5;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette="polar"] {
+  color-scheme: light;
+  --background: 0.9513 0.0074 260.7;
+  --foreground: 0.3244 0.0229 264.2;
+  --card: 1 0 0;
+  --card-foreground: 0.3244 0.0229 264.2;
+  --popover: 1 0 0;
+  --popover-foreground: 0.3244 0.0229 264.2;
+  --primary: 0.3244 0.0229 264.2;
+  --primary-foreground: 1 0 0;
+  --secondary: 0.8993 0.0164 262.7;
+  --secondary-foreground: 0.36 0.028 264;
+  --muted: 0.8993 0.0164 262.7;
+  --muted-foreground: 0.4523 0.0352 264.1;
+  --accent: 0.5944 0.0772 254;
+  --accent-foreground: 1 0 0;
+  --border: 0.82 0.025 263;
+  --input: 0.74 0.03 263;
+  --ring: 0.5944 0.0772 254;
+}
+
+/* Solar keeps Solarized's deliberately measured background / foreground
+ * relationship, reduced to Scout's UI roles rather than syntax colors. */
+[data-scout-theme-mode="dark"][data-scout-palette="solar"] {
+  color-scheme: dark;
+  --background: 0.2673 0.0486 219.8;
+  --foreground: 0.80 0.0159 196.8;
+  --card: 0.32 0.0518 219.7;
+  --card-foreground: 0.80 0.0159 196.8;
+  --popover: 0.30 0.05 220;
+  --popover-foreground: 0.80 0.0159 196.8;
+  --primary: 0.80 0.0159 196.8;
+  --primary-foreground: 0.2673 0.0486 219.8;
+  --secondary: 0.36 0.049 219;
+  --secondary-foreground: 0.82 0.016 197;
+  --muted: 0.34 0.047 220;
+  --muted-foreground: 0.74 0.0197 205.3;
+  --accent: 0.6437 0.1019 187.4;
+  --accent-foreground: 0.22 0.045 220;
+  --border: 0.523 0.0283 219.1;
+  --input: 0.57 0.03 215;
+  --ring: 0.6437 0.1019 187.4;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette="solar"] {
+  color-scheme: light;
+  --background: 0.9735 0.0261 90.1;
+  --foreground: 0.42 0.0283 219.1;
+  --card: 0.9934 0.0107 95.2;
+  --card-foreground: 0.42 0.032 219;
+  --popover: 0.9934 0.0107 95.2;
+  --popover-foreground: 0.42 0.032 219;
+  --primary: 0.42 0.032 219;
+  --primary-foreground: 0.9934 0.0107 95.2;
+  --secondary: 0.9306 0.026 92.4;
+  --secondary-foreground: 0.45 0.03 219;
+  --muted: 0.9306 0.026 92.4;
+  --muted-foreground: 0.47 0.026 215;
+  --accent: 0.6149 0.1394 244.9;
+  --accent-foreground: 0.9934 0.0107 95.2;
+  --border: 0.82 0.026 91;
+  --input: 0.74 0.03 91;
+  --ring: 0.6149 0.1394 244.9;
+}
+
+/* Carbon and Week come from the Technical HUD study (/studies/technical-hud).
+ * Week is the /ops/week ground: near-black with cool ink and an emerald signal.
+ * Carbon is the midpoint between Graphite and Week: deeper than Graphite,
+ * neutral cool grey instead of Graphite's faint violet, solid panels. */
+[data-scout-theme-mode="dark"][data-scout-palette="carbon"] {
+  color-scheme: dark;
+  --background: 0.159 0.0045 264.4;
+  --foreground: 0.948 0.0052 247.9;
+  --card: 0.186 0.0044 264.5;
+  --card-foreground: 0.948 0.0052 247.9;
+  --popover: 0.208 0.0050 248.1;
+  --popover-foreground: 0.948 0.0052 247.9;
+  --primary: 0.948 0.0052 247.9;
+  --primary-foreground: 0.159 0.0045 264.4;
+  --secondary: 0.238 0.0065 258.4;
+  --secondary-foreground: 0.948 0.0052 247.9;
+  --muted: 0.226 0.0066 258.4;
+  --muted-foreground: 0.745 0.0103 252.8;
+  --accent: 0.809 0.1608 161.9;
+  --accent-foreground: 0.175 0.0265 163.1;
+  --border: 0.312 0.0083 255.6;
+  --input: 0.354 0.0102 254.0;
+  --ring: 0.809 0.1608 161.9;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette="carbon"] {
+  color-scheme: light;
+  --background: 0.961 0.0029 264.5;
+  --foreground: 0.221 0.0066 258.4;
+  --card: 0.985 0.0013 286.4;
+  --card-foreground: 0.221 0.0066 258.4;
+  --popover: 0.991 0.0013 286.4;
+  --popover-foreground: 0.221 0.0066 258.4;
+  --primary: 0.221 0.0066 258.4;
+  --primary-foreground: 0.961 0.0029 264.5;
+  --secondary: 0.930 0.0046 258.3;
+  --secondary-foreground: 0.221 0.0066 258.4;
+  --muted: 0.933 0.0046 258.3;
+  --muted-foreground: 0.475 0.0127 256.7;
+  --accent: 0.593 0.1276 161.8;
+  --accent-foreground: 0.985 0.0013 286.4;
+  --border: 0.869 0.0064 255.5;
+  --input: 0.822 0.0083 253.9;
+  --ring: 0.593 0.1276 161.8;
+}
+
+[data-scout-theme-mode="dark"][data-scout-palette="week"] {
+  color-scheme: dark;
+  --background: 0.134 0.0051 262.3;
+  --foreground: 0.937 0.0076 241.7;
+  --card: 0.154 0.0046 264.4;
+  --card-foreground: 0.937 0.0076 241.7;
+  --popover: 0.176 0.0052 248.1;
+  --popover-foreground: 0.937 0.0076 241.7;
+  --primary: 0.937 0.0076 241.7;
+  --primary-foreground: 0.134 0.0051 262.3;
+  --secondary: 0.207 0.0076 248.2;
+  --secondary-foreground: 0.937 0.0076 241.7;
+  --muted: 0.190 0.0069 258.4;
+  --muted-foreground: 0.672 0.0110 238.6;
+  --accent: 0.809 0.1608 161.9;
+  --accent-foreground: 0.175 0.0265 163.1;
+  --border: 0.287 0.0093 248.2;
+  --input: 0.326 0.0112 248.2;
+  --ring: 0.809 0.1608 161.9;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette="week"] {
+  color-scheme: light;
+  --background: 0.969 0.0025 228.8;
+  --foreground: 0.198 0.0102 248.3;
+  --card: 0.990 0.0011 197.1;
+  --card-foreground: 0.198 0.0102 248.3;
+  --popover: 0.994 0 0;
+  --popover-foreground: 0.198 0.0102 248.3;
+  --primary: 0.198 0.0102 248.3;
+  --primary-foreground: 0.969 0.0025 228.8;
+  --secondary: 0.941 0.0051 228.8;
+  --secondary-foreground: 0.198 0.0102 248.3;
+  --muted: 0.944 0.0051 228.8;
+  --muted-foreground: 0.470 0.0158 241.2;
+  --accent: 0.593 0.1276 161.8;
+  --accent-foreground: 0.990 0.0011 197.1;
+  --border: 0.882 0.0077 228.9;
+  --input: 0.835 0.0104 238.5;
+  --ring: 0.593 0.1276 161.8;
+}
+
+/* Paper is the Friendly ground: warm paper greys with white cards in light,
+ * a soft charcoal (not near-black) in dark. Its native signal is blue. The
+ * light greys sit at hue 85 with the other light grounds: at 106 they read
+ * green beside a white card. */
+[data-scout-theme-mode="dark"][data-scout-palette="paper"] {
+  color-scheme: dark;
+  --background: 0.223 0.0038 286.1;
+  --foreground: 0.943 0.0027 106.5;
+  --card: 0.257 0.0056 286;
+  --card-foreground: 0.943 0.0027 106.5;
+  --popover: 0.278 0.0056 286;
+  --popover-foreground: 0.943 0.0027 106.5;
+  --primary: 0.943 0.0027 106.5;
+  --primary-foreground: 0.223 0.0038 286.1;
+  --secondary: 0.294 0.0058 286;
+  --secondary-foreground: 0.943 0.0027 106.5;
+  --muted: 0.28 0.0056 286;
+  --muted-foreground: 0.731 0.0072 97.4;
+  --accent: 0.706 0.1311 267.9;
+  --accent-foreground: 0.2 0.03 267;
+  --border: 0.342 0.0052 286.1;
+  --input: 0.38 0.0055 286.1;
+  --ring: 0.706 0.1311 267.9;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette="paper"] {
+  color-scheme: light;
+  --background: 0.966 0.004 85;
+  --foreground: 0.221 0.0038 85;
+  --card: 1 0 0;
+  --card-foreground: 0.221 0.0038 85;
+  --popover: 1 0 0;
+  --popover-foreground: 0.221 0.0038 85;
+  --primary: 0.221 0.0038 85;
+  --primary-foreground: 0.985 0.002 85;
+  --secondary: 0.947 0.0045 85;
+  --secondary-foreground: 0.221 0.0038 85;
+  --muted: 0.952 0.0045 85;
+  --muted-foreground: 0.475 0.0085 85;
+  --accent: 0.537 0.1878 266.3;
+  --accent-foreground: 1 0 0;
+  --border: 0.902 0.0055 85;
+  --input: 0.872 0.0069 85;
+  --ring: 0.537 0.1878 266.3;
+}
+
+/* Status is semantic, not decorative. Palette and interface shape never
+ * redefine what success, warning, failure, or information mean. */
+[data-scout-theme-mode="dark"][data-scout-palette] {
+  --destructive: 0.72 0.18 25;
+  --destructive-foreground: 0.98 0 0;
+  --warning: 0.82 0.15 85;
+  --success: 0.8 0.15 155;
+  --info: 0.72 0.13 240;
+}
+
+[data-scout-theme-mode="light"][data-scout-palette] {
+  --destructive: 0.62 0.19 25;
+  --destructive-foreground: 0.99 0 0;
+  --warning: 0.72 0.15 85;
+  --success: 0.64 0.16 155;
+  --info: 0.56 0.14 240;
+}
+
+/* Accent overrides are intentionally small and optional. "Theme" leaves the
+ * palette's native signal untouched. */
+[data-scout-theme-mode="dark"][data-scout-accent="lime"] {
+  --accent: 0.86 0.17 125;
+  --accent-foreground: 0.14 0.02 125;
+  --ring: 0.86 0.17 125;
+}
+
+[data-scout-theme-mode="light"][data-scout-accent="lime"] {
+  --accent: 0.72 0.16 125;
+  --accent-foreground: 0.99 0 0;
+  --ring: 0.72 0.16 125;
+}
+
+[data-scout-theme-mode="dark"][data-scout-accent="cyan"] {
+  --accent: 0.8 0.12 215;
+  --accent-foreground: 0.15 0.03 230;
+  --ring: 0.8 0.12 215;
+}
+
+[data-scout-theme-mode="light"][data-scout-accent="cyan"] {
+  --accent: 0.58 0.14 230;
+  --accent-foreground: 0.99 0 0;
+  --ring: 0.58 0.14 230;
+}
+
+[data-scout-theme-mode="dark"][data-scout-accent="violet"] {
+  --accent: 0.76 0.14 300;
+  --accent-foreground: 0.16 0.03 300;
+  --ring: 0.76 0.14 300;
+}
+
+[data-scout-theme-mode="light"][data-scout-accent="violet"] {
+  --accent: 0.58 0.17 300;
+  --accent-foreground: 0.99 0 0;
+  --ring: 0.58 0.17 300;
+}
+
+[data-scout-theme-mode="dark"][data-scout-accent="amber"] {
+  --accent: 0.78 0.12 75;
+  --accent-foreground: 0.18 0.01 75;
+  --ring: 0.78 0.12 75;
+}
+
+[data-scout-theme-mode="light"][data-scout-accent="amber"] {
+  --accent: 0.54 0.12 65;
+  --accent-foreground: 0.99 0 0;
+  --ring: 0.54 0.12 65;
+}
+
+[data-scout-theme-mode="dark"][data-scout-accent="emerald"] {
+  --accent: 0.809 0.1608 161.9;
+  --accent-foreground: 0.175 0.0265 163.1;
+  --ring: 0.809 0.1608 161.9;
+}
+
+[data-scout-theme-mode="light"][data-scout-accent="emerald"] {
+  --accent: 0.593 0.1276 161.8;
+  --accent-foreground: 0.99 0 0;
+  --ring: 0.593 0.1276 161.8;
+}
+
+[data-scout-theme-mode="dark"][data-scout-accent="blue"] {
+  --accent: 0.706 0.1311 267.9;
+  --accent-foreground: 0.2 0.03 267;
+  --ring: 0.706 0.1311 267.9;
+}
+
+[data-scout-theme-mode="light"][data-scout-accent="blue"] {
+  --accent: 0.537 0.1878 266.3;
+  --accent-foreground: 0.99 0 0;
+  --ring: 0.537 0.1878 266.3;
+}
+
+/* Near-square: the middle corner is one touch of rounding, not a smaller
+ * Rounded. Hudson ships editorial at 4px; Scout holds it at 2px. */
+[data-hudson-template="editorial"][data-hudson-theme] {
+  --radius: 2px;
+  --radius-xs: 1px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-pill: 2px;
+  --radius-bubble: 12px;
+  --radius-soft: 8px;
+}
+
+/* The radius scale in tokens.css is Rounded's. Square takes every rung to 0,
+ * pills included, so chips and segmented controls square off with the panels.
+ * Round marks (status dots, avatars) use 50% and keep their shape. */
+[data-hudson-template="drafting"][data-hudson-theme] {
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-pill: 0px;
+  --radius-bubble: 10px;
+  --radius-soft: 6px;
+}
+
+/* Hudson maps --hud-dim to muted-foreground at 78% alpha, which weakens
+ * timestamps and captions in both modes. Keep dim below muted while lifting
+ * its alpha so small text remains readable on light and dark panels. */
+[data-scout-theme-mode="dark"][data-scout-palette] {
+  --hud-dim: oklch(var(--muted-foreground) / 0.92);
+}
+
+[data-scout-theme-mode="light"][data-scout-palette] {
+  --hud-dim: oklch(var(--muted-foreground) / 0.86);
+}
+
+/* Contrast changes only structural separation. It does not brighten text or
+ * repurpose the accent, so it remains safe to compare across palettes. */
+[data-scout-contrast="soft"] {
+  --hud-border: color-mix(in srgb, var(--hud-ink) 8%, transparent);
+  --hud-chrome-border: color-mix(in srgb, var(--hud-ink) 10%, transparent);
+  --hud-chrome-border-subtle: color-mix(in srgb, var(--hud-ink) 6%, transparent);
+  --hud-line: color-mix(in srgb, var(--hud-ink) 10%, transparent);
+  --hud-line-strong: color-mix(in srgb, var(--hud-ink) 14%, transparent);
+}
+
+[data-scout-contrast="balanced"] {
+  --hud-border: color-mix(in srgb, var(--hud-ink) 14%, transparent);
+  --hud-chrome-border: color-mix(in srgb, var(--hud-ink) 18%, transparent);
+  --hud-chrome-border-subtle: color-mix(in srgb, var(--hud-ink) 10%, transparent);
+  --hud-line: color-mix(in srgb, var(--hud-ink) 16%, transparent);
+  --hud-line-strong: color-mix(in srgb, var(--hud-ink) 22%, transparent);
+}
+
+[data-scout-contrast="strong"] {
+  --hud-border: color-mix(in srgb, var(--hud-ink) 20%, transparent);
+  --hud-chrome-border: color-mix(in srgb, var(--hud-ink) 28%, transparent);
+  --hud-chrome-border-subtle: color-mix(in srgb, var(--hud-ink) 16%, transparent);
+  --hud-line: color-mix(in srgb, var(--hud-ink) 24%, transparent);
+  --hud-line-strong: color-mix(in srgb, var(--hud-ink) 32%, transparent);
+}
+
+/* ── Lines ────────────────────────────────────────────────────────────────
+ * Two lines for the whole client, both driven by Separators (contrast):
+ *   --scout-line         a row or section hairline: rows in a list, the rule
+ *                        under a section label, a field's edge.
+ *   --scout-line-strong  an edge that holds a region: a pane's head band,
+ *                        a sheet or popover, a focused or selected outline.
+ *   --scout-line-edge    the page sheet's edge, where it meets the frame. On
+ *                        Home the rail and the page share one colour, so this
+ *                        line is the whole boundary, and the strong line
+ *                        vanished there at Soft contrast.
+ * Panes are divided by the shell, not by these. Local tokens (--sys-hairline,
+ * --av2-hairline, --sq-rule ...) alias these three; do not mint new ones.
+ * They are declared on the element that carries data-scout-contrast (the
+ * Provider's outer wrapper and :root), so they resolve against that element's
+ * --hud-ink, and every look and palette inherits them. Alpha over transparent,
+ * so they read the same on ground, plane and raised surfaces. */
+:root,
+[data-scout-contrast] {
+  --scout-line-a: 7%;
+  --scout-line-strong-a: 12%;
+  --scout-line-edge-a: 20%;
+  --scout-line: color-mix(in srgb, var(--hud-ink, currentColor) var(--scout-line-a), transparent);
+  --scout-line-strong: color-mix(in srgb, var(--hud-ink, currentColor) var(--scout-line-strong-a), transparent);
+  --scout-line-edge: color-mix(in srgb, var(--hud-ink, currentColor) var(--scout-line-edge-a), transparent);
+}
+:root[data-scout-contrast="balanced"],
+[data-scout-contrast="balanced"] {
+  --scout-line-a: 10%;
+  --scout-line-strong-a: 16%;
+  --scout-line-edge-a: 24%;
+}
+:root[data-scout-contrast="strong"],
+[data-scout-contrast="strong"] {
+  --scout-line-a: 15%;
+  --scout-line-strong-a: 24%;
+  --scout-line-edge-a: 32%;
+}
+
+/* ── Pane head ────────────────────────────────────────────────────────────
+ * One pane head for the client: the app's top row is 40px, and every pane's
+ * head is a 32px band (the rail's band is the same) with one title style:
+ * mono at --text-xs, regular weight, in the voice's case and tracking. A Look
+ * moves the title through --text-xs and the voice tokens, not by its own
+ * head height or weight. See components/Pane.tsx. */
+:root {
+  --scout-top-row: 40px;
+  --scout-pane-band: 32px;
+  --scout-pane-title-size: var(--text-xs);
+  --scout-pane-title-weight: 400;
+}
+
+/* ── Voice ────────────────────────────────────────────────────────────────
+ * Mixed is the default: sans prose, mono labels, semibold titles. Mono sets
+ * the interface in the system mono at the body's light weight, the quiet HUD
+ * variant. It overrides the alias rather than --hud-font-sans, which the
+ * provider sets inline. */
+:root[data-scout-voice="mono"] body,
+:root[data-scout-voice="mono"] [data-scout-theme] {
+  --font-sans: var(--hud-font-mono);
+  --font-accent-title: var(--hud-font-mono);
+  font-family: var(--hud-font-mono);
+}
+
+/* Letter case belongs to the voice. Labels are written in the case they read
+ * in; a rule that wants capitals asks for them with
+ *   text-transform: var(--voice-case, uppercase);
+ *   letter-spacing: var(--voice-track, <its tracking>);
+ * Mono leaves both unset, so those labels keep their capitals and tracking.
+ * Mixed and Sans set them to none and normal, so the words read as written.
+ * On :root, so portals outside the theme wrapper follow too. A specimen that
+ * carries its own data-voice (Settings, Type) shows that voice's case. */
+:root[data-scout-voice="mixed"],
+:root[data-scout-voice="sans"],
+[data-voice="mixed"],
+[data-voice="sans"] {
+  --voice-case: none;
+  --voice-track: normal;
+}
+[data-voice="mono"] {
+  --voice-case: initial;
+  --voice-track: initial;
+}
+
+/* Sans: the conventional voice. Every face is the system sans and labels keep
+ * the case they are written in, untracked; numerals are tabular so columns
+ * still line up. Code keeps mono: code, pre, kbd and samp, and the terminal,
+ * diff, console and code surfaces restore the real face for their subtree.
+ * The overrides sit on the alias scope because the Provider's outer wrapper
+ * sets --hud-font-mono inline. */
+:root {
+  --scout-face-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+:root[data-scout-voice="sans"] [data-scout-theme] {
+  --hud-font-mono: var(--hud-font-sans);
+  --font-mono: var(--hud-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+:root[data-scout-voice="sans"] [data-scout-theme] :is(code, pre, kbd, samp, .xterm, [class*="terminal"], [class*="diff"], [class*="console"], [class*="code-"], [class*="-code"]) {
+  --hud-font-mono: var(--scout-face-mono);
+  --font-mono: var(--scout-face-mono);
+}
+:root[data-scout-voice="sans"] [data-scout-theme] :is(code, pre, kbd, samp) {
+  font-family: var(--scout-face-mono);
+}
+/* A specimen that carries its own data-voice (Settings, Type) keeps it. */
+:root[data-scout-voice="sans"] [data-scout-theme] *:not(code, pre, kbd, samp, [data-voice] *) {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+/* ── Finish ───────────────────────────────────────────────────────────────
+ * Ticks: a faint scanline veil over the window, and corner ticks on panels
+ * (the bottom-right tick is the HUD grid's resize handle). */
+:root[data-scout-finish="ticks"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.007) 0 1px, transparent 1px 3px);
+}
+:root[data-scout-finish="ticks"][data-scout-theme-mode="light"] body::after {
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.012) 0 1px, transparent 1px 3px);
+}
+
+/* ── Frame spacing ────────────────────────────────────────────────────────
+ * The room around and between a view's panels, set by Density. Panels meet
+ * at a seam, not a gap: one value all round, so the space above a panel
+ * matches the space beside it. One parameter drives it all: --frame-unit,
+ * 2px at Regular, halved by Compact, doubled by Large. The gap and the edges
+ * are one unit; the sheet's seam to the window is three (FRAME_SEAM_UNITS);
+ * a pane corner in a sheet corner rounds to the sheet's radius less its inset
+ * (scout/sidebar/frame-pane-corners.ts), so the curves stay concentric.
+ * Each panel keeps its own edge and head. The HUD grid and the docked sides
+ * read --frame-gap back for their layout math
+ * (components/hud-grid/frame-spacing.ts), so CSS and geometry move together. */
+:root {
+  --frame-unit: 2px;
+  --frame-edge-x: var(--frame-unit);
+  --frame-edge-y: var(--frame-unit);
+  --frame-gap: var(--frame-unit);
+}
+:root[data-scout-avatar-size="compact"] { --frame-unit: 1px; }
+:root[data-scout-avatar-size="large"] { --frame-unit: 4px; }
+/* The panels' own edges: a quiet divider, a step under the border colour, so
+   the space between sections reads before the lines do. */
+:root { --frame-divider: color-mix(in srgb, var(--border) 60%, transparent); }
+/* Two layers, each its own choice over Density's unit.
+   Panels › Joined: no gap. Neighbouring panels overlap by their 1px edge, so
+   each boundary is one shared hairline, never two (components/hud-grid/
+   hud-grid.css, Joined). The docked sides' drag handle keeps 6px, on the
+   boundary (screens/views/views.css, Joined panels).
+   Edges › Flush: no room between the panels and the page sheet. The sheet
+   keeps the Corners setting, and a panel in one of its corners follows its
+   arc (scout/sidebar/frame-pane-corners.ts). */
+:root[data-scout-panels="joined"] { --frame-gap: 0px; }
+:root[data-scout-edges="flush"] {
+  --frame-edge-x: 0px;
+  --frame-edge-y: 0px;
+}

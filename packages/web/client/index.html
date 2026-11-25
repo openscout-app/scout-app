@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09090a" />
+    <title>Scout</title>
+    <link rel="icon" href="/favicon.ico?v=scout-mark-2" sizes="any" />
+    <link rel="icon" href="/favicon.svg?v=scout-mark-2" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png?v=scout-mark-2" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <style>
+      html {
+        --boot-bg: #09090a;
+        --boot-ink: #f2f2f3;
+        --boot-line: oklch(0.96 0.0013 286.4 / 0.08);
+        --boot-mark: oklch(0.96 0.0013 286.4 / 0.28);
+      }
+
+      html[data-boot-theme="light"] {
+        --boot-bg: oklch(0.975 0.002 286);
+        --boot-ink: oklch(0.22 0.004 286);
+        --boot-line: oklch(0.82 0.008 286 / 0.92);
+        --boot-mark: oklch(0.22 0.004 286 / 0.3);
+      }
+
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        background: var(--boot-bg);
+        color: var(--boot-ink);
+      }
+
+      body {
+        margin: 0;
+      }
+
+      /* What a cold load shows until the app's first render replaces it: the
+         page in the startup theme and the Scout mark in the middle, one stroke
+         tracing its ring. No lines of a shell that the real shell would not
+         match. The mark fades in after a beat, so a fast load shows only the
+         page colour. The colours are the ones the app last painted, when it
+         left them (main.tsx, openscout.boot-paint). */
+      .boot-frame {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .boot-frame svg {
+        width: 36px;
+        height: 36px;
+        color: var(--boot-ink);
+        opacity: 0;
+        animation: boot-in 320ms ease-out 200ms forwards;
+      }
+
+      .boot-frame .ring { stroke: var(--boot-mark); }
+      .boot-frame .core { fill: var(--boot-mark); }
+      .boot-frame .trace {
+        stroke: currentColor;
+        stroke-dasharray: 18 82;
+        animation: boot-trace 1.6s linear infinite;
+      }
+
+      @keyframes boot-in { to { opacity: 1; } }
+      @keyframes boot-trace { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+
+      @media (prefers-reduced-motion: reduce) {
+        .boot-frame .trace { animation: none; stroke-dasharray: none; opacity: 0.35; }
+      }
+    </style>
+    <!--
+      SCO-065: Pierre Diffs is loaded at runtime from esm.sh (see
+      scout/repo-diff/pierre.ts). It's a React *component* library, so it must
+      use ONE React instance, rendered in its own isolated root. This import map
+      canonicalises the bare `react`/`react-dom` specifiers (Pierre is fetched
+      with `?external=react,react-dom`) to a single pinned, immutable esm.sh copy
+      — matched to the app's bundled React (19.2.3). The app's own bundle never
+      imports bare `react` at runtime (Vite bundles it), so this only affects the
+      runtime-loaded Pierre subtree.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@19.2.3",
+          "react/jsx-runtime": "https://esm.sh/react@19.2.3/jsx-runtime",
+          "react-dom": "https://esm.sh/react-dom@19.2.3?external=react",
+          "react-dom/client": "https://esm.sh/react-dom@19.2.3/client?external=react"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Invited members use the channel API, without the operator bootstrap.
+      // Keep the ordinary shell's bootstrap synchronous before main.tsx runs.
+      (() => {
+        const path = window.location.pathname;
+        const standalone = /^\/chat\/?$/.test(path)
+          || /^\/invite\/[^/]+\/?$/.test(path)
+          || (path === "/" && window.location.hostname.toLowerCase().startsWith("chat."));
+        // The startup theme as lib/theme.ts picks it: ?theme=, the stored
+        // appearance, then the system.
+        let theme = new URLSearchParams(window.location.search).get("theme");
+        if (theme !== "light" && theme !== "dark") {
+          try { theme = JSON.parse(localStorage.getItem("openscout.theme") || "{}").theme; } catch { theme = null; }
+        }
+        if (theme !== "light" && theme !== "dark") {
+          theme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        }
+        document.documentElement.dataset.bootTheme = theme;
+        // The page and ink colours the app painted last time in this theme, so the
+        // first frame matches the app it gives way to.
+        try {
+          const paint = JSON.parse(localStorage.getItem("openscout.boot-paint") || "null");
+          if (paint && paint.theme === theme && paint.bg && paint.ink) {
+            document.documentElement.style.setProperty("--boot-bg", paint.bg);
+            document.documentElement.style.setProperty("--boot-ink", paint.ink);
+            document.documentElement.style.setProperty("--boot-mark", "color-mix(in oklab, " + paint.ink + " 22%, transparent)");
+          }
+        } catch {}
+        // The operator shell's frame. Standalone, embed and lab pages draw their own.
+        const shell = !standalone
+          && !/^\/(embed|glass|deck|swarm|dev)(\/|$)/.test(path)
+          && !("__SCOUT_GLASS__" in window);
+        if (shell) {
+          // The Scout mark (components/ScoutMark.tsx) at twice its grid size.
+          document.getElementById("root").innerHTML = '<div class="boot-frame" role="status" aria-label="Loading Scout">'
+            + '<svg viewBox="0 0 18 18" fill="none" aria-hidden="true">'
+            + '<path class="ring" d="M9 1 16 5v8l-7 4-7-4V5Z" stroke-width="2" stroke-linejoin="round"/>'
+            + '<path class="trace" d="M9 1 16 5v8l-7 4-7-4V5Z" pathLength="100" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+            + '<path class="core" d="M9 4.43 13 6.71v4.58L9 13.57 5 11.29V6.71Z"/>'
+            + '</svg></div>';
+        }
+        if (!standalone) {
+          document.write('<script src="/api/bootstrap.js"><\/script>');
+        }
+      })();
+    </script>
+    <script type="module" src="/main.tsx"></script>
+  </body>
+</html>

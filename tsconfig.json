@@ -1,5 +1,1 @@
-{
-  "extends": "./packages/web/client/tsconfig.json",
-  "compilerOptions": { "types": ["bun"] },
-  "include": ["scripts/**/*.ts", "packages/web/server/**/*.ts", "packages/web/shared/**/*.ts"]
-}
+{ "extends": "./packages/web/tsconfig.check.json" }

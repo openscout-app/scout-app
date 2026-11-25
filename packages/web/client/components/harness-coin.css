@@ -1,0 +1,9 @@
+.harness-coin {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  background: var(--bg);
+  color: var(--ink);
+}

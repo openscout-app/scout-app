@@ -1,0 +1,104 @@
+/* Page / Pane / Section (components/Pane.tsx). The head shares its band and
+ * title with a composed view's panel head (components/hud-grid/hud-grid.css):
+ * --scout-pane-band, --scout-pane-title-size and -weight (styles/appearance.css). */
+
+.scout-page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.scout-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.scout-pane-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: none;
+  height: var(--scout-pane-band);
+  padding: 0 var(--space-sm) 0 var(--space-lg);
+  border-bottom: 1px solid var(--scout-line);
+  white-space: nowrap;
+}
+
+.scout-pane-title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: var(--scout-pane-title-size);
+  font-weight: var(--scout-pane-title-weight);
+  line-height: var(--leading-none);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--ink);
+}
+
+.scout-pane-count {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+.scout-pane-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.scout-pane-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+}
+
+.scout-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+/* A tool in the head: the same compact chip a composed panel's head uses
+ * (.vw-chip in screens/views/views.css), on the line tokens. */
+.scout-pane-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  height: 20px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.scout-pane-tool:hover { color: var(--ink); }
+.scout-pane-tool:disabled { opacity: 0.5; cursor: default; }
+
+.scout-pane-note {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  color: var(--dim);
+}

@@ -1,0 +1,8 @@
+{
+  // Bun consumes this runtime-safe config. TypeScript editors follow the
+  // solution reference, where React declarations belong to the type graph only.
+  "extends": "./tsconfig.runtime.json",
+  "files": [],
+  "include": [],
+  "references": [{ "path": "./tsconfig.editor.json" }]
+}

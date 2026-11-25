@@ -1,0 +1,79 @@
+/* The Voice view's panels: the /voice instrument cut into panels (Voice call,
+   Voice stage, Voice turns, Voice turn, Voice usage). The page's own CSS
+   (screens/voice/voice-paths.css, voice-turn.css) still draws every part; this
+   only fits the parts to a panel.
+
+   Sized by the panel, never the window: the page's @media (max-width: 760px)
+   rules have @container twins here. A panel may be square (the ticks finish),
+   so nothing inside it is a rounded box: the well's card frame drops, and
+   every corner left takes a radius token the look can set. */
+
+.vw-voice { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+
+/* ── Voice call ─────────────────────────────────────────────────────────── */
+.vw-voice-call { display: flex; flex-direction: column; }
+.vw-voice-call-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--scout-chrome-border-soft);
+}
+.vw-voice-call-id { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.vw-voice-call-mode {
+  flex: none;
+  font-family: var(--font-accent-title);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--scout-chrome-ink-strong);
+}
+.vw-voice-alert { margin: 0; padding: 8px 12px; font-size: 13px; color: var(--scout-chrome-ink-strong); }
+.vw-voice-call-well { padding: 12px 16px 16px; }
+
+/* The well is the panel's body, not a card inside it. */
+.vw-voice .voice-well {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.vw-voice .voice-well--row { padding-top: 12px; border-top: 1px solid var(--scout-chrome-border-soft); }
+
+/* ── Voice stage ────────────────────────────────────────────────────────── */
+.vw-voice-stage .voice-stack { width: 100%; margin: 0; }
+.vw-voice-stage .vtl-hold { padding-inline: 20px; }
+
+/* ── Voice turns, Voice turn, Voice usage ───────────────────────────────── */
+.vw-voice-turns { padding: 10px 12px; }
+.vw-voice-lanes { padding: 10px 12px 14px; overflow-x: auto; }
+.vw-voice-usage details { border-top-width: 0; }
+
+/* ── Corners: tokens, never literal radii ───────────────────────────────── */
+.vw-voice .voice-mode-switch { border-radius: var(--radius-sm); }
+.vw-voice .voice-mode-switch button { border-radius: var(--radius-xs); }
+.vw-voice .voice-well-cta,
+.vw-voice .voice-well--row .voice-well-cta,
+.vw-voice .voice-well-flag { border-radius: var(--radius-sm); }
+.vw-voice .vtl-track { border-radius: var(--radius-xs); }
+.vw-voice .vtl-span,
+.vw-voice .vtl-span.vtl-ghost,
+.vw-voice .vtl-mini-strip,
+.vw-voice .vp7-share { border-radius: var(--radius-xs); }
+
+/* ── The page's 760px rules, by the panel's width ───────────────────────── */
+/* In a panel the window's width says nothing: hold the wide sizes... */
+.vw-voice .voice-well--row .voice-well-cta { margin-left: auto; }
+.vw-voice .vp7-hero-quote { font-size: 30px; }
+.vw-voice .vp7-hero-quote--rest { font-size: 24px; }
+
+/* ...and take the narrow ones when the panel is narrow. */
+@container (max-width: 760px) {
+  .vw-voice .voice-well--row .voice-well-cta { margin-left: 0; }
+  .vw-voice .vp7-hero-quote { font-size: 23px; }
+  .vw-voice .vp7-hero-quote--rest { font-size: 20px; }
+}

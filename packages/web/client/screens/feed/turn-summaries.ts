@@ -5,7 +5,8 @@
  * still writing some, the read repeats a few times, then stops. A post with
  * no summary reads null, and its row keeps the words it has.
  *
- * A host that generates summaries queues a turn once and keeps what it writes.
+ * The model is never called on the client's clock: the server queues a turn
+ * once and keeps what it writes (server/turn-summary.ts).
  */
 import { useEffect, useSyncExternalStore } from "react";
 import type { FeedSummaries, FeedTurnSummary } from "../../../shared/api/feed.ts";

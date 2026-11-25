@@ -1,0 +1,187 @@
+/* Activity panels: the Activity log (screens/system-surfaces-redesign.css,
+ * .sys-audit-*) inside view panels. The log is already rows under a
+ * SectionRule, with a plain count strip and fact rows, on the page and in a
+ * panel alike; this file only fits it to the panel: tighter padding, state
+ * cards and banners without boxes, and sizes that read the panel body (a
+ * query container), never the window. The page's @media rules for the log
+ * return here as @container rules, and these selectors outrank them. */
+
+.vw-activity,
+.vw-activity-item {
+  min-height: 0;
+}
+
+.vw-activity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+/* ── The sync line ──────────────────────────────────────────────────── */
+
+.vw-activity > .scout-section > .scout-section-rule {
+  padding-inline: var(--space-md);
+}
+
+.vw-activity .sys-stat-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.vw-activity .sys-stat-value {
+  font-size: var(--text-xl);
+}
+
+.vw-activity .sys-stat-detail {
+  font-size: var(--text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ── States: words in the panel, not cards in it ────────────────────── */
+
+.vw-activity .sys-state-card {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: var(--space-lg) 0;
+}
+
+.vw-activity .sys-state-title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.vw-activity .sys-state-card-error .sys-state-title {
+  color: var(--red);
+}
+
+.vw-activity .sys-banner {
+  border-radius: 0;
+  border-width: 1px 0;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-md);
+}
+
+/* ── The log ────────────────────────────────────────────────────────── */
+
+.vw-activity .sys-audit-toggle {
+  grid-template-columns: 76px 16px minmax(0, 1fr) 48px;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.vw-activity .sys-audit-details {
+  padding: 0 var(--space-md) var(--space-md) calc(76px + 16px + var(--space-md) * 3);
+}
+
+/* the page's narrow-window rules undone: only the panel's width decides */
+.vw-activity .sys-audit-stamp,
+.vw-activity-item .sys-audit-stamp {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3xs);
+  padding-top: var(--space-3xs);
+}
+
+.vw-activity .sys-audit-expand {
+  padding-top: var(--space-2xs);
+}
+
+.vw-activity .sys-audit-marker,
+.vw-activity-item .sys-audit-marker {
+  display: flex;
+}
+
+/* ── Details: facts as rows, not wells ──────────────────────────────── */
+
+.vw-activity .sys-inline-actions,
+.vw-activity-item .sys-inline-actions {
+  gap: var(--space-sm);
+}
+
+/* ── Activity details ───────────────────────────────────────────────── */
+
+.vw-activity-record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+}
+
+.vw-activity-record-head {
+  display: grid;
+  grid-template-columns: 76px 16px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+/* the panel has room for the whole summary the row clamps */
+.vw-activity-item .sys-audit-summary {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.vw-activity-item .sys-audit-details {
+  padding: 0;
+}
+
+/* ── Narrow panels ──────────────────────────────────────────────────── */
+
+@container (max-width: 560px) {
+  .vw-activity .sys-audit-toggle {
+    grid-template-columns: 60px 16px minmax(0, 1fr) auto;
+  }
+
+  .vw-activity .sys-audit-details {
+    padding-left: calc(60px + 16px + var(--space-md) * 3);
+  }
+}
+
+@container (max-width: 420px) {
+  .vw-activity .sys-audit-toggle,
+  .vw-activity-record-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-xs);
+  }
+
+  .vw-activity .sys-audit-stamp,
+  .vw-activity-item .sys-audit-stamp {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-sm);
+    padding-top: 0;
+  }
+
+  .vw-activity .sys-audit-expand {
+    padding-top: 0;
+  }
+
+  .vw-activity .sys-audit-marker,
+  .vw-activity-item .sys-audit-marker {
+    display: none;
+  }
+
+  .vw-activity .sys-audit-details {
+    padding: 0 var(--space-md) var(--space-md);
+  }
+
+  .vw-activity .sys-detail-grid,
+  .vw-activity-item .sys-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vw-activity .sys-stat-detail {
+    display: none;
+  }
+}
+
+/* the head's Refresh while a read is out */
+.vw-panel--activity .vw-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -94,14 +94,14 @@ export type TurnBeatsView = {
 
 /* ── reading one call ─────────────────────────────────────────────────── */
 
-const SHELL = new Set(["bash", "shell", "terminal", "exec", "run", "command", "exec_command", "shell_command", "local_shell", "container_exec", "container.exec"]);
-const READ = new Set(["read", "read_file", "view", "view_file", "view_image", "open_file"]);
-const EDIT = new Set(["edit", "multiedit", "strreplace", "str_replace", "str_replace_editor", "str_replace_based_edit_tool", "edit_file", "apply_patch", "patch", "notebookedit"]);
+const SHELL = new Set(["run_command", "shell_exec", "bash", "shell", "terminal", "exec", "run", "command", "exec_command", "shell_command", "local_shell", "container_exec", "container.exec"]);
+const READ = new Set(["read", "read_file", "read_resource", "view", "view_file", "view_image", "open_file"]);
+const EDIT = new Set(["edit", "multiedit", "strreplace", "str_replace", "str_replace_editor", "str_replace_based_edit_tool", "edit_file", "file_change", "code_action", "apply_patch", "patch", "notebookedit"]);
 const WRITE = new Set(["write", "write_file", "create", "create_file"]);
-const SEARCH = new Set(["grep", "glob", "search", "rg", "find", "codebase_search", "file_search", "grep_search", "web_search", "websearch", "web.run", "web"]);
-const FETCH = new Set(["webfetch", "web_fetch", "fetch", "fetch_url"]);
-const AGENT = new Set(["agent", "task", "spawn_agent", "subagent"]);
-const PLAN = new Set(["todowrite", "todo_write", "update_plan", "todoread", "todo_read"]);
+const SEARCH = new Set(["grep", "glob", "search", "rg", "find", "codebase_search", "file_search", "grep_search", "find_by_name", "search_web", "web_search", "websearch", "web.run", "web"]);
+const FETCH = new Set(["webfetch", "web_fetch", "fetch", "fetch_url", "read_url_content", "open_browser_url"]);
+const AGENT = new Set(["agent", "task", "spawn_agent", "subagent", "invoke_subagent", "define_subagent", "manage_subagents", "send_message"]);
+const PLAN = new Set(["todowrite", "todo_write", "update_plan", "update_steps", "todoread", "todo_read"]);
 
 /*
  * A command runs tests or a check when one of its segments starts with a

@@ -1,0 +1,17 @@
+.scout-queue-ticket {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.s-msg-compose-queue-row[data-submitting] { color: var(--muted); }
+.scout-queue-receipt { font-size: 12px; color: var(--muted); padding: 4px 12px; }
+@media (prefers-reduced-motion: reduce) { .scout-queue-ticket { display: none; } }

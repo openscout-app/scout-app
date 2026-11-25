@@ -1,0 +1,224 @@
+/* Sessions as slots. Scout chrome tokens only; one accent, used for live state,
+   never for selection (selected = plate). */
+.s-sessions-slots { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; color: var(--scout-chrome-ink); background: var(--scout-chrome-bg); }
+.s-slots-toolbar, .s-slot-head, .s-session-actions, .s-slots-flight { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.s-slots-toolbar { gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--scout-chrome-border-soft); }
+.s-slots-toolbar h1 { margin: 0 4px 0 0; font-size: 15px; font-weight: 400; color: var(--scout-chrome-ink-strong); }
+.s-slots-toolbar .s-session-actions { gap: 2px; padding: 2px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 7px; }
+.s-slots-toolbar .s-session-actions > button { border-color: transparent; background: transparent; color: var(--scout-chrome-ink-faint); }
+.s-slots-toolbar .s-session-actions > button[aria-pressed="true"] { background: var(--scout-chrome-hover); color: var(--scout-chrome-ink-strong); }
+.s-slots-add { margin-left: auto; }
+.s-slots-add select { font-size: 12px; color: var(--scout-chrome-ink-faint); }
+
+.s-slot-list { display: flex; flex: 1; min-height: 0; overflow-x: auto; }
+.s-primitive-slot { display: flex; flex-direction: column; min-width: 240px; min-height: 0; border-right: 1px solid var(--scout-chrome-border-soft); }
+.s-primitive-slot:last-child { border-right: 0; }
+.s-slot-head { position: relative; gap: 8px; min-height: 32px; padding: 0 10px 0 12px; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10.5px; color: var(--scout-chrome-ink-faint); border-bottom: 1px solid var(--scout-chrome-border-soft); }
+.s-slot-prim { display: inline-flex; align-items: center; gap: 7px; font-weight: 400; text-transform: var(--voice-case, uppercase); letter-spacing: var(--voice-track, 0.04em); color: var(--scout-chrome-ink); }
+.s-slot-num { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--scout-chrome-border-soft); color: var(--scout-chrome-ink-faint); letter-spacing: 0; }
+.s-slot-head > span { color: var(--scout-chrome-ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 60px; }
+.s-slot-head summary { list-style: none; padding: 2px 6px; border-radius: 4px; color: var(--scout-chrome-ink-faint); }
+.s-slot-head summary::-webkit-details-marker { display: none; }
+.s-slot-head summary:hover, .s-slot-options[open] summary { background: var(--scout-chrome-hover); color: var(--scout-chrome-ink); }
+.s-slot-body { flex: 1; min-height: 0; min-width: 0; overflow-x: hidden; overflow-y: auto; }
+.s-slot-options > div { position: absolute; right: 8px; top: calc(100% + 4px); z-index: 3; display: grid; gap: 8px; padding: 12px; min-width: 200px; font-family: inherit; font-size: 12px; background: var(--scout-chrome-bg); border: 1px solid var(--scout-chrome-border-soft); border-radius: 8px; box-shadow: 0 12px 32px rgb(0 0 0 / 0.35); }
+.s-sessions-slots summary { cursor: pointer; }
+.s-sessions-slots select, .s-sessions-slots input:not([type="radio"]) { background: transparent; color: var(--scout-chrome-ink); border: 1px solid var(--scout-chrome-border-soft); border-radius: 5px; font: inherit; font-size: 12px; max-width: 100%; padding: 3px 6px; }
+.s-sessions-slots :is(button, input, select, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Board: filters, then rows */
+.s-session-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--scout-chrome-border-soft); }
+.s-session-filters label, .s-slots-flight label { display: flex; flex-direction: column; gap: 3px; font-size: 10.5px; color: var(--scout-chrome-ink-faint); min-width: 0; flex: 1 1 80px; }
+.s-session-board-members { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.s-session-board--cards .s-session-board-members { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 10px; padding: 12px; }
+/* Rows sit on the app grid: one line is 32, two lines are 48 (6 + 20 + 16 + 5 + the 1px line). */
+.s-session-member { display: flex; flex-direction: column; justify-content: center; gap: 0; box-sizing: border-box; min-height: 32px; text-align: left; width: 100%; padding: 6px 12px 5px; border: 0; border-bottom: 1px solid var(--scout-chrome-border-soft); background: transparent; color: var(--scout-chrome-ink-faint); font: inherit; cursor: pointer; }
+.s-session-member:hover { background: var(--scout-chrome-hover); }
+.s-session-member[aria-pressed="true"] { background: var(--scout-chrome-active, var(--scout-chrome-hover)); color: var(--scout-chrome-ink); }
+.s-session-member-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.s-session-member-top > svg { flex: none; }
+.s-session-member strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 20px; font-weight: 400; color: var(--scout-chrome-ink); }
+.s-session-member[aria-pressed="true"] strong { color: var(--scout-chrome-ink-strong); }
+.s-session-member-meta { padding-left: 22px; font-size: 12px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-session-member small { display: none; }
+.s-session-state { flex: none; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; letter-spacing: var(--voice-track, 0.04em); text-transform: var(--voice-case, uppercase); }
+.s-session-state[data-state="working"]::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
+.s-session-state[data-state="asks"] { padding: 1px 5px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 3px; color: var(--scout-chrome-ink-strong); }
+/* an idle row's age sits where a state would, quieter */
+.s-session-state[data-state="idle"] { letter-spacing: 0; text-transform: none; color: var(--scout-chrome-ink-ghost, var(--scout-chrome-ink-faint)); font-variant-numeric: tabular-nums; }
+/* A parent with subagents keeps one line: a count beside the age opens them
+   under the row. Its open button stretches over the row; the count sits above. */
+.s-session-fold > .s-session-member { position: relative; cursor: default; }
+.s-session-member[data-pressed="true"] { background: var(--scout-chrome-active, var(--scout-chrome-hover)); color: var(--scout-chrome-ink); }
+.s-session-member[data-pressed="true"] strong { color: var(--scout-chrome-ink-strong); }
+.s-session-open { all: unset; display: flex; flex: 1; min-width: 0; cursor: pointer; }
+.s-session-open::after { content: ""; position: absolute; inset: 0; }
+.s-session-member:has(.s-session-open:focus-visible) { outline: 1px solid var(--accent); outline-offset: -1px; }
+.s-session-subcount { position: relative; z-index: 1; flex: none; display: inline-flex; align-items: center; gap: 1px; height: 18px; padding: 0 2px 0 5px; border: 1px solid transparent; border-radius: 3px; background: transparent; color: var(--scout-chrome-ink-faint); font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.s-session-subcount:hover, .s-session-subcount[aria-expanded="true"] { border-color: var(--scout-chrome-border-soft); color: var(--scout-chrome-ink); }
+.s-session-subcount:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.s-session-subcount svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.s-session-subcount[aria-expanded="true"] svg { transform: rotate(180deg); }
+.s-session-fold[data-open="true"] > .s-session-member { border-bottom-color: transparent; }
+.s-session-subs { display: grid; padding: 0 0 4px; border-bottom: 1px solid var(--scout-chrome-border-soft); }
+.s-session-sub { display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 12px 4px 34px; border: 0; background: transparent; color: var(--scout-chrome-ink-faint); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.s-session-sub:hover { background: var(--scout-chrome-hover); }
+.s-session-sub[aria-pressed="true"] { background: var(--scout-chrome-active, var(--scout-chrome-hover)); color: var(--scout-chrome-ink-strong); }
+.s-session-sub > svg { flex: none; }
+.s-session-sub-task { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a project's line over its rows: mono label on a hairline, no box. A 24 band: 8 + 12 + 3 + the 1px line. */
+.s-session-group { box-sizing: border-box; height: 32px; margin: 0; padding: 14px 12px 4px; line-height: 14px; border-bottom: 1px solid var(--scout-chrome-border-soft); font-size: 12px; font-weight: 400; color: var(--scout-chrome-ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-session-board--cards .s-session-member { gap: 6px; padding: 12px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 8px; }
+.s-session-board--cards .s-session-member strong { white-space: normal; }
+.s-session-board--cards .s-session-member-meta { padding-left: 0; white-space: normal; }
+.s-session-board--cards .s-session-member small { display: block; font-size: 11px; color: var(--scout-chrome-ink-ghost, var(--scout-chrome-ink-faint)); }
+.s-session-muted, .s-session-origin { font-size: 12px; color: var(--scout-chrome-ink-faint); }
+.s-session-lane { margin: 8px; overflow: hidden; border-radius: 8px; }
+.s-session-lane[data-selected="true"] { background: var(--scout-chrome-hover); }
+.s-session-lane .s-observe { max-height: 260px; }
+.s-session-origin { padding: 6px 12px; margin: 0; }
+
+/* Session: header, transcript, composer */
+.s-session-slot { display: flex; height: 100%; min-height: 0; }
+.s-session-thread { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+.s-session-header { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--scout-chrome-border-soft); }
+.s-session-header > svg { margin-top: 2px; flex: none; }
+.s-session-header > div { flex: 0 1 auto; min-width: 0; }
+.s-session-header h2 { margin: 0; font-size: 15px; font-weight: 400; line-height: 1.35; color: var(--scout-chrome-ink-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-session-header p { margin: var(--space-xs) 0 0; font-size: 11.5px; color: var(--scout-chrome-ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-session-header p code { font-size: 10.5px; color: var(--scout-chrome-ink-ghost, var(--scout-chrome-ink-faint)); }
+/* the name renames in place: it reads as the heading until it is pressed */
+.s-session-name-button { display: inline-flex; align-items: center; gap: 6px; max-width: calc(100% + 12px); margin: -2px -6px; padding: 2px 6px; border: 1px solid transparent; border-radius: var(--radius-sm); background: none; font: inherit; color: inherit; text-align: left; cursor: text; }
+.s-session-name-button > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-session-name-button:hover, .s-session-name-button:focus-visible { border-color: var(--scout-chrome-border-soft); }
+.s-session-name-pencil { flex: none; color: var(--scout-chrome-ink-faint); opacity: 0; }
+.s-session-name-button:hover .s-session-name-pencil, .s-session-name-button:focus-visible .s-session-name-pencil { opacity: 1; }
+/* the h2 clips long titles; the name's own button and field draw their border outside it */
+.s-session-header .s-session-name { overflow: visible; }
+.s-session-name-field { width: 28em; max-width: calc(100% + 12px); min-width: 0; margin: -2px -6px; padding: 2px 6px; font: inherit; color: var(--scout-chrome-ink-strong); background: var(--scout-chrome-bg, var(--bg)); border: 1px solid var(--accent); border-radius: var(--radius-sm); outline: none; }
+.s-session-name-error { margin-left: 8px; font-size: 11.5px; color: var(--red); }
+/* the state sits beside the name, as a row on the board says it; the Concise/Details switch takes the right edge */
+.s-session-header > [role="status"] { flex: none; margin-right: auto; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; letter-spacing: var(--voice-track, 0.04em); text-transform: var(--voice-case, uppercase); color: var(--scout-chrome-ink-faint); white-space: nowrap; }
+.s-session-header > [role="status"][data-state="working"]::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
+.s-session-header > [role="status"][data-state="waiting"] { color: var(--scout-chrome-ink-strong); }
+.s-session-header > [role="group"] { flex: none; }
+/* Thread text sits on the reading pane's 24px keyline (the app grid). */
+.s-session-feed { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.s-session-transcript { flex: 1; overflow-y: auto; min-height: 0; padding: 20px 24px; }
+.s-session-feed .s-session-jump { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 4; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--scout-line); border-radius: var(--radius-pill); background: var(--scout-chrome-bg, var(--bg)); color: var(--scout-chrome-ink-strong, var(--ink)); font-size: 12px; white-space: nowrap; }
+.s-session-turn { margin: 0 0 28px; }
+.s-session-user-message { width: fit-content; max-width: 85%; margin: 0 0 24px auto; padding: 10px 16px; border-radius: 18px; background: var(--scout-chrome-hover); color: var(--scout-chrome-ink-strong); overflow-wrap: anywhere; }
+.s-session-agent-message { margin: 16px 0; line-height: 1.65; overflow-wrap: anywhere; }
+.s-session-user-message .s-message-markup-paragraph { margin: 0; }
+.s-session-agent-message .s-message-markup-code { overflow-x: auto; }
+.s-session-turn .s-observe-stream { min-height: 0; }
+.s-session-request, .s-session-changes { margin: 14px 0; padding: 12px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 8px; font-size: 13px; }
+.s-session-request pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11.5px; padding: 8px 10px; border-radius: 6px; background: var(--scout-chrome-hover); }
+.s-session-request form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: end; }
+.s-session-request form label { display: flex; flex: 1; flex-direction: column; gap: 4px; }
+.s-session-changes header, .s-session-changes li { display: flex; gap: 12px; justify-content: space-between; }
+.s-session-changes ul { list-style: none; margin: 10px -12px 12px; padding: 0; }
+.s-session-changes li { margin: 0; padding: 6px 12px; border-top: 1px solid var(--scout-chrome-border-soft); overflow-wrap: anywhere; font-size: 12px; }
+.s-session-changes li > code { min-width: 0; font-size: 11.5px; }
+.s-session-changes li > span { color: var(--scout-chrome-ink-faint); font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; }
+.s-session-unavailable { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--scout-chrome-ink-faint); }
+
+/* The composer on the app grid: the box sits 12px outside the thread's
+   keyline, so its text starts on the same 24px line; 14/20 text, two lines
+   when empty, a 40px tool bar with a 24px send. */
+.s-session-composer { padding: 8px 12px 12px; }
+.s-session-composer > p { margin: 8px 0 0; font-size: 12px; color: var(--scout-chrome-ink-faint); }
+.s-session-composer-box { border: 1px solid var(--scout-chrome-border-soft); border-radius: var(--radius-soft, 12px); background: var(--scout-chrome-hover); overflow: hidden; }
+.s-session-composer-box:focus-within { border-color: var(--scout-chrome-ink-faint); }
+.s-session-composer-box textarea { display: block; box-sizing: border-box; width: 100%; min-height: 52px; max-height: 240px; resize: none; field-sizing: content; padding: 12px 11px 0; border: 0; background: transparent; color: var(--scout-chrome-ink-strong); font: inherit; font-size: 14px; line-height: 20px; }
+.s-session-composer-box textarea::placeholder { color: var(--scout-chrome-ink-faint); opacity: 1; }
+.s-session-composer-box textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 14px; }
+.s-session-composer-tools { display: flex; justify-content: flex-end; align-items: center; gap: 8px; box-sizing: border-box; padding: 8px; min-height: 40px; }
+.s-session-send { display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 50%; background: var(--scout-chrome-ink-strong); color: var(--scout-chrome-bg, var(--hud-bg)); cursor: pointer; }
+.s-session-steer-action { box-sizing: border-box; height: 24px; padding: 0 8px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 8px; background: transparent; color: var(--scout-chrome-ink-strong); font: inherit; font-size: 12px; cursor: pointer; }
+.s-session-send:hover:not(:disabled) { opacity: 0.8; }
+.s-session-steer-action:hover:not(:disabled) { background: var(--scout-chrome-hover); }
+.s-session-composer button:disabled, .s-session-composer textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+.s-session-steer-reason { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* read only: one line in place of the box, a headline and why */
+.s-session-readonly { display: grid; gap: 4px; padding: 12px 16px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 12px; font-size: 13px; line-height: 1.45; }
+.s-session-readonly-title { color: var(--scout-chrome-ink-strong); }
+.s-session-readonly-detail { color: var(--scout-chrome-ink-faint); }
+/* files going with the reply: a name and a remove mark each, above the line */
+.s-session-files { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 10px 12px 0; list-style: none; }
+.s-session-files li { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 3px 4px 3px 10px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 8px; font-size: 12px; color: var(--scout-chrome-ink-strong); }
+.s-session-files li > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-session-files li.is-attaching { padding-right: 10px; color: var(--scout-chrome-ink-faint); }
+.s-session-files button { display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--scout-chrome-ink-faint); cursor: pointer; }
+.s-session-files button:hover:not(:disabled) { background: var(--scout-chrome-hover); color: var(--scout-chrome-ink-strong); }
+/* a file held over the session: the line it will join lights */
+.s-session-slot.is-file-over .s-session-composer-box { border-color: var(--scout-chrome-ink-strong); }
+.s-session-pending { display: grid; gap: 8px; margin-bottom: 10px; }
+.s-session-pending-message { padding: 10px 14px; border: 1px solid var(--scout-chrome-border-soft); border-radius: 12px; font-size: 13px; }
+.s-session-pending-message p { margin: 0 0 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.s-session-pending-message small { font-size: 11px; color: var(--scout-chrome-ink-faint); }
+.s-session-changes .s-session-add { color: var(--green); font-weight: 400; }
+.s-session-changes .s-session-del { color: var(--red); font-weight: 400; }
+.s-session-slot > .s-session-inspector { width: 260px; flex: 0 0 260px; overflow-y: auto; border-left: 1px solid var(--scout-chrome-border-soft); }
+/* drag the inspector's left edge to resize it; the edge lights on hover */
+.s-session-inspector-edge { position: relative; flex: none; width: 0; z-index: 2; }
+.s-session-inspector-resize { position: absolute; inset: 0 -4px 0 -3px; cursor: col-resize; touch-action: none; }
+.s-session-inspector-resize::after { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px; background: transparent; transition: background 120ms; }
+.s-session-inspector-resize:hover::after, .s-session-inspector-resize.is-dragging::after { background: var(--scout-chrome-ink-faint, var(--muted)); }
+.s-session-inspector-resize:focus-visible { outline: none; }
+.s-session-inspector-resize:focus-visible::after { background: var(--ink); }
+.s-session-inspector > .s-observe-rail { width: auto; border: 0; }
+.s-session-steered { padding: 14px 16px; font-size: 12px; border-bottom: 1px solid var(--scout-chrome-border-soft); }
+.s-session-steered h3 { margin: 0 0 10px; color: var(--scout-chrome-ink-strong); font-size: 13px; font-weight: 400; }
+.s-session-steered ol { list-style: none; padding: 0; margin: 0; }
+.s-session-steered li { padding: 6px 0; }
+.s-session-steered summary { display: flex; gap: 8px; color: var(--scout-chrome-ink-faint); }
+.s-session-steered summary span { min-width: 0; overflow-wrap: anywhere; }
+.s-session-steered time { flex-shrink: 0; }
+.s-session-steered p { margin: 6px 0; color: var(--scout-chrome-ink-faint); }
+.s-session-steered dl { margin: 8px 0 0; font-size: 11px; }
+.s-session-steered dt { color: var(--scout-chrome-ink-faint); }
+.s-session-steered dd { margin: 2px 0 8px; overflow-wrap: anywhere; }
+
+.s-session-slot--reading .s-session-transcript > *, .s-session-slot--reading .s-session-composer > * { width: 100%; max-width: 72ch; margin-inline: auto; }
+.s-session-slot--reading .s-session-composer { border-top: 0; }
+.s-session-slot--sheet .s-session-header { padding: 12px 16px; }
+.s-session-slot--sheet .s-session-transcript { padding: 16px; }
+.s-session-empty { padding: 24px; font-size: 13px; color: var(--scout-chrome-ink-faint); }
+.s-session-notice, .s-slots-flight { margin: 0; padding: 6px 16px; font-size: 12px; color: var(--scout-chrome-ink-faint); border-bottom: 1px solid var(--scout-chrome-border-soft); }
+.s-sessions-slots [role="alert"] { color: var(--red); }
+@media (max-width: 900px) {
+  .s-session-slot > .s-session-inspector, .s-session-slot > .s-session-inspector-edge { display: none; }
+  .s-slot-list { scroll-snap-type: x proximity; }
+  .s-primitive-slot { scroll-snap-align: start; max-width: 100%; }
+  .s-slots-toolbar { padding-left: 12px; }
+}
+
+/* ── Sharp look ──────────────────────────────────────────────────────────── */
+/* composer: a square box on the plane, a square ink send, focus is the box's ink edge */
+:root[data-scout-look="sharp"] .s-session-composer-box { border-color: var(--edge, var(--border)); border-radius: 0; background: var(--surface); }
+:root[data-scout-look="sharp"] .s-session-composer-box:focus-within { border-color: var(--ink); }
+:root[data-scout-look="sharp"] .s-session-composer-box textarea { font-size: 13px; }
+:root[data-scout-look="sharp"] .s-session-composer-box textarea:focus-visible { outline: none; border-radius: 0; }
+:root[data-scout-look="sharp"] .s-session-send { width: 24px; height: 24px; border-radius: 0; background: var(--ink); color: var(--bg); }
+:root[data-scout-look="sharp"] .s-session-steer-action { height: var(--control-h); padding: 0 10px; border-color: var(--edge-strong, var(--border)); border-radius: 0; font-size: var(--fs-meta); }
+:root[data-scout-look="sharp"] .s-session-composer > p { font-size: var(--fs-meta); color: var(--dim); }
+:root[data-scout-look="sharp"] .s-session-pending-message { border-color: var(--edge-soft, var(--border)); border-radius: 0; }
+:root[data-scout-look="sharp"] .s-session-files li { border-color: var(--edge, var(--border)); border-radius: 0; font-size: var(--fs-meta); }
+:root[data-scout-look="sharp"] .s-session-files button { border-radius: 0; }
+:root[data-scout-look="sharp"] .s-session-slot.is-file-over .s-session-composer-box { border-color: var(--ink); }
+:root[data-scout-look="sharp"] .s-session-changes .s-session-add { color: var(--muted); }
+
+/* read only: a word and a line, no box */
+:root[data-scout-look="sharp"] .s-session-readonly { padding: 10px 0 0; border: 0; border-top: 1px solid var(--edge-soft, var(--border)); border-radius: 0; }
+:root[data-scout-look="sharp"] .s-session-readonly-title { font: var(--w-title) var(--fs-label)/1.4 var(--font-mono); letter-spacing: var(--voice-track, var(--tr-title)); text-transform: var(--voice-case, uppercase); color: var(--ink); }
+:root[data-scout-look="sharp"] .s-session-readonly-detail { font-size: var(--fs-row); color: var(--muted); }
+
+/* inspector: Sent is a rail section like the ones below it */
+:root[data-scout-look="sharp"] .s-session-slot > .s-session-inspector { border-left-color: var(--edge-soft, var(--border)); }
+:root[data-scout-look="sharp"] .s-session-steered { border-bottom-color: var(--edge-soft, var(--border)); }
+:root[data-scout-look="sharp"] .s-session-steered h3 { font: var(--w-title) var(--fs-label)/1.4 var(--font-mono); letter-spacing: var(--voice-track, var(--tr-title)); text-transform: var(--voice-case, uppercase); color: var(--dim); }
+:root[data-scout-look="sharp"] .s-session-steered > p { font-size: var(--fs-meta); color: var(--dim); }
+
+/* The task leads; its project, branch and model sit on one quieter line. */
+.s-session-header > div > p { margin: var(--space-xs) 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--scout-chrome-ink-faint); }

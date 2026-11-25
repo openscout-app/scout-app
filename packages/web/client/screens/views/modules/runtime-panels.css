@@ -1,0 +1,40 @@
+/* Runtime as panels (runtime-summary, harness-families, runtime-table). The
+ * page's styles (screens/ops/ops-atop.css) draw the parts; these fit them to a
+ * panel. The table panel lays out its own grid: filter bar, table, keys, and
+ * the open row's drawer under the table, or beside it when the panel is wide. */
+
+.vw-runtime-summary { height: 100%; }
+.vw-runtime-summary .s-atop-summary { min-height: 100%; flex-wrap: wrap; border-bottom: 0; background: none; }
+@container (max-width: 640px) {
+  .vw-runtime-summary .s-atop-summary-cell { padding: 8px 12px; }
+  .vw-runtime-summary .s-atop-summary-spacer { display: none; }
+}
+
+.vw-harness-families { padding: 8px; }
+.vw-harness-families .s-observed-topology { border: 0; background: none; }
+
+.vw-runtime-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.vw-runtime-table:has(> .s-atop-drawer) { grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1fr); }
+.vw-runtime-table > .s-atop-drawer { margin-top: 0; max-height: none; border-width: 1px 0 0; border-radius: 0; }
+
+@container (min-width: 900px) {
+  .vw-runtime-table:has(> .s-atop-drawer) {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 38%);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .vw-runtime-table:has(> .s-atop-drawer) > :not(.s-atop-drawer) { grid-column: 1; }
+  .vw-runtime-table > .s-atop-drawer { grid-column: 2; grid-row: 1 / -1; border-width: 0 0 0 1px; }
+}
+@container (max-width: 520px) {
+  .vw-runtime-table .s-atop-keys > span:not(.s-atop-keys-count):not(.s-atop-keys-spacer) { display: none; }
+  .vw-runtime-table .s-atop-fbar { padding: 4px 8px; }
+}

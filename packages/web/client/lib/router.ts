@@ -1,12 +1,1774 @@
-import type { Route } from "./types.ts";
+import { retiredWebPath } from "../../shared/local-navigation.ts";
+import { parseBoardSelection, buildBoardSelection } from "./board-selection.ts";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { isCanvasEnabled, isOpsEnabled, isReviewEnabled } from "./feature-flags.ts";
+import { randomUuid } from "./random-id.ts";
+import { beginNavTiming } from "./perf.ts";
+import {
+  parseScopeRouteFromUrl,
+  preserveLocationSearch,
+} from "../scope/paths.ts";
+import { scopeRoutePath } from "../scope/presentation.ts";
+import { normalizeRoute } from "./synthetic-agent-routing.ts";
+import { BASIC_WEB, basicRoute } from "../basic/profile.ts";
+import { isTerminalSurfaceId } from "@openscout/protocol";
+import { canonicalTerminalSurfaceId, surfaceKeyFromParts, surfacePartsFromKey } from "./terminal-sessions.ts";
+import {
+  parseSearchFiltersFromUrl,
+  searchFiltersAreActive,
+  serializeSearchFiltersToParams,
+} from "./knowledge-search.ts";
+import type {
+  AgentTab,
+  DispatchFilter,
+  DispatchWindow,
+  FollowPreferredView,
+  OpsMode,
+  ProjectSet,
+  ProjectsIndexView,
+  ProjectStateFilter,
+  Route,
+  SearchMode,
+  SettingsSection,
+} from "./types.ts";
 
-/** The full app owns navigation; keep real hrefs for copying and modified clicks. */
-export function routePath(route: Route): string {
-  switch (route.view) {
-    case "feed": return "/feed";
-    case "inbox": return `/?${new URLSearchParams({ post: route.post })}`;
-    case "sessions": return `/sessions/${encodeURIComponent(route.sessionId)}`;
-    case "conversation": return `/c/${encodeURIComponent(route.conversationId)}${route.workId ? "?" + new URLSearchParams({ workId: route.workId }) : ""}`;
-    case "work": return `/work/${encodeURIComponent(route.workId)}`;
+/* ── URL ↔ Route mapping ── */
+
+const APP_URL_BASE = typeof window !== "undefined" ? window.location.href : "http://127.0.0.1/";
+
+/** Accepts full URLs or path-only hrefs; resolves against the active document. */
+function resolveAppUrl(hrefOrPath: string | URL): URL {
+  const value = hrefOrPath.toString();
+  return new URL(value, APP_URL_BASE);
+}
+
+function parseAgentTab(value: string | null): AgentTab | undefined {
+  switch (value) {
+    case "profile":
+    case "config":
+    case "definitions":
+      return value === "definitions" ? "config" : value;
+    case "observe":
+    case "message":
+      return value;
+    default:
+      return undefined;
   }
+}
+
+function hashMessageId(hash: string): string | null {
+  const raw = hash.trim().replace(/^#/, "");
+  if (!raw.startsWith("msg-")) return null;
+  const id = raw.slice("msg-".length).trim();
+  if (!id) return null;
+  try {
+    return decodeURIComponent(id);
+  } catch {
+    return id;
+  }
+}
+
+function parseOpsMode(value: string | undefined): OpsMode | undefined {
+  switch (value) {
+    case "control":
+    case "mission":
+    // Command/Conductor views retired — fold legacy URLs into Control.
+    case "command":
+    case "warroom":
+    case "conduct":
+    case "conductor":
+      return "mission";
+    // Ops › In flight. `/ops/advisor` (Host Advisor, which it replaced) and the
+    // legacy `/ops/plan` slug still land on it.
+    case "in-flight":
+    case "plan":
+    case "advisor":
+      return "advisor";
+    case "issues":
+    case "errors":
+    case "warnings":
+      return "issues";
+    case "agents":
+    case "tail":
+    case "atop":
+    case "lanes":
+    case "world":
+    case "week":
+    // Cockpit: Home's old grid (quotas, velocity, what's moving, coordination, the Tail), behind Home's Look closer
+    case "cockpit":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseDispatchFilter(value: string | null): DispatchFilter | undefined {
+  return value === "delivered" || value === "failed" || value === "all" ? value : undefined;
+}
+
+function parseDispatchWindow(value: string | null): DispatchWindow | undefined {
+  return value === "1h" || value === "today" || value === "24h" || value === "7d" || value === "all"
+    ? value
+    : undefined;
+}
+
+function parseSearchMode(value: string | undefined): SearchMode | undefined {
+  return value === "indexer" || value === "knowledge" ? value : undefined;
+}
+
+function parseSettingsSection(value: string | undefined): SettingsSection | undefined {
+  switch (value) {
+    case "pairing":
+    case "agents":
+    case "appearance":
+    case "operator":
+    case "comms":
+    case "credentials":
+    case "scoutbot":
+    case "voice":
+    case "terminal":
+    case "assistants":
+    case "devices":
+    case "mesh":
+    case "pro":
+    case "desk":
+    case "system":
+    case "feedback":
+    case "about":
+      return value;
+    // The page is titled Keys; the URL keeps its older name.
+    case "keys":
+      return "credentials";
+    // Alias for the communications section label used in chrome.
+    case "communications":
+      return "comms";
+    default:
+      return undefined;
+  }
+}
+
+function parseFollowPreferredView(value: string | null): FollowPreferredView | undefined {
+  switch (value) {
+    case "tail":
+    case "session":
+    case "chat":
+    case "work":
+      return value;
+    default:
+      return undefined;
+  }
+}
+
+function parseTerminalMode(value: string | null): "observe" | "takeover" | undefined {
+  const normalized = value?.trim().replace(/\.+$/u, "");
+  return normalized === "observe" || normalized === "takeover" ? normalized : undefined;
+}
+
+function parseTerminalBackend(value: string | null): "pty" | "tmux" | "zellij" | "herdr" | undefined {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "pty" || normalized === "tmux" || normalized === "zellij" || normalized === "herdr"
+    ? normalized
+    : undefined;
+}
+
+function parseTerminalAgent(value: string | null): "shell" | "claude" | "codex" | "pi" | undefined {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === "shell" || normalized === "claude" || normalized === "codex" || normalized === "pi"
+    ? normalized
+    : undefined;
+}
+
+function parseDiffInclude(value: string | null): "changed" | "all" | undefined {
+  return value === "all" || value === "touched" ? "all" : value === "changed" ? "changed" : undefined;
+}
+
+function parsePositiveLine(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+// /ops/<slug> addresses follow the tab labels. The mode ids stay put because the native
+// app and embeds (?mode=) pass them directly: Fleet is mode "world" at /ops/fleet, Overview
+// is mode "week" at /ops/overview, and its old /ops/world and /ops/week addresses still open it.
+function parseOpsPathMode(slug: string | undefined): OpsMode | undefined {
+  switch (slug) {
+    case "fleet":
+      return "world";
+    case "overview":
+    case "world":
+      return "week";
+    default:
+      return parseOpsMode(slug);
+  }
+}
+
+function opsModePath(mode: OpsMode): string {
+  switch (mode) {
+    case "mission":
+      return "control";
+    case "advisor":
+      return "in-flight";
+    case "world":
+      return "fleet";
+    case "week":
+      return "overview";
+    default:
+      return mode;
+  }
+}
+
+function isOpsEnabledForUrl(url: URL): boolean {
+  if (url.searchParams.has("no-ops")) {
+    return false;
+  }
+  if (typeof window === "undefined") {
+    return true;
+  }
+  return isOpsEnabled();
+}
+
+// Tail (ops?mode=tail) is part of the core retrieval set (System dropdown,
+// `g,l` go-shortcut), so it stays reachable even when the broader Ops cluster
+// (ops.control) is gated off. Other Ops modes still follow the ops gate.
+function isTailCoreSurface(mode: string | undefined): boolean {
+  return mode === "tail";
+}
+
+// Lanes is shared with the native app and chrome-free embeds, so direct links are
+// not gated with the broader Ops cluster.
+function isLanesCoreSurface(mode: string | undefined): boolean {
+  return mode === "lanes" || mode === "world" || mode === "week";
+}
+
+// Cockpit was Home until the front page took its place, so it stays reachable
+// with the broader Ops cluster gated off, as Home was.
+function isUngatedOpsSurface(mode: string | undefined): boolean {
+  return isTailCoreSurface(mode) || isLanesCoreSurface(mode) || mode === "cockpit";
+}
+
+const MACHINE_SCOPE_PARAM = "machineId";
+const MACHINE_SCOPED_VIEWS = new Set<Route["view"]>([
+  "inbox",
+  "status",
+  "conversation",
+  "agents-v2",
+  "messages",
+  "sessions",
+  "repos",
+  "harnesses",
+  "mesh",
+  "mesh-ops",
+  "activity",
+  "work",
+  "follow",
+]);
+
+function parseMachineId(url: URL): string | undefined {
+  return url.searchParams.get(MACHINE_SCOPE_PARAM)?.trim() || undefined;
+}
+
+function withMachineScope<T extends Route>(route: T, machineId: string | undefined): T {
+  if (!machineId || !MACHINE_SCOPED_VIEWS.has(route.view)) return route;
+  return { ...route, machineId } as T;
+}
+
+export function routeSupportsMachineScope(route: Pick<Route, "view">): boolean {
+  return MACHINE_SCOPED_VIEWS.has(route.view);
+}
+
+export function routeMachineId(route: Route): string | null {
+  return "machineId" in route && route.machineId ? route.machineId : null;
+}
+
+export function setRouteMachineScope(route: Route, machineId: string | null): Route {
+  if (!routeSupportsMachineScope(route)) return route;
+  const scoped = { ...route } as Route & { machineId?: string };
+  const value = machineId?.trim();
+  if (value) {
+    scoped.machineId = value;
+  } else {
+    delete scoped.machineId;
+  }
+  return scoped;
+}
+
+export function clearRouteMachineScope(route: Route): Route {
+  if (!routeSupportsMachineScope(route)) return route;
+  return { ...route, machineId: "" } as Route;
+}
+
+function resolveNavigatedMachineScope(nextRoute: Route, currentRoute: Route): Route {
+  if (!routeSupportsMachineScope(nextRoute)) return nextRoute;
+  if ("machineId" in nextRoute) {
+    return setRouteMachineScope(nextRoute, nextRoute.machineId ?? null);
+  }
+  return setRouteMachineScope(nextRoute, routeMachineId(currentRoute));
+}
+
+function appendMachineScope(params: URLSearchParams, route: Route): void {
+  if ("machineId" in route && route.machineId) {
+    params.set(MACHINE_SCOPE_PARAM, route.machineId);
+  }
+}
+
+function searchSuffix(params: URLSearchParams): string {
+  const search = params.toString();
+  return search ? `?${search}` : "";
+}
+
+function pathWithMachineScope(path: string, route: Route): string {
+  const params = new URLSearchParams();
+  appendMachineScope(params, route);
+  return `${path}${searchSuffix(params)}`;
+}
+
+function routeScopeKey(route: Route): string {
+  return "machineId" in route && route.machineId ? `:machine:${route.machineId}` : "";
+}
+
+function localRoute(r: Route): Route {
+  if (r.view === "status" || r.view === "broker" || (r.view === "ops" && (r.mode === "world" || r.mode === "week" || r.mode === "cockpit"))) return { view: "ops", mode: "mission" };
+  if (r.view === "code" || r.view === "canvas") return { view: "inbox" };
+  if (r.view === "views" && r.viewId) {
+    const path = retiredWebPath(resolveAppUrl("/views/" + r.viewId));
+    if (path) return path === "/" ? { view: "inbox" } : { view: "ops", mode: "mission" };
+  }
+  return r;
+}
+
+export function routeFromUrl(urlLike: string | URL): Route {
+  return localRoute(readRoute(urlLike));
+}
+
+function readRoute(urlLike: string | URL): Route {
+  const url = resolveAppUrl(urlLike);
+  const replacement = retiredWebPath(url);
+  if (replacement) return replacement === "/" ? { view: "inbox" } : { view: "ops", mode: "mission" };
+  const parts = url.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+  // Lanes lives under Sessions at /sessions/lanes. It is still the Ops lanes
+  // route inside, so read it the way /ops/lanes (which still opens it) reads.
+  if (parts.length === 2 && parts[0] === "sessions" && parts[1] === "lanes") {
+    const lanes = new URL(url);
+    lanes.pathname = "/ops/lanes";
+    return routeFromUrl(lanes);
+  }
+  if (url.pathname === "/embed/work") {
+    const canonical = new URL(url);
+    const workId = url.searchParams.get("workId")?.trim();
+    canonical.pathname = workId ? `/work/${encodeURIComponent(workId)}` : "/work";
+    canonical.searchParams.delete("workId");
+    return routeFromUrl(canonical);
+  }
+  if (parts[0] === "embed" && ["home", "search", "ops", "requests", "world", "sessions"].includes(parts[1] ?? "")) {
+    const canonical = new URL(url);
+    // /embed/world is Overview's own seat in the Mac app (Ops' mode "week" at /ops/overview)
+    if (parts[1] === "world") {
+      canonical.pathname = "/ops/overview";
+      canonical.searchParams.delete("mode");
+      return routeFromUrl(canonical);
+    }
+    const area = parts[1]!;
+    // ?mode= carries a mode id; for Ops turn it into its /ops/<slug> address (Fleet's id "world" is /ops/fleet)
+    const rawMode = url.searchParams.get("mode");
+    const opsMode = area === "ops" ? parseOpsMode(rawMode ?? undefined) : undefined;
+    const mode = opsMode ? opsModePath(opsMode) : rawMode;
+    canonical.pathname = area === "home" ? "/" : `/${area}${mode ? `/${encodeURIComponent(mode)}` : ""}`;
+    canonical.searchParams.delete("mode");
+    const route = routeFromUrl(canonical);
+    // The Ops entry has a core Tail fallback when its power surfaces are off,
+    // matching the primary-area default rather than giving the provider Inbox.
+    return area === "ops" && route.view === "inbox" ? { ...route, view: "ops", mode: "tail" } : route;
+  }
+  const machineId = parseMachineId(url);
+  const scoped = <T extends Route>(route: T): T => withMachineScope(route, machineId);
+  const scopeRoute = parseScopeRouteFromUrl(parts, url, scoped);
+  if (scopeRoute) return scopeRoute;
+  if (parts[0] === "inbox" || parts[0] === "requests") {
+    // The Inbox lives at /inbox; /requests is its old address. ?request= is the
+    // open item; /embed/requests lands here with it too
+    const requestId = url.searchParams.get("request")?.trim() || undefined;
+    return { view: "requests", ...(requestId ? { requestId } : {}) };
+  }
+  const messageHashId = hashMessageId(url.hash);
+  const agentTab = parseAgentTab(url.searchParams.get("tab"))
+    ?? (messageHashId ? "message" : undefined);
+  const agentProjectSlug = url.searchParams.get("project")?.trim() || undefined;
+  const sessionAgentId = url.searchParams.get("agentId")?.trim() || undefined;
+  if (parts[0] === "agent" && parts[1]) {
+    return { view: "agent-info", conversationId: decodeURIComponent(parts[1]) };
+  }
+  const agentsV2Project = url.searchParams.get("project")?.trim() || undefined;
+  const agentsV2Harness = url.searchParams.get("harness")?.trim() || undefined;
+  const agentsV2Node = url.searchParams.get("node")?.trim() || undefined;
+  const agentsV2SetRaw = url.searchParams.get("set")?.trim();
+  const agentsV2Set: ProjectSet | undefined =
+    agentsV2SetRaw === "live" || agentsV2SetRaw === "ephemeral" || agentsV2SetRaw === "archived"
+      ? (agentsV2SetRaw as ProjectSet)
+      : undefined;
+  const agentsV2IndexRaw = url.searchParams.get("view")?.trim();
+  const agentsV2IndexView: ProjectsIndexView | undefined =
+    agentsV2IndexRaw === "sessions" || agentsV2IndexRaw === "agents" || agentsV2IndexRaw === "projects"
+      ? (agentsV2IndexRaw as ProjectsIndexView)
+      : undefined;
+  const agentsV2StateRaw = url.searchParams.get("state")?.trim();
+  const agentsV2StateFilter: ProjectStateFilter | undefined =
+    agentsV2StateRaw === "needs" || agentsV2StateRaw === "live" || agentsV2StateRaw === "idle"
+      ? (agentsV2StateRaw as ProjectStateFilter)
+      : undefined;
+  const agentsV2ShowEphemeral = url.searchParams.get("ephemeral") === "1";
+  const agentsV2SessionParam = url.searchParams.get("session")?.trim() || undefined;
+  const agentsV2Select = url.searchParams.get("select")?.trim() || undefined;
+  // the Projects page's preview: a PR, or a worktree, and a file in it
+  const agentsV2PrRaw = Number(url.searchParams.get("pr")?.trim());
+  const agentsV2Pr = Number.isInteger(agentsV2PrRaw) && agentsV2PrRaw > 0 ? agentsV2PrRaw : undefined;
+  const agentsV2Worktree = url.searchParams.get("worktree")?.trim() || undefined;
+  const agentsV2File = url.searchParams.get("file")?.trim() || undefined;
+  const agentsV2ByRaw = url.searchParams.get("by");
+  const agentsV2By = agentsV2ByRaw === "worktrees" || agentsV2ByRaw === "sessions" ? agentsV2ByRaw : undefined;
+  const agentsV2Common = {
+    ...(agentsV2Harness ? { harness: agentsV2Harness } : {}),
+    ...(agentsV2Node ? { node: agentsV2Node } : {}),
+    ...(agentsV2Set ? { set: agentsV2Set } : {}),
+    ...(agentsV2IndexView ? { indexView: agentsV2IndexView } : {}),
+    ...(agentsV2StateFilter ? { stateFilter: agentsV2StateFilter } : {}),
+    ...(agentsV2ShowEphemeral ? { showEphemeral: true } : {}),
+    ...(agentsV2Pr ? { pr: agentsV2Pr } : agentsV2Worktree ? { worktree: agentsV2Worktree } : {}),
+    ...((agentsV2Pr || agentsV2Worktree) && agentsV2File ? { file: agentsV2File } : {}),
+  };
+  if (parts[0] === "projects") {
+    const projectSlug = parts[1] ? decodeURIComponent(parts[1]) : undefined;
+    if (!projectSlug) {
+      // Bare /projects is the project list; the agent feed lives at /agents. A
+      // ?select= peek belongs to the feed, so an old /projects?select= link stays on it.
+      return scoped({
+        view: "agents-v2",
+        ...(agentsV2Select ? { selectedAgentId: agentsV2Select } : { indexView: "projects" as const }),
+        ...agentsV2Common,
+      });
+    }
+    if (parts[2] === "agents") {
+      const agentId = parts[3] ? decodeURIComponent(parts[3]) : undefined;
+      if (agentId) {
+        if (parts[4] === "c" && parts[5]) {
+          return scoped({
+            view: "agents-v2",
+            projectSlug,
+            agentId,
+            conversationId: decodeURIComponent(parts[5]),
+            tab: agentTab ?? "message",
+            ...agentsV2Common,
+          });
+        }
+        const sessionId = parts[4] === "sessions" && parts[5]
+          ? decodeURIComponent(parts[5])
+          : agentsV2SessionParam;
+        return scoped({
+          view: "agents-v2",
+          projectSlug,
+          agentId,
+          ...(sessionId ? { sessionId } : {}),
+          ...(agentTab ? { tab: agentTab } : {}),
+          ...agentsV2Common,
+        });
+      }
+      return scoped({
+        view: "agents-v2",
+        projectSlug,
+        indexView: "agents",
+        ...(agentsV2Select ? { selectedAgentId: agentsV2Select } : {}),
+        ...agentsV2Common,
+      });
+    }
+    if (parts[2] === "sessions") {
+      return scoped({
+        view: "agents-v2",
+        projectSlug,
+        indexView: "sessions",
+        ...(parts[3] ? { sessionId: decodeURIComponent(parts[3]) } : {}),
+        // a file the session's worktree changed, open in the page's Changes panel
+        ...(parts[3] && agentsV2File ? { file: agentsV2File } : {}),
+        ...(agentsV2Select ? { selectedAgentId: agentsV2Select } : {}),
+        ...agentsV2Common,
+      });
+    }
+    return scoped({
+      view: "agents-v2",
+      projectSlug,
+      ...(agentsV2Select ? { selectedAgentId: agentsV2Select } : {}),
+      ...agentsV2Common,
+      // looking by sessions or by worktrees with nothing picked yet; a PR or worktree already says so
+      ...(agentsV2By && !agentsV2Pr && !agentsV2Worktree && !agentsV2Select ? { by: agentsV2By } : {}),
+    });
+  }
+  if (parts[0] === "agents-v2" && parts[1] === "sessions" && parts[2]) {
+    return scoped({
+      view: "agents-v2",
+      sessionId: decodeURIComponent(parts[2]),
+      ...(agentsV2Select ? { selectedAgentId: agentsV2Select } : {}),
+      ...(agentsV2Project ? { projectSlug: agentsV2Project } : {}),
+      ...agentsV2Common,
+    });
+  }
+  if (parts[0] === "agents-v2" && parts[1]) {
+    const agentId = decodeURIComponent(parts[1]);
+    return scoped({
+      view: "agents-v2",
+      agentId,
+      ...(agentTab ? { tab: agentTab } : {}),
+      ...(agentsV2SessionParam ? { sessionId: agentsV2SessionParam } : {}),
+      ...(agentsV2Project ? { projectSlug: agentsV2Project } : {}),
+      ...agentsV2Common,
+    });
+  }
+  if (parts[0] === "agents-v2") {
+    return scoped({
+      view: "agents-v2",
+      ...(agentsV2Select ? { selectedAgentId: agentsV2Select } : {}),
+      ...(agentsV2Project ? { projectSlug: agentsV2Project } : {}),
+      ...agentsV2Common,
+    });
+  }
+  if (parts[0] === "agents" && parts[1]) {
+    const agentId = decodeURIComponent(parts[1]);
+    const sessionId = parts[2] === "sessions" && parts[3]
+      ? decodeURIComponent(parts[3])
+      : agentsV2SessionParam;
+    if (parts[2] === "c" && parts[3]) {
+      return scoped({
+        view: "agents-v2",
+        agentId,
+        conversationId: decodeURIComponent(parts[3]),
+        tab: agentTab ?? "message",
+        ...agentsV2Common,
+      });
+    }
+    return scoped({
+      view: "agents-v2",
+      agentId,
+      ...(sessionId ? { sessionId } : {}),
+      ...(agentTab ? { tab: agentTab } : {}),
+      ...agentsV2Common,
+    });
+  }
+  if (parts[0] === "agents") {
+    return scoped({
+      view: "agents-v2",
+      ...(agentsV2Select ? { selectedAgentId: agentsV2Select } : {}),
+      ...(agentsV2Project ? { projectSlug: agentsV2Project } : {}),
+      ...agentsV2Common,
+    });
+  }
+  // Legacy /agents.deprecated/* → agents-v2 (canonical /projects / /agents/:id).
+  if (parts[0] === "agents.deprecated" && parts[1] && parts[2] === "sessions" && parts[3]) {
+    return scoped({
+      view: "sessions",
+      agentId: decodeURIComponent(parts[1]),
+      sessionId: decodeURIComponent(parts[3]),
+    });
+  }
+  if (parts[0] === "agents.deprecated" && parts[1] && parts[2] === "c" && parts[3]) {
+    return scoped({
+      view: "agents-v2",
+      agentId: decodeURIComponent(parts[1]),
+      conversationId: decodeURIComponent(parts[3]),
+      tab: agentTab ?? "message",
+    });
+  }
+  if (parts[0] === "agents.deprecated" && parts[1]) {
+    const agentId = decodeURIComponent(parts[1]);
+    return scoped({
+      view: "agents-v2",
+      agentId,
+      ...(agentTab ? { tab: agentTab } : {}),
+      ...(!agentTab && agentProjectSlug ? { projectSlug: agentProjectSlug } : {}),
+    });
+  }
+  if (parts[0] === "agents.deprecated") {
+    return scoped({
+      view: "agents-v2",
+      ...(agentProjectSlug ? { projectSlug: agentProjectSlug } : {}),
+    });
+  }
+  // Legacy /fleet → Home (inbox).
+  if (parts[0] === "fleet") return scoped({ view: "inbox" });
+  // Dashboards › Status: Home's old grid.
+  if (parts[0] === "status") return scoped({ view: "status" });
+  // /c/{conversationId} always opens the conversation surface directly.
+  if (parts[0] === "c" && parts[1]) {
+    return scoped({
+      view: "conversation",
+      conversationId: decodeURIComponent(parts[1]),
+    });
+  }
+  if (parts[0] === "flights" && parts[1] && parts[2] === "observe") {
+    const sessionId = url.searchParams.get("session")?.trim() || undefined;
+    const compareSessionId = url.searchParams.get("compare")?.trim() || undefined;
+    return scoped({
+      view: "sessions",
+      flightId: decodeURIComponent(parts[1]),
+      ...(sessionId ? { sessionId } : {}),
+      ...(compareSessionId ? { compareSessionId } : {}),
+    });
+  }
+  // /sessions/hosts/<label>/<ref> names a session that stays on that host.
+  // `hosts` is reserved, so it is never itself a session id. The ref is the
+  // same one segment a local session uses. A query does not name the host.
+  if (parts[0] === "sessions" && parts[1] === "hosts") {
+    if (parts.length === 4) {
+      const hostLabel = decodeURIComponent(parts[2]).trim();
+      const sessionId = decodeURIComponent(parts[3]).trim();
+      if (hostLabel && sessionId) {
+        return {
+          view: "sessions",
+          sessionId,
+          hostLabel,
+          ...(sessionAgentId ? { agentId: sessionAgentId } : {}),
+        };
+      }
+    }
+    return { view: "sessions" };
+  }
+  if (parts[0] === "sessions" && parts[1]) {
+    return scoped({
+      view: "sessions",
+      sessionId: decodeURIComponent(parts[1]),
+      ...(sessionAgentId ? { agentId: sessionAgentId } : {}),
+    });
+  }
+  // Legacy /conversations → Chat messages index.
+  if (parts[0] === "conversations") return scoped({ view: "messages" });
+  if (parts[0] === "messages") {
+    // /messages/agent/<agentId> opens the agent master view; ?thread= raises
+    // one of its session conversations in the side panel.
+    if (parts[1] === "agent" && parts[2]) {
+      const threadId = url.searchParams.get("thread")?.trim() || undefined;
+      return scoped({
+        view: "messages",
+        agentId: decodeURIComponent(parts[2]),
+        ...(threadId ? { threadId } : {}),
+      });
+    }
+    const base: Extract<Route, { view: "messages" }> = {
+      view: "messages",
+      ...(parts[1] ? { conversationId: decodeURIComponent(parts[1]) } : {}),
+    };
+    return scoped(base);
+  }
+  if (parts[0] === "sessions") {
+    return scoped({
+      view: "sessions",
+      ...(sessionAgentId ? { agentId: sessionAgentId } : {}),
+    });
+  }
+  if (parts[0] === "repos") {
+    const root = url.searchParams.get("root")?.trim() || undefined;
+    return scoped({ view: "repos", ...(root ? { root } : {}) });
+  }
+  if (parts[0] === "providers" || parts[0] === "harnesses") {
+    return scoped({ view: "harnesses" });
+  }
+  if (parts[0] === "repo-diff") {
+    const path = url.searchParams.get("path")?.trim();
+    if (path) {
+      const layers = url.searchParams
+        .getAll("layer")
+        .filter(
+          (v): v is "unstaged" | "staged" | "branch" =>
+            v === "unstaged" || v === "staged" || v === "branch",
+        );
+      const files = url.searchParams.getAll("file").map((v) => v.trim()).filter(Boolean);
+      const sessionId = url.searchParams.get("sessionId")?.trim() || undefined;
+      const agentId = url.searchParams.get("agentId")?.trim() || undefined;
+      const include = parseDiffInclude(url.searchParams.get("include"));
+      return {
+        view: "repo-diff",
+        path,
+        ...(layers.length > 0 ? { layers } : {}),
+        ...(files.length > 0 ? { files } : {}),
+        ...(sessionId ? { sessionId } : {}),
+        ...(agentId ? { agentId } : {}),
+        ...(include ? { include } : {}),
+      };
+    }
+    // No path → fall through to the default route below.
+  }
+  if (parts[0] === "search") {
+    const mode = parseSearchMode(parts[1]);
+    const hitId = url.searchParams.get("hit")?.trim() || undefined;
+    const filters = parseSearchFiltersFromUrl(url.searchParams);
+    return {
+      view: "search",
+      ...(mode && mode !== "knowledge" ? { mode } : {}),
+      ...(hitId ? { hitId } : {}),
+      ...(searchFiltersAreActive(filters) ? { filters } : {}),
+    };
+  }
+  // Legacy /channels deep links alias onto the unified conversation route.
+  if (parts[0] === "channels" && parts[1]) {
+    return scoped({ view: "messages", conversationId: decodeURIComponent(parts[1]) });
+  }
+  if (parts[0] === "channels") return scoped({ view: "messages" });
+  // The page is called Network everywhere it is named, so /network is the
+  // canonical path. /mesh stays a working alias: it is in bookmarks, in older
+  // links, and in the native app's deep links, and breaking those to rename a
+  // page would be a worse trade than carrying one extra alias.
+  if (parts[0] === "network" || parts[0] === "mesh") return scoped({ view: "mesh" });
+  if (parts[0] === "mesh-ops") {
+    return scoped({
+      view: "mesh-ops",
+      ...(parts[1] ? { itemId: decodeURIComponent(parts[1]) } : {}),
+    });
+  }
+  if (parts[0] === "dispatch" || parts[0] === "broker") {
+    const attemptId = url.searchParams.get("attempt")?.trim() || undefined;
+    const filter = parseDispatchFilter(url.searchParams.get("filter"));
+    const focus = [...new Set(url.searchParams.getAll("focus").map((value) => value.trim()).filter(Boolean))];
+    const window = parseDispatchWindow(url.searchParams.get("window"));
+    const between = focus.length >= 2 && url.searchParams.get("between") === "1";
+    return {
+      view: "broker",
+      ...(attemptId ? { attemptId } : {}),
+      ...(filter && filter !== "all" ? { filter } : {}),
+      ...(focus.length > 0 ? { focus } : {}),
+      ...(between ? { between: true } : {}),
+      ...(window && window !== "all" ? { window } : {}),
+    };
+  }
+  if (parts[0] === "code") {
+    const wt = url.searchParams.get("wt")?.trim() || undefined;
+    const returnConversationId = url.searchParams.get("fromConversation")?.trim() || undefined;
+    const line = parsePositiveLine(url.searchParams.get("line"));
+    const rawEndLine = parsePositiveLine(url.searchParams.get("endLine"));
+    const endLine = line && rawEndLine && rawEndLine >= line ? rawEndLine : undefined;
+    if (parts[1]) {
+      const project = decodeURIComponent(parts[1]);
+      const path = parts.length > 2 ? parts.slice(2).map(decodeURIComponent).join("/") : undefined;
+      return {
+        view: "code",
+        project,
+        ...(path ? { path } : {}),
+        ...(wt ? { wt } : {}),
+        ...(line ? { line } : {}),
+        ...(endLine ? { endLine } : {}),
+        ...(returnConversationId ? { returnConversationId } : {}),
+      };
+    }
+    const root = url.searchParams.get("root")?.trim() || undefined;
+    const file = url.searchParams.get("file")?.trim() || undefined;
+    return {
+      view: "code",
+      ...(root ? { root } : {}),
+      ...(file ? { file } : {}),
+      ...(wt ? { wt } : {}),
+      ...(line ? { line } : {}),
+      ...(endLine ? { endLine } : {}),
+      ...(returnConversationId ? { returnConversationId } : {}),
+    };
+  }
+  if (parts[0] === "briefings" && parts[1]) {
+    return { view: "briefings", briefingId: decodeURIComponent(parts[1]) };
+  }
+  if (parts[0] === "briefings") return { view: "briefings" };
+  if (parts[0] === "rooms") return { view: "rooms" };
+  if (parts[0] === "views") return parts[1] ? { view: "views", viewId: decodeURIComponent(parts[1]) } : { view: "views" };
+  if (parts[0] === "review") return scoped(typeof window !== "undefined" && !isReviewEnabled() ? { view: "inbox" } : { view: "review" });
+  // Home is the Feed: an old /feed link lands on Home.
+  if (parts[0] === "feed") return { view: "inbox" };
+  if (parts[0] === "workspace" || parts[0] === "canvas") {
+    if (typeof window !== "undefined" && !isCanvasEnabled()) return { view: "inbox" };
+    // a past window: ?end= in epoch ms, with ?hours= its length; the live window has neither
+    const end = Number(url.searchParams.get("end")), hours = Number(url.searchParams.get("hours"));
+    const past = Number.isSafeInteger(end) && end > 0 ? { end, ...(Number.isSafeInteger(hours) && hours > 0 ? { hours } : {}) } : {};
+    return { view: "canvas", ...(parts[1] ? { project: decodeURIComponent(parts[1]) } : {}), ...past };
+  }
+  if (parts[0] === "boards") return parts[1] ? { view: "boards", boardId: decodeURIComponent(parts[1]) } : { view: "boards" };
+  if (parts[0] === "activity") {
+    const eventId = url.searchParams.get("event")?.trim() || undefined;
+    return scoped({ view: "activity", ...(eventId ? { eventId } : {}) });
+  }
+  if (parts[0] === "voice") return { view: "voice" };
+  // bare /work is the Work view with no item picked (its list leads)
+  if (parts[0] === "work") {
+    if (parts[1] === "board" && !parts[2]) return scoped({ view: "work", workId: "", board: true, ...parseBoardSelection(url.search) });
+    return scoped({ view: "work", workId: parts[1] ? decodeURIComponent(parts[1]) : "" });
+  }
+  if (parts[0] === "follow") {
+    const preferredView = parseFollowPreferredView(url.searchParams.get("view"));
+    const route: Extract<Route, { view: "follow" }> = {
+      view: "follow",
+      ...(preferredView ? { preferredView } : {}),
+    };
+    const kind = parts[1];
+    const id = parts[2] ? decodeURIComponent(parts[2]) : "";
+    if (kind === "flight" && id) route.flightId = id;
+    if (kind === "invocation" && id) route.invocationId = id;
+    if (kind === "conversation" && id) route.conversationId = id;
+    if (kind === "work" && id) route.workId = id;
+    if (kind === "session" && id) route.sessionId = id;
+    if (kind === "agent" && id) route.targetAgentId = id;
+    const flightId = url.searchParams.get("flightId");
+    const invocationId = url.searchParams.get("invocationId");
+    const conversationId = url.searchParams.get("conversationId");
+    const workId = url.searchParams.get("workId");
+    const sessionId = url.searchParams.get("sessionId");
+    const targetAgentId = url.searchParams.get("targetAgentId");
+    if (flightId) route.flightId = flightId;
+    if (invocationId) route.invocationId = invocationId;
+    if (conversationId) route.conversationId = conversationId;
+    if (workId) route.workId = workId;
+    if (sessionId) route.sessionId = sessionId;
+    if (targetAgentId) route.targetAgentId = targetAgentId;
+    return scoped(route);
+  }
+  if (parts[0] === "settings") {
+    if (parts[1] === "agents") {
+      return {
+        view: "settings",
+        section: "agents",
+        ...(parts[2] ? { agentId: decodeURIComponent(parts[2]) } : {}),
+      };
+    }
+    const section = parseSettingsSection(parts[1]);
+    return {
+      view: "settings",
+      ...(section ? { section } : {}),
+    };
+  }
+  if (parts[0] === "terminal") {
+    const mode = parseTerminalMode(url.searchParams.get("mode"));
+    const terminalSessionId = url.searchParams.get("session")?.trim() || undefined;
+    const terminalSurfaceKey = canonicalTerminalSurfaceId(url.searchParams.get("surface")) ?? undefined;
+    if (parts[1] === "new") {
+      const terminalBackend = parseTerminalBackend(url.searchParams.get("backend")) ?? "pty";
+      const terminalAgent = parseTerminalAgent(url.searchParams.get("agent")) ?? "shell";
+      const terminalSessionName = url.searchParams.get("name")?.trim() || undefined;
+      const terminalTabId = url.searchParams.get("tab")?.trim() || undefined;
+      const zellijSocketDir = url.searchParams.get("socketDir")?.trim() || undefined;
+      return {
+        view: "terminal",
+        terminalBackend,
+        terminalAgent,
+        ...(terminalSessionName ? { terminalSessionName } : {}),
+        ...(terminalTabId ? { terminalTabId } : {}),
+        ...(zellijSocketDir ? { zellijSocketDir } : {}),
+      };
+    }
+    // `/terminal/s/<surfaceId>` carries an opaque handle; the older
+    // `/terminal/<backend>/<name>` form still parses, through the same
+    // constructor, so existing deep links keep resolving.
+    const pathSurfaceKey = parts[1] === "s" && parts[2]
+      ? (isTerminalSurfaceId(decodeURIComponent(parts.slice(2).join("/")))
+        ? decodeURIComponent(parts.slice(2).join("/"))
+        : null)
+      : surfaceKeyFromParts(
+        parts[1] ? decodeURIComponent(parts[1]) : undefined,
+        parts[2] ? decodeURIComponent(parts.slice(2).join("/")) : undefined,
+      );
+    if (pathSurfaceKey) {
+      return {
+        view: "terminal",
+        terminalSurfaceKey: pathSurfaceKey,
+        ...(terminalSessionId ? { terminalSessionId } : {}),
+        ...(mode ? { mode } : {}),
+      };
+    }
+    return {
+      view: "terminal",
+      ...(parts[1] ? { agentId: decodeURIComponent(parts[1]) } : {}),
+      ...(mode ? { mode } : {}),
+      ...(!parts[1] && terminalSessionId ? { terminalSessionId } : {}),
+      ...(!parts[1] && terminalSurfaceKey ? { terminalSurfaceKey } : {}),
+    };
+  }
+  if (parts[0] === "ops") {
+    const mode = parseOpsPathMode(parts[1]) ?? "mission";
+    if (!isUngatedOpsSurface(mode) && !isOpsEnabledForUrl(url)) {
+      return scoped({ view: "inbox" });
+    }
+    const tailQuery = mode === "tail" ? url.searchParams.get("q")?.trim() : "";
+    const planDocumentId = mode === "advisor" ? url.searchParams.get("plan")?.trim() : "";
+    const flightId = url.searchParams.get("flightId")?.trim();
+    const invocationId = url.searchParams.get("invocationId")?.trim();
+    const conversationId = url.searchParams.get("conversationId")?.trim();
+    const workId = url.searchParams.get("workId")?.trim();
+    const sessionId = url.searchParams.get("sessionId")?.trim();
+    const targetAgentId = url.searchParams.get("targetAgentId")?.trim()
+      ?? url.searchParams.get("agentId")?.trim();
+    const dataset = mode === "week" && url.searchParams.get("data") === "team" ? "team" as const : undefined;
+    // /ops/overview?source=realtime|otlp (or the older live, ?live) follows the machines in real time instead of playback
+    const rawSource = url.searchParams.get("source") ?? (url.searchParams.has("live") ? "live" : null);
+    const source = mode !== "week" ? undefined
+      : rawSource === "realtime" || rawSource === "real-time" || rawSource === "live" ? "live" as const
+      : rawSource === "otlp" ? "otlp" as const : undefined;
+    return {
+      view: "ops",
+      mode,
+      ...(dataset ? { dataset } : {}),
+      ...(source ? { source } : {}),
+      ...(tailQuery ? { tailQuery } : {}),
+      ...(planDocumentId ? { planDocumentId } : {}),
+      ...(flightId ? { flightId } : {}),
+      ...(invocationId ? { invocationId } : {}),
+      ...(conversationId ? { conversationId } : {}),
+      ...(workId ? { workId } : {}),
+      ...(sessionId ? { sessionId } : {}),
+      ...(targetAgentId ? { targetAgentId } : {}),
+    };
+  }
+  // Home, with a Feed post expanded in its stream: /?post=<id>
+  const post = parts.length === 0 ? url.searchParams.get("post")?.trim() : "";
+  return scoped(post ? { view: "inbox", post } : { view: "inbox" });
+}
+
+export function routePath(r: Route, pathname?: string): string {
+  r = localRoute(r);
+  const scopePath = r.view === "sessions" && r.flightId
+    ? null
+    : scopeRoutePath(r, pathname);
+  if (scopePath) return scopePath;
+
+  switch (r.view) {
+    case "requests": {
+      const params = new URLSearchParams();
+      if (r.requestId) params.set("request", r.requestId);
+      return `/inbox${searchSuffix(params)}`;
+    }
+    case "inbox": {
+      const params = new URLSearchParams();
+      if (r.post) params.set("post", r.post);
+      appendMachineScope(params, r);
+      return `/${searchSuffix(params)}`;
+    }
+    case "status":
+      return pathWithMachineScope("/status", r);
+    case "conversation": {
+      const params = new URLSearchParams();
+      appendMachineScope(params, r);
+      return `/c/${encodeURIComponent(r.conversationId)}${searchSuffix(params)}`;
+    }
+    case "agent-info":
+      return `/agent/${encodeURIComponent(r.conversationId)}`;
+    case "agents-v2": {
+      const params = new URLSearchParams();
+      if (r.harness) params.set("harness", r.harness);
+      if (r.node) params.set("node", r.node);
+      if (r.set) params.set("set", r.set);
+      const bareIndex = !r.projectSlug && !r.agentId && !r.sessionId;
+      // The project list owns /projects; the feed owns /agents. Only sessions needs ?view=.
+      if (!r.projectSlug && r.indexView && r.indexView !== "agents" && !(bareIndex && r.indexView === "projects")) params.set("view", r.indexView);
+      if (r.stateFilter) params.set("state", r.stateFilter);
+      if (r.showEphemeral) params.set("ephemeral", "1");
+      if (r.selectedAgentId && !r.agentId && !r.sessionId) params.set("select", r.selectedAgentId);
+      if (r.projectSlug && !r.agentId && !r.sessionId) {
+        if (r.pr) params.set("pr", String(r.pr));
+        else if (r.worktree) params.set("worktree", r.worktree);
+        else if (r.by && !r.selectedAgentId) params.set("by", r.by);
+        if ((r.pr || r.worktree) && r.file) params.set("file", r.file);
+      }
+      if (r.projectSlug && r.sessionId && !r.agentId && r.file) params.set("file", r.file);
+      const defaultTab = r.conversationId ? "message" : "profile";
+      if (r.agentId && r.tab && r.tab !== defaultTab) params.set("tab", r.tab);
+      appendMachineScope(params, r);
+      const projectPath = r.projectSlug ? `/projects/${encodeURIComponent(r.projectSlug)}` : null;
+      const path = projectPath
+        ? r.agentId
+          ? r.conversationId
+            ? `${projectPath}/agents/${encodeURIComponent(r.agentId)}/c/${encodeURIComponent(r.conversationId)}`
+            : r.sessionId
+            ? `${projectPath}/agents/${encodeURIComponent(r.agentId)}/sessions/${encodeURIComponent(r.sessionId)}`
+            : `${projectPath}/agents/${encodeURIComponent(r.agentId)}`
+          : r.sessionId
+            ? `${projectPath}/sessions/${encodeURIComponent(r.sessionId)}`
+            : r.indexView === "sessions"
+              ? `${projectPath}/sessions`
+              : r.indexView === "agents"
+                ? `${projectPath}/agents`
+                : projectPath
+        : r.agentId
+          ? r.conversationId
+            ? `/agents/${encodeURIComponent(r.agentId)}/c/${encodeURIComponent(r.conversationId)}`
+            : r.sessionId
+            ? `/agents/${encodeURIComponent(r.agentId)}/sessions/${encodeURIComponent(r.sessionId)}`
+            : `/agents/${encodeURIComponent(r.agentId)}`
+          : r.sessionId
+            ? `/sessions/${encodeURIComponent(r.sessionId)}`
+            : r.indexView === "projects" || r.indexView === "sessions"
+              ? "/projects"
+              : "/agents";
+      return `${path}${searchSuffix(params)}`;
+    }
+    case "messages": {
+      const params = new URLSearchParams();
+      if (r.agentId && r.threadId) params.set("thread", r.threadId);
+      appendMachineScope(params, r);
+      const base = r.agentId
+        ? `/messages/agent/${encodeURIComponent(r.agentId)}`
+        : r.conversationId
+          ? `/messages/${encodeURIComponent(r.conversationId)}`
+          : "/messages";
+      return `${base}${searchSuffix(params)}`;
+    }
+    case "sessions": {
+      const params = new URLSearchParams();
+      if (r.agentId) params.set("agentId", r.agentId);
+      if (r.flightId) {
+        if (r.sessionId) params.set("session", r.sessionId);
+        if (r.compareSessionId) params.set("compare", r.compareSessionId);
+        appendMachineScope(params, r);
+        return `/flights/${encodeURIComponent(r.flightId)}/observe${searchSuffix(params)}`;
+      }
+      if (r.hostLabel && r.sessionId) {
+        return `/sessions/hosts/${encodeURIComponent(r.hostLabel)}/${encodeURIComponent(r.sessionId)}${searchSuffix(params)}`;
+      }
+      appendMachineScope(params, r);
+      const path = r.sessionId
+        ? `/sessions/${encodeURIComponent(r.sessionId)}`
+        : "/sessions";
+      return `${path}${searchSuffix(params)}`;
+    }
+    case "repos": {
+      const params = new URLSearchParams();
+      if (r.root) params.set("root", r.root);
+      appendMachineScope(params, r);
+      return `/repos${searchSuffix(params)}`;
+    }
+    case "harnesses":
+      return pathWithMachineScope("/providers", r);
+    case "repo-diff": {
+      const params = new URLSearchParams();
+      params.set("path", r.path);
+      for (const layer of r.layers ?? []) params.append("layer", layer);
+      for (const file of r.files ?? []) params.append("file", file);
+      if (r.sessionId) params.set("sessionId", r.sessionId);
+      if (r.agentId) params.set("agentId", r.agentId);
+      if (r.include) params.set("include", r.include);
+      return `/repo-diff${searchSuffix(params)}`;
+    }
+    case "search": {
+      const base = r.mode === "indexer" ? "/search/indexer" : "/search";
+      const params = r.filters
+        ? serializeSearchFiltersToParams(r.filters, { hitId: r.hitId ?? null })
+        : new URLSearchParams();
+      if (!r.filters && r.hitId) params.set("hit", r.hitId);
+      return `${base}${searchSuffix(params)}`;
+    }
+    case "mesh":
+      return pathWithMachineScope("/network", r);
+    case "mesh-ops":
+      return pathWithMachineScope(
+        r.itemId ? `/mesh-ops/${encodeURIComponent(r.itemId)}` : "/mesh-ops",
+        r,
+      );
+    case "broker": {
+      const params = new URLSearchParams();
+      if (r.attemptId) params.set("attempt", r.attemptId);
+      if (r.filter && r.filter !== "all") params.set("filter", r.filter);
+      for (const key of r.focus ?? []) params.append("focus", key);
+      if (r.between && (r.focus?.length ?? 0) >= 2) params.set("between", "1");
+      if (r.window && r.window !== "all") params.set("window", r.window);
+      return `/dispatch${searchSuffix(params)}`;
+    }
+    case "code": {
+      const params = new URLSearchParams();
+      if (r.wt) params.set("wt", r.wt);
+      if (r.line) params.set("line", String(r.line));
+      if (r.line && r.endLine && r.endLine >= r.line) params.set("endLine", String(r.endLine));
+      if (r.project) {
+        if (r.returnConversationId) params.set("fromConversation", r.returnConversationId);
+        const segments = [encodeURIComponent(r.project)];
+        if (r.path) segments.push(...r.path.split("/").map(encodeURIComponent));
+        const base = `/code/${segments.join("/")}`;
+        return `${base}${searchSuffix(params)}`;
+      }
+      if (r.root) params.set("root", r.root);
+      if (r.file) params.set("file", r.file);
+      if (r.returnConversationId) params.set("fromConversation", r.returnConversationId);
+      const search = params.toString();
+      return search ? `/code?${search}` : "/code";
+    }
+    case "briefings":
+      return r.briefingId
+        ? `/briefings/${encodeURIComponent(r.briefingId)}`
+        : "/briefings";
+    case "rooms": {
+      const params = new URLSearchParams();
+      if (r.source === "slack") params.set("source", "slack");
+      if (r.directId && r.source !== "slack") {
+        params.set("dm", r.directId);
+        return `/rooms${searchSuffix(params)}`;
+      }
+      if (r.space) params.set("space", r.space);
+      if (r.channelId) params.set("channel", r.channelId);
+      if (r.messageId) params.set("message", r.messageId);
+      return `/rooms${searchSuffix(params)}`;
+    }
+    case "activity": {
+      const params = new URLSearchParams();
+      if (r.eventId) params.set("event", r.eventId);
+      appendMachineScope(params, r);
+      return `/activity${searchSuffix(params)}`;
+    }
+    case "views":
+      return r.viewId ? `/views/${encodeURIComponent(r.viewId)}` : "/views";
+    case "boards":
+      return r.boardId ? `/boards/${encodeURIComponent(r.boardId)}` : "/boards";
+    case "review":
+      return "/review";
+    case "feed":
+      return "/";
+    case "canvas":
+      return `${r.project ? `/workspace/${encodeURIComponent(r.project)}` : "/workspace"}${r.end ? `?end=${r.end}${r.hours ? `&hours=${r.hours}` : ""}` : ""}`;
+    case "voice":
+      return "/voice";
+    case "work":
+      return r.board ? buildBoardSelection(pathWithMachineScope("/work/board", r), r.boardItem, r.boardFull) : pathWithMachineScope(r.workId ? `/work/${encodeURIComponent(r.workId)}` : "/work", r);
+    case "settings":
+      if (r.section === "agents") {
+        return r.agentId
+          ? `/settings/agents/${encodeURIComponent(r.agentId)}`
+          : "/settings/agents";
+      }
+      if (!r.section) return "/settings";
+      if (r.section === "pairing") return "/settings/pairing";
+      if (r.section === "comms") return "/settings/comms";
+      return `/settings/${r.section}`;
+    case "ops":
+      if (!r.mode) return "/ops";
+      // Ops › Control keeps the wall's cursor: /ops/control?sessionId=…
+      if (r.mode === "mission" && r.sessionId) return `/ops/control${searchSuffix(new URLSearchParams({ sessionId: r.sessionId }))}`;
+      // Lanes lives under Sessions and keeps the lane the deck opened in its
+      // Lane panel: /sessions/lanes?sessionId=… (or a registered agent's ?targetAgentId=)
+      if (r.mode === "lanes") {
+        const params = new URLSearchParams();
+        if (r.sessionId) params.set("sessionId", r.sessionId);
+        if (r.targetAgentId) params.set("targetAgentId", r.targetAgentId);
+        return `/sessions/lanes${searchSuffix(params)}`;
+      }
+      if (r.mode === "tail" || r.mode === "advisor") {
+        const params = new URLSearchParams();
+        if (r.mode === "tail" && r.tailQuery) params.set("q", r.tailQuery);
+        if (r.mode === "advisor" && r.planDocumentId) params.set("plan", r.planDocumentId);
+        if (r.flightId) params.set("flightId", r.flightId);
+        if (r.invocationId) params.set("invocationId", r.invocationId);
+        if (r.conversationId) params.set("conversationId", r.conversationId);
+        if (r.workId) params.set("workId", r.workId);
+        if (r.sessionId) params.set("sessionId", r.sessionId);
+        if (r.targetAgentId) params.set("targetAgentId", r.targetAgentId);
+        return `/ops/${opsModePath(r.mode)}${searchSuffix(params)}`;
+      }
+      if (r.mode === "week" && (r.dataset || r.source)) {
+        const params = new URLSearchParams();
+        if (r.dataset) params.set("data", r.dataset);
+        if (r.source) params.set("source", r.source === "live" ? "realtime" : r.source);
+        return `/ops/${opsModePath(r.mode)}${searchSuffix(params)}`;
+      }
+      return `/ops/${opsModePath(r.mode)}`;
+    case "follow": {
+      const params = new URLSearchParams();
+      if (r.preferredView) params.set("view", r.preferredView);
+      if (r.flightId) params.set("flightId", r.flightId);
+      if (r.invocationId) params.set("invocationId", r.invocationId);
+      if (r.conversationId) params.set("conversationId", r.conversationId);
+      if (r.workId) params.set("workId", r.workId);
+      if (r.sessionId) params.set("sessionId", r.sessionId);
+      if (r.targetAgentId) params.set("targetAgentId", r.targetAgentId);
+      if (r.machineId) params.set(MACHINE_SCOPE_PARAM, r.machineId);
+      const search = params.toString();
+      return `/follow${search ? `?${search}` : ""}`;
+    }
+    case "terminal":
+      if (r.agentId) {
+        const params = new URLSearchParams();
+        if (r.mode) params.set("mode", r.mode);
+        return `/terminal/${encodeURIComponent(r.agentId)}${searchSuffix(params)}`;
+      }
+      {
+        const params = new URLSearchParams();
+        if (r.terminalBackend) {
+          if (r.terminalBackend !== "pty") params.set("backend", r.terminalBackend);
+          if (r.terminalAgent && r.terminalAgent !== "shell") params.set("agent", r.terminalAgent);
+          if (r.terminalSessionName) params.set("name", r.terminalSessionName);
+          if (r.terminalTabId) params.set("tab", r.terminalTabId);
+          if (r.zellijSocketDir) params.set("socketDir", r.zellijSocketDir);
+          return `/terminal/new${searchSuffix(params)}`;
+        }
+        if (r.mode) params.set("mode", r.mode);
+        const surfaceParts = surfacePartsFromKey(r.terminalSurfaceKey);
+        if (surfaceParts) {
+          return `/terminal/${encodeURIComponent(surfaceParts.backend)}/${encodeURIComponent(surfaceParts.sessionName)}${searchSuffix(params)}`;
+        }
+        // Pane- or node-scoped surfaces have no readable two-segment form.
+        if (isTerminalSurfaceId(r.terminalSurfaceKey)) {
+          return `/terminal/s/${encodeURIComponent(r.terminalSurfaceKey!)}${searchSuffix(params)}`;
+        }
+        if (r.terminalSessionId) params.set("session", r.terminalSessionId);
+        if (r.terminalSurfaceKey) params.set("surface", r.terminalSurfaceKey);
+        return `/terminal${searchSuffix(params)}`;
+      }
+  }
+}
+
+/** Scroll-memory key for a route; exported for tests. Sole owner: useRouter's scrollMap. */
+export function routeKey(r: Route): string {
+  const scope = routeScopeKey(r);
+  switch (r.view) {
+    case "views":
+      return `views:${r.viewId ?? ""}`;
+    case "boards":
+      return `boards:${r.boardId ?? ""}`;
+    case "conversation":
+      return `conv:${r.conversationId}${scope}`;
+    case "agent-info":
+      return `agent-info:${r.conversationId}`;
+    case "settings":
+      return `settings:${r.section ?? "pairing"}:${r.agentId ?? ""}`;
+    case "agents-v2":
+      return [
+        "agents-v2",
+        r.projectSlug ?? "",
+        r.harness ?? "",
+        r.node ?? "",
+        r.set ?? "",
+        r.indexView ?? "agents",
+        r.stateFilter ?? "",
+        r.showEphemeral ? "eph" : "",
+        r.agentId ?? "",
+        r.sessionId ?? "",
+        r.pr ?? "",
+        r.worktree ?? "",
+        r.file ?? "",
+        r.by ?? "",
+        scope,
+      ].join(":");
+    case "sessions":
+      return r.flightId
+        ? `flight-observe:${r.flightId}:${r.sessionId ?? ""}:${r.compareSessionId ?? ""}${scope}`
+        : r.sessionId ? `session:${r.agentId ?? ""}:${r.sessionId}${scope}` : `sessions${scope}`;
+    case "messages":
+      return [
+        "messages",
+        r.conversationId ?? "",
+        r.agentId ?? "",
+        r.threadId ?? "",
+        scope,
+      ].join(":");
+    case "work":
+      return `work:${r.board ? "board" : r.workId}${scope}`;
+    case "ops":
+      return `ops:${r.mode ?? "advisor"}:${r.tailQuery ?? ""}:${r.planDocumentId ?? ""}:${r.flightId ?? ""}:${r.invocationId ?? ""}:${r.workId ?? ""}:${r.conversationId ?? ""}:${r.sessionId ?? ""}:${r.targetAgentId ?? ""}`;
+    case "search":
+      return `search:${r.mode ?? "knowledge"}:${r.hitId ?? ""}`;
+    case "broker":
+      return `broker:${r.attemptId ?? ""}`;
+    case "follow":
+      return `follow:${r.flightId ?? r.invocationId ?? r.conversationId ?? r.workId ?? r.sessionId ?? r.targetAgentId ?? ""}:${r.preferredView ?? ""}${scope}`;
+    case "terminal":
+      return `terminal:${r.agentId ?? ""}:${r.terminalSessionId ?? ""}:${r.terminalSurfaceKey ?? ""}:${r.terminalBackend ?? ""}:${r.terminalAgent ?? ""}:${r.terminalSessionName ?? ""}:${r.terminalTabId ?? ""}:${r.mode ?? "detail"}`;
+    case "repo-diff":
+      return `repo-diff:${r.path}`;
+    case "inbox":
+      return `inbox${r.post ? `:post:${r.post}` : ""}${scope}`;
+    default:
+      return `${r.view}${scope}`;
+  }
+}
+
+/* ── Router hook ── */
+
+function routeFromLocation(pathname: string, searchStr: string): Route {
+  const route = normalizeRoute(routeFromUrl(`${pathname}${searchStr}`));
+  return BASIC_WEB ? basicRoute(route) : route;
+}
+
+/* ── Browser location store ── */
+
+export type BrowserLocationState = {
+  pathname: string;
+  searchStr: string;
+  /** Location hash without the leading "#". */
+  hash: string;
+  /** history.state for the active entry. */
+  state: unknown;
+};
+
+function locationHashSuffix(hash: string): string {
+  return hash ? `#${hash}` : "";
+}
+
+function isStandaloneEmbedPath(pathname: string): boolean {
+  // /glass and /glass/conversation are the Mac Glass window's entry pages (screens/glass), not shell routes.
+  return pathname.startsWith("/embed/") || pathname === "/ops/lanes/embed" || pathname === "/glass" || pathname === "/glass/conversation";
+}
+
+function readBrowserLocation(): BrowserLocationState {
+  if (typeof window === "undefined") {
+    const url = new URL(APP_URL_BASE);
+    return {
+      pathname: url.pathname,
+      searchStr: url.search,
+      hash: url.hash.replace(/^#/, ""),
+      state: null,
+    };
+  }
+  return {
+    pathname: window.location.pathname,
+    searchStr: window.location.search,
+    hash: window.location.hash.replace(/^#/, ""),
+    state: window.history.state,
+  };
+}
+
+function isSameBrowserLocation(a: BrowserLocationState, b: BrowserLocationState): boolean {
+  return a.pathname === b.pathname
+    && a.searchStr === b.searchStr
+    && a.hash === b.hash
+    && Object.is(a.state, b.state);
+}
+
+/** Platform hooks the location store needs; injectable so tests can drive it headlessly. */
+export type BrowserLocationEnv = {
+  read: () => BrowserLocationState;
+  push: (href: string, state: unknown) => void;
+  replace: (href: string, state: unknown) => void;
+  /** Observe browser-driven location changes (popstate / hashchange). */
+  observe: (onChange: () => void) => () => void;
+};
+
+export type BrowserLocationStore = {
+  getSnapshot: () => BrowserLocationState;
+  subscribe: (listener: () => void) => () => void;
+  navigateTo: (href: string, options?: { replace?: boolean; state?: unknown }) => void;
+};
+
+/**
+ * Single reactive owner of the browser location. Internal push/replace
+ * operations publish synchronously; popstate/hashchange are observed through
+ * the env. Subscribers read an immutable snapshot via useSyncExternalStore.
+ */
+export function createBrowserLocationStore(env: BrowserLocationEnv): BrowserLocationStore {
+  let snapshot = env.read();
+  const listeners = new Set<() => void>();
+  let stopObserving: (() => void) | null = null;
+
+  const syncFromEnv = () => {
+    const next = env.read();
+    if (isSameBrowserLocation(snapshot, next)) return;
+    snapshot = next;
+    for (const listener of listeners) listener();
+  };
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(listener) {
+      if (!stopObserving) stopObserving = env.observe(syncFromEnv);
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    navigateTo(href, options = {}) {
+      const from = snapshot.pathname;
+      const state = options.state === undefined ? snapshot.state : options.state;
+      if (options.replace) {
+        env.replace(href, state);
+      } else {
+        env.push(href, state);
+      }
+      syncFromEnv();
+      if (snapshot.pathname !== from) {
+        beginNavTiming(from, snapshot.pathname);
+      }
+    },
+  };
+}
+
+function windowLocationEnv(): BrowserLocationEnv {
+  if (typeof window === "undefined") {
+    return {
+      read: readBrowserLocation,
+      push: () => {},
+      replace: () => {},
+      observe: () => () => {},
+    };
+  }
+  return {
+    read: readBrowserLocation,
+    push: (href, state) => {
+      // A URL-only push can also inherit history.state outside buildNavigateState.
+      if (state && typeof state === "object" && "overviewEntry" in state) {
+        const { overviewEntry, ...rest } = state;
+        window.history.pushState(rest, "", href);
+      } else window.history.pushState(state, "", href);
+    },
+    replace: (href, state) => window.history.replaceState(state, "", href),
+    observe: (onChange) => {
+      window.addEventListener("popstate", onChange);
+      window.addEventListener("hashchange", onChange);
+      return () => {
+        window.removeEventListener("popstate", onChange);
+        window.removeEventListener("hashchange", onChange);
+      };
+    },
+  };
+}
+
+const browserLocationStore = createBrowserLocationStore(windowLocationEnv());
+
+/** Reactive browser location for any component (shell or scope namespace). */
+export function useBrowserLocation(): BrowserLocationState {
+  return useSyncExternalStore(
+    browserLocationStore.subscribe,
+    browserLocationStore.getSnapshot,
+    browserLocationStore.getSnapshot,
+  );
+}
+
+function navigateBrowser(href: string, options: { replace?: boolean; state?: unknown } = {}): void {
+  browserLocationStore.navigateTo(href, options);
+}
+
+/** A tab history entry owns its Overview position even after a pop changes the URL. */
+export function overviewEntryKey(): string {
+  const navigation = (window as Window & { navigation?: { currentEntry?: { key: string } } }).navigation;
+  if (navigation?.currentEntry?.key) return navigation.currentEntry.key;
+  const state = window.history.state;
+  if (typeof state?.overviewEntry === "string") return state.overviewEntry;
+  const key = randomUuid();
+  navigateBrowser(location.href, { replace: true, state: { ...state, overviewEntry: key } });
+  return key;
+}
+
+type BrowserNavigationAPI = {
+  readonly canGoBack: boolean;
+  readonly canGoForward?: boolean;
+  back: () => unknown;
+  forward?: () => unknown;
+};
+
+function browserNavigationAPI(): BrowserNavigationAPI | null {
+  if (typeof window === "undefined") return null;
+  return (window as Window & { navigation?: BrowserNavigationAPI }).navigation ?? null;
+}
+
+/** Whether the browser has a previous entry for the current tab. */
+export function canNavigateBrowserBack(): boolean {
+  if (typeof window === "undefined") return false;
+  const navigation = browserNavigationAPI();
+  return navigation ? navigation.canGoBack : window.history.length > 1;
+}
+
+/**
+ * Use the browser's real session history so toolbar/mouse Back and Scout's Back
+ * control all resolve the same route stack.
+ */
+export function navigateBrowserBack(): void {
+  if (!canNavigateBrowserBack()) return;
+  const navigation = browserNavigationAPI();
+  if (navigation) {
+    void navigation.back();
+    return;
+  }
+  window.history.back();
+}
+
+/**
+ * Whether the browser has a later entry. Without the Navigation API the history
+ * length cannot tell, so Forward stays enabled and a press at the end is a no-op.
+ */
+export function canNavigateBrowserForward(): boolean {
+  if (typeof window === "undefined") return false;
+  const navigation = browserNavigationAPI();
+  return navigation && typeof navigation.canGoForward === "boolean" ? navigation.canGoForward : true;
+}
+
+/** The browser's Forward, the pair to `navigateBrowserBack`. */
+export function navigateBrowserForward(): void {
+  const navigation = browserNavigationAPI();
+  if (navigation?.forward) {
+    if (navigation.canGoForward === false) return;
+    void navigation.forward();
+    return;
+  }
+  window.history.forward();
+}
+
+/* ── URL policy: search params, hash, history entry state ── */
+
+/** Typed history-entry payload owned by the Scout router. */
+export type ScoutHistoryState = {
+  /** Origin route for BackToPicker (set by navigate with `returnTo`). */
+  returnTo?: Route;
+  /**
+   * When true, the previous history entry is the recorded origin of this
+   * navigation, so BackToPicker may prefer `history.back()`.
+   */
+  returnUseHistory?: boolean;
+  /**
+   * Marks a /settings/* entry pushed by openSettings, so closeSettings may
+   * prefer `history.back()` and restore wherever the user came from.
+   */
+  settingsEntry?: boolean;
+  [key: string]: unknown;
+};
+
+export type NavigateOptions = {
+  /** Replace the current history entry instead of pushing a new one. */
+  replace?: boolean;
+  /**
+   * Hash for the destination (with or without "#"). Hashes clear by default on
+   * navigation — pass one explicitly to retain or set it.
+   */
+  hash?: string | null;
+  /** history.state for the destination entry; defaults to the current entry's. */
+  state?: unknown;
+  /**
+   * Origin route stored on the destination history entry for BackToPicker.
+   * Replaces the former sessionStorage nav-return side channel.
+   */
+  returnTo?: Route;
+  /**
+   * Carry whitelisted global search params (feature flags) onto the
+   * destination. Default true; route-local params never carry either way.
+   */
+  preserveSearch?: boolean;
+};
+
+export function readReturnToFromState(state: unknown): Route | null {
+  if (!state || typeof state !== "object") return null;
+  const returnTo = (state as ScoutHistoryState).returnTo;
+  if (!returnTo || typeof returnTo !== "object") return null;
+  if (typeof (returnTo as Route).view !== "string") return null;
+  return returnTo as Route;
+}
+
+export function shouldUseHistoryBack(state: unknown): boolean {
+  if (!state || typeof state !== "object") return false;
+  return (state as ScoutHistoryState).returnUseHistory === true;
+}
+
+export function isSettingsHistoryEntry(state: unknown): boolean {
+  if (!state || typeof state !== "object") return false;
+  return (state as ScoutHistoryState).settingsEntry === true;
+}
+
+/**
+ * Entry-scoped keys (returnTo/returnUseHistory/settingsEntry) describe how the
+ * user ARRIVED at an entry; they must never be inherited by the next entry a
+ * plain navigate pushes, or BackToPicker/closeSettings would act on a stale
+ * origin. Strip them unless this navigate call sets them explicitly.
+ */
+function stripEntryScopedState(state: unknown): unknown {
+  if (!state || typeof state !== "object") return state;
+  const {
+    returnTo: _returnTo,
+    returnUseHistory: _returnUseHistory,
+    settingsEntry: _settingsEntry,
+    overviewEntry: _overviewEntry,
+    ...rest
+  } = state as ScoutHistoryState;
+  return rest;
+}
+
+/** Exported for tests. */
+export function buildNavigateState(
+  currentState: unknown,
+  options: NavigateOptions,
+): unknown {
+  if (options.returnTo !== undefined) {
+    const base =
+      options.state !== undefined
+        ? options.state
+        : stripEntryScopedState(currentState);
+    const merged: ScoutHistoryState =
+      base && typeof base === "object" ? { ...(base as ScoutHistoryState) } : {};
+    merged.returnTo = options.returnTo;
+    // history.back() only lands on the recorded origin when this navigation
+    // pushed a fresh entry on top of it; a replace keeps the current entry, so
+    // the predecessor is whatever was there before — BackToPicker must fall
+    // back to navigating to returnTo instead.
+    merged.returnUseHistory = options.replace !== true;
+    return merged;
+  }
+  if (options.state !== undefined) return options.state;
+  // replace keeps the same history entry, so entry-scoped state (returnTo,
+  // settingsEntry) stays accurate and is preserved; only a pushed entry is a
+  // new arrival that must not inherit its predecessor's origin.
+  if (options.replace) return currentState;
+  return stripEntryScopedState(currentState);
+}
+
+function normalizeHashOption(hash: string | null | undefined): string {
+  return hash ? hash.replace(/^#/, "") : "";
+}
+
+/**
+ * Pure navigation planner: applies the machine-scope propagation rules and the
+ * search/hash policy to produce the destination href. The hash defaults to
+ * cleared; only whitelisted global params survive from the current search
+ * (route serialization owns route-local params; machineId rides the Route).
+ */
+export function planNavigation(
+  current: Pick<BrowserLocationState, "pathname" | "searchStr">,
+  requestedRoute: Route,
+  options: NavigateOptions = {},
+): { route: Route; href: string } {
+  const currentRoute = routeFromLocation(current.pathname, current.searchStr);
+  const nextRoute = resolveNavigatedMachineScope(localRoute(requestedRoute), currentRoute);
+  const preservedSearch = options.preserveSearch === false ? "" : current.searchStr;
+  let path = routePath(nextRoute, current.pathname);
+  const nativeAreaView: Record<string, Route["view"]> = {
+    "/embed/requests": "requests", "/embed/home": "inbox", "/embed/search": "search", "/embed/ops": "ops",
+    "/embed/sessions": "sessions",
+  };
+  // A flight's page has its own address (/flights/<id>/observe); its id is not a session's.
+  const flightPage = nextRoute.view === "sessions" && !!nextRoute.flightId;
+  if (nativeAreaView[current.pathname] === nextRoute.view && !flightPage) {
+    // Keep the native document entry point across local filters/mode changes
+    // and reloads. The query carries the same canonical route state.
+    const embedded = resolveAppUrl(path);
+    const mode = embedded.pathname.split("/").filter(Boolean)[1];
+    embedded.pathname = current.pathname;
+    const nativeParams = new URLSearchParams(current.searchStr);
+    for (const key of ["embed", "profile", "theme", "themeVars", "_nav"]) {
+      const value = nativeParams.get(key);
+      if (value !== null) embedded.searchParams.set(key, value);
+    }
+    // the path segment is encoded; ?mode= carries it plain (a session ref holds ":")
+    if (mode) embedded.searchParams.set("mode", decodeURIComponent(mode));
+    path = embedded.pathname + embedded.search;
+  }
+  const canonicalPath = preserveLocationSearch(path, preservedSearch);
+  const hash = normalizeHashOption(options.hash);
+  return { route: nextRoute, href: `${canonicalPath}${hash ? `#${hash}` : ""}` };
+}
+
+export type LocationUpdate = {
+  /** Set a key to a value, or null to remove it. Applied over the current search. */
+  searchPatch?: Record<string, string | null>;
+  /** Set the hash (with or without "#"); null clears it; undefined leaves it. */
+  hash?: string | null;
+  /** Default true — URL UI-state patches replace rather than push. */
+  replace?: boolean;
+  /** history.state for the entry; defaults to the current entry's. */
+  state?: unknown;
+};
+
+/** Pure href computation for updateLocation; exported for tests. */
+export function applyLocationUpdate(
+  current: Pick<BrowserLocationState, "pathname" | "searchStr" | "hash">,
+  update: LocationUpdate,
+): string {
+  const params = new URLSearchParams(current.searchStr);
+  for (const [key, value] of Object.entries(update.searchPatch ?? {})) {
+    if (value === null) params.delete(key);
+    else params.set(key, value);
+  }
+  const search = params.toString();
+  const hash = update.hash === undefined ? current.hash : normalizeHashOption(update.hash);
+  return `${current.pathname}${search ? `?${search}` : ""}${hash ? `#${hash}` : ""}`;
+}
+
+/**
+ * Narrow escape hatch for URL UI state that is not a product Route (lane-sheet
+ * section hashes, dev-only query cleanup, scope layout toggles). Publishes
+ * through the same location store as navigate(). Product navigation must use
+ * navigate(); the terminal embed keeps its own isolated local router.
+ */
+export function updateLocation(update: LocationUpdate): void {
+  const current = browserLocationStore.getSnapshot();
+  const href = applyLocationUpdate(current, update);
+  const currentHref = `${current.pathname}${current.searchStr}${locationHashSuffix(current.hash)}`;
+  if (href === currentHref) return;
+  navigateBrowser(href, { replace: update.replace ?? true, state: update.state });
+}
+
+/**
+ * Basic web: every location folds onto Home, DMs or Tail, so any URL the basic
+ * route policy does not reproduce exactly (full-app surfaces, stray params,
+ * machine scope) is replaced by its basic equivalent. Exported for tests.
+ */
+export function basicCanonicalHref(pathname: string, searchStr: string, hash: string): string | null {
+  const canonical = routePath(basicRoute(normalizeRoute(routeFromUrl(`${pathname}${searchStr}`))), "/");
+  return `${pathname}${searchStr}` === canonical ? null : `${canonical}${locationHashSuffix(hash)}`;
+}
+
+/**
+ * Canonical href for a location, or null when already canonical. Handles the
+ * legacy /scout → /scope rewrite and trailing-slash/alias normalization that
+ * used to race with the TanStack beforeLoad redirect; the replace here is now
+ * the only canonicalizer. The current hash is retained (same logical location);
+ * only whitelisted global search params carry over.
+ */
+export function canonicalHrefForRoute(pathname: string, searchStr: string, hash: string): string | null {
+  // Embeds own their URL in both clients; a native host loaded that exact path.
+  const replacement = retiredWebPath(resolveAppUrl(pathname + searchStr));
+  if (replacement) return replacement;
+  if (isStandaloneEmbedPath(pathname)) return null;
+  if (BASIC_WEB) return basicCanonicalHref(pathname, searchStr, hash);
+  const routeUrl = `${pathname}${searchStr}`;
+  const raw = routeFromUrl(routeUrl);
+  const normalized = normalizeRoute(raw);
+  const canonicalPath = preserveLocationSearch(routePath(normalized, pathname), searchStr);
+  const shouldCanonicalize =
+    routeKey(raw) !== routeKey(normalized)
+    || normalized.view === "agents-v2"
+    || routeUrl !== canonicalPath;
+  if (!shouldCanonicalize || routeUrl === canonicalPath) return null;
+  return `${canonicalPath}${locationHashSuffix(hash)}`;
+}
+
+export function useRouter() {
+  const { pathname, searchStr, hash } = useBrowserLocation();
+  const routeUrl = `${pathname}${searchStr}`;
+  const route = useMemo(() => routeFromLocation(pathname, searchStr), [pathname, searchStr]);
+  const scrollMap = useRef<Record<string, number>>({});
+  const prevRouteUrl = useRef(routeUrl);
+
+  useEffect(() => {
+    const canonicalHref = canonicalHrefForRoute(pathname, searchStr, hash);
+    if (canonicalHref) {
+      navigateBrowser(canonicalHref, { replace: true });
+    }
+  }, [pathname, searchStr, hash]);
+
+  useEffect(() => {
+    if (prevRouteUrl.current === routeUrl) return;
+    const r = routeFromLocation(pathname, searchStr);
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollMap.current[routeKey(r)] ?? 0);
+    });
+    prevRouteUrl.current = routeUrl;
+  }, [routeUrl, pathname, searchStr]);
+
+  const navigate = useCallback((r: Route, options: NavigateOptions = {}) => {
+    const normalizedRoute: Route = normalizeRoute(
+      (r.view === "ops" && !isOpsEnabled() && !isUngatedOpsSurface(r.mode)) || (r.view === "review" && !isReviewEnabled()) || (r.view === "canvas" && !isCanvasEnabled()) || r.view === "feed"
+        ? { view: "inbox" }
+        : r,
+    );
+    const requestedRoute = BASIC_WEB ? basicRoute(normalizedRoute) : normalizedRoute;
+    const currentRoute = routeFromLocation(pathname, searchStr);
+    // Basic carries no global search params (machine scope, embed, theme), so
+    // every destination is planned from a clean root.
+    const { route: nextRoute, href } = planNavigation(
+      BASIC_WEB ? { pathname: "/", searchStr: "" } : { pathname, searchStr },
+      requestedRoute,
+      options,
+    );
+    scrollMap.current[routeKey(currentRoute)] = window.scrollY;
+    const currentState = browserLocationStore.getSnapshot().state;
+    const state = buildNavigateState(currentState, options);
+    navigateBrowser(href, { replace: options.replace, state });
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollMap.current[routeKey(nextRoute)] ?? 0);
+    });
+  }, [pathname, searchStr]);
+
+  const navigateBack = useCallback(() => navigateBrowserBack(), []);
+  const canNavigateBack = canNavigateBrowserBack();
+  const navigateForward = useCallback(() => navigateBrowserForward(), []);
+  const canNavigateForward = canNavigateBrowserForward();
+
+  return { route, navigate, navigateBack, canNavigateBack, navigateForward, canNavigateForward };
 }

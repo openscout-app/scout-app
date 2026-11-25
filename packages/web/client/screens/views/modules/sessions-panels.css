@@ -1,0 +1,288 @@
+/* The Sessions view's panels: the board's members and one session, drawn by
+ * the Sessions screens' own parts (screens/sessions/, sessions-slots.css),
+ * fitted to a panel. Every rule is scoped to a module root, so the slot
+ * screen (Basic web) draws exactly as before.
+ *
+ * The panel is the frame: rows, lanes, the request and the changes lie flat
+ * on hairlines, no rounded boxes inside a square panel; what stays rounded
+ * (the composer, a message, the send control) takes the theme's corner
+ * tokens, so the HUD look squares them too. Sizes read the panel (the body,
+ * and each compared session, is a query container), never the window: the
+ * slot screen's @media rule that hides the inspector returns here as an
+ * @container rule, and these selectors outrank it. */
+
+/* ── Session board ─────────────────────────────────────────────────── */
+
+.vw-session-board {
+  min-height: 0;
+}
+
+.vw-session-notice {
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--scout-chrome-border-soft);
+  color: var(--scout-chrome-ink-faint);
+  font-size: var(--text-sm);
+}
+
+.vw-session-board .s-session-member:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.vw-session-board .s-session-state[data-state="asks"] {
+  border-radius: var(--radius-xs);
+}
+
+.vw-session-board .s-session-board--cards .s-session-board-members {
+  gap: 0;
+  padding: 0;
+}
+
+/* cards are tiles on hairlines, not boxes */
+.vw-session-board .s-session-board--cards .s-session-member {
+  border: 0;
+  border-right: 1px solid var(--scout-chrome-border-soft);
+  border-bottom: 1px solid var(--scout-chrome-border-soft);
+  border-radius: 0;
+}
+
+.vw-session-board .s-session-lane {
+  margin: 0;
+  border-bottom: 1px solid var(--scout-chrome-border-soft);
+  border-radius: 0;
+}
+
+.vw-session-board .s-session-empty {
+  padding: 12px;
+}
+
+@container (max-width: 300px) {
+  .vw-session-board .s-session-member-meta {
+    padding-left: 0;
+  }
+}
+
+/* ── Session thread ────────────────────────────────────────────────── */
+
+.vw-session-thread {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: var(--scout-chrome-ink);
+}
+
+.vw-session-thread > .s-slots-flight {
+  flex: none;
+  padding: 6px 12px;
+}
+
+.vw-session-thread select {
+  max-width: 100%;
+  padding: 3px 6px;
+  border: 1px solid var(--scout-chrome-border-soft);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--scout-chrome-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.vw-session-thread :is(button, input, select, summary, textarea):focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* the session's terminal in the thread's place; padding on .xterm is the one xterm's fit subtracts */
+.vw-session-terminal {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.vw-session-terminal > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.vw-session-terminal .xterm {
+  padding: var(--space-xs) 0 0 var(--space-md);
+}
+
+/* one session, or two compared: side by side when there is room, else stacked */
+.vw-session-thread-split {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+@container (min-width: 760px) {
+  .vw-session-thread-split[data-compare] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.vw-session-thread-split[data-compare] > .vw-session-thread-pane + .vw-session-thread-pane {
+  border-top: 1px solid var(--scout-chrome-border-soft);
+}
+
+@container (min-width: 760px) {
+  .vw-session-thread-split[data-compare] > .vw-session-thread-pane + .vw-session-thread-pane {
+    border-top: 0;
+    border-left: 1px solid var(--scout-chrome-border-soft);
+  }
+}
+
+/* each session sizes by its own width, so a compared one keeps its inspector rule */
+.vw-session-thread-pane {
+  container-type: inline-size;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.vw-session-thread-pane > .s-session-slot {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Desk's delivery log and context: beside the thread once the session is 760px wide */
+.vw-session-thread-pane .s-session-slot > .s-session-inspector {
+  display: none;
+}
+
+@container (min-width: 760px) {
+  .vw-session-thread-pane .s-session-slot > .s-session-inspector {
+    display: block;
+  }
+}
+
+/* The thread's title, its text and the composer's text share the reading
+   pane's 24px keyline (the app grid), at every width. */
+.vw-session-thread .s-session-header {
+  padding: 10px 24px;
+}
+
+.vw-session-thread .s-session-transcript {
+  padding: 16px 24px;
+}
+
+.vw-session-thread .s-session-user-message {
+  border-radius: var(--radius-bubble);
+}
+
+.vw-session-thread .s-session-request,
+.vw-session-thread .s-session-changes {
+  padding-inline: 0;
+  border-inline: 0;
+  border-radius: 0;
+}
+
+.vw-session-thread .s-session-changes ul {
+  margin-inline: 0;
+}
+
+.vw-session-thread .s-session-changes li {
+  padding-inline: 0;
+}
+
+.vw-session-thread .s-session-request pre {
+  border-radius: var(--radius-sm);
+}
+
+.vw-session-thread .s-session-composer {
+  padding: 8px 12px 12px;
+}
+
+.vw-session-thread .s-session-composer-box {
+  border-radius: var(--radius-lg);
+}
+
+.vw-session-thread .s-session-composer-box textarea:focus-visible {
+  border-radius: var(--radius-md);
+}
+
+.vw-session-thread .s-session-send {
+  border-radius: var(--radius-pill);
+}
+
+.vw-session-thread .s-session-steer-action,
+.vw-session-thread .s-session-pending-message {
+  border-radius: var(--radius-md);
+}
+
+.vw-session-thread [role="alert"] {
+  color: var(--red);
+}
+
+/* The turns' colours are light, not hue (turn-beats.css keeps coral and green for
+ * the chat screens): a failure is bright ink among the muted calls, what passed
+ * is plain ink, and a diff's signs carry its sides, the removed lines dimmer. */
+.vw-session-thread :is(.s-turn-work, .s-tb) {
+  --tb-pass: color-mix(in srgb, var(--hud-ink) 40%, var(--hud-bg));
+  --tb-add: var(--hud-ink);
+  --tb-fail: var(--hud-ink);
+  --tb-del: color-mix(in srgb, var(--hud-muted) 80%, var(--hud-bg));
+}
+
+.vw-session-thread .s-tb-cells i[data-s="fail"] {
+  box-shadow: none;
+}
+
+/* a link in a turn is ink on a hairline underline; the accent is kept for what
+ * waits on the operator */
+.vw-session-thread :is(.s-message-markup a, a.s-inline-link) {
+  color: var(--scout-chrome-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--scout-chrome-border-soft);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.vw-session-thread :is(.s-message-markup a, a.s-inline-link):hover {
+  text-decoration-color: currentColor;
+}
+
+/* ── Session details ───────────────────────────────────────────────── */
+
+/* The thread draws its session's ledger into this body (session-details-host.ts).
+ * The ledger scrolls itself; the panel is its surface, so it lies flat on the
+ * panel with no slab of its own and starts at the panel's edge. */
+.vw-session-details {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: var(--scout-chrome-ink);
+}
+
+.vw-session-details-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.vw-session-details-body > * {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.vw-session-details .s-ledger {
+  gap: 18px;
+  padding: 10px 12px 20px;
+  background: transparent;
+}
+
+/* ── Sharp look ────────────────────────────────────────────────────── */
+
+/* focus is an ink line, not emerald */
+:root[data-scout-look="sharp"] .vw-session-board .s-session-member:focus-visible,
+:root[data-scout-look="sharp"] .vw-session-thread :is(button, input, select, summary, textarea):focus-visible {
+  outline-color: var(--ink);
+}

@@ -50,7 +50,7 @@ export function sizeForKey(key: string, size: PostSize): PostSize | null {
  */
 export const WORDS: Record<PostSize, { title: number | null; caption: number | null }> = {
   s: { title: 24, caption: 16 },
-  m: { title: 64, caption: 48 },
+  m: { title: 32, caption: 48 },
   l: { title: null, caption: null },
 };
 

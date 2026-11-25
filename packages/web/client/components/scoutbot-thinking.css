@@ -1,0 +1,27 @@
+.scoutbot-thinking { display: inline-flex; align-self: flex-start; flex-shrink: 0; line-height: 0; }
+.scoutbot-thinking > .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.scoutbot-thinking .sbt-bot { transform: none; }
+.sbd-face .scoutbot-thinking svg { filter: none; }
+.scoutbot-thinking .sbt-blink { animation-play-state: paused; }
+.scoutbot-thinking .sbt-current { opacity: 0.55; animation: scoutbot-current-breathe 3.2s ease-in-out infinite paused; }
+.scoutbot-thinking .sbt-current__flow { animation: scoutbot-current-travel 6.4s cubic-bezier(0.4, 0.22, 0.6, 0.78) infinite paused; }
+.scoutbot-thinking[data-active] :is(.sbt-current, .sbt-current__flow, .sbt-blink) { animation-play-state: running; }
+/* Keep the current moving through its softer beat; no full stop or blackout. */
+@keyframes scoutbot-current-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.9; }
+}
+@keyframes scoutbot-current-travel {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -100; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scoutbot-thinking :is(.sbt-current, .sbt-current__flow, .sbt-blink) { animation: none !important; }
+  .scoutbot-thinking .sbt-current { opacity: 0.6; }
+  .scoutbot-thinking .sbt-current__rim { opacity: 1; }
+  .scoutbot-thinking .sbt-current__flow { display: none; }
+}
+.ce-root.is-reduced .scoutbot-thinking :is(.sbt-current, .sbt-current__flow, .sbt-blink) { animation: none !important; }
+.ce-root.is-reduced .scoutbot-thinking .sbt-current { opacity: 0.6; }
+.ce-root.is-reduced .scoutbot-thinking .sbt-current__rim { opacity: 1; }
+.ce-root.is-reduced .scoutbot-thinking .sbt-current__flow { display: none; }

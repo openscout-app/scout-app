@@ -1,0 +1,8 @@
+/* The frame AgentAvatar puts around a mark when a caller passes a class, a
+   style or no size. Zero specificity, so the caller's own rules win: a
+   treatment that hides an avatar with `display: none` must not lose to the
+   frame's layout. */
+:where(.agent-avatar-frame) {
+  display: inline-grid;
+  place-items: center;
+}

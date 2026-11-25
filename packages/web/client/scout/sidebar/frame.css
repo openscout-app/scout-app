@@ -1,0 +1,447 @@
+/*
+ * The app frame (design/studio › web-nav-chrome, findings 1–13).
+ *
+ * The sidebar, the top row and the status bar are one surface: the frame. The
+ * page below the top row (side rail, center, inspector) is one sheet inside
+ * it, with 14px corners under Rounded. Panes inside the sheet are square; a
+ * pane corner in one of the sheet's corners follows its arc, concentric with
+ * it (frame-pane-corners.ts). The frame is a pale, slightly translucent tint over the frame
+ * backdrop the operator picks in Settings › Appearance. The sheet is the page:
+ * solid by default, or a faint page backdrop behind its panes (the page,
+ * below); the panes stay solid, so text reads the same whatever is chosen.
+ *
+ * Every rule here is gated on html[data-scout-frame], which the shell sets for
+ * the Scout presentation with the sidebar chrome on. Slack and the legacy top
+ * bar (?ff.nav.sidebar=off) are untouched. FrameSheet.tsx draws the seam, the
+ * corner caps and the sheet's edge.
+ */
+
+/* ── tokens ─────────────────────────────────────────────────────────────── */
+
+/* The backdrop presets, on :root so Settings › Appearance can preview them. */
+:root {
+  --scout-backdrop-smooth: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--hud-status-info, var(--hud-accent)) 26%, var(--hud-bg)) 0%,
+    color-mix(in srgb, var(--hud-accent) 16%, var(--hud-bg)) 55%,
+    color-mix(in srgb, var(--hud-status-info, var(--hud-accent)) 10%, var(--hud-bg)) 100%
+  );
+  --scout-backdrop-dusk: linear-gradient(
+    200deg,
+    color-mix(in srgb, var(--hud-status-warn, var(--hud-accent)) 30%, var(--hud-bg)) 0%,
+    color-mix(in srgb, var(--hud-accent) 26%, var(--hud-bg)) 60%,
+    var(--hud-bg) 100%
+  );
+  --scout-backdrop-aurora:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--hud-status-info, var(--hud-accent)) 55%, transparent), transparent 48%),
+    radial-gradient(circle at 88% 92%, color-mix(in srgb, var(--hud-accent) 45%, transparent), transparent 46%),
+    radial-gradient(circle at 70% 8%, color-mix(in srgb, var(--hud-status-warn, var(--hud-accent)) 30%, transparent), transparent 40%),
+    var(--hud-bg);
+  --scout-backdrop-plain: var(--hud-bg);
+  /* Your own: four corner colours on a soft field, drawn like the Mac app's
+     mesh (ScoutBackdropMesh). theme.ts sets --scout-backdrop-c1…c4. */
+  --scout-backdrop-c1: #4f7fb0;
+  --scout-backdrop-c2: #8a5fa0;
+  --scout-backdrop-c3: #3d8a80;
+  --scout-backdrop-c4: #b98545;
+  --scout-backdrop-custom:
+    radial-gradient(circle at 0% 0%, var(--scout-backdrop-c1), transparent 68%),
+    radial-gradient(circle at 100% 0%, var(--scout-backdrop-c2), transparent 68%),
+    radial-gradient(circle at 0% 100%, var(--scout-backdrop-c3), transparent 68%),
+    radial-gradient(circle at 100% 100%, var(--scout-backdrop-c4), transparent 68%),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--scout-backdrop-c1) 50%, var(--scout-backdrop-c4)),
+      color-mix(in srgb, var(--scout-backdrop-c2) 50%, var(--scout-backdrop-c3))
+    );
+  /* The frame's tint: a step paler than the page, about half see-through. */
+  --scout-frame-veil: color-mix(in srgb, color-mix(in srgb, var(--hud-bg) 88%, var(--hud-ink)) 55%, transparent);
+}
+
+html[data-scout-frame] {
+  --scout-sheet-radius: 14px;
+  /* The edge line: the sheet is the page's only edge (app.css). The plain line
+     and then the strong line each nearly matched the frame, so it vanished. */
+  --scout-sheet-edge: var(--scout-line-edge);
+  --scout-frame-backdrop: var(--scout-backdrop-plain);
+  --scout-frame-paint: linear-gradient(var(--scout-frame-veil), var(--scout-frame-veil)), var(--scout-frame-backdrop);
+}
+/* The sheet's corners follow the theme's: Square is 90 degrees, Near-square
+   one touch of rounding. The caps collapse with the radius. */
+html[data-scout-frame][data-hudson-template="drafting"] { --scout-sheet-radius: 0px; }
+html[data-scout-frame][data-hudson-template="editorial"] { --scout-sheet-radius: 3px; }
+html[data-scout-frame][data-scout-frame-backdrop="dusk"] { --scout-frame-backdrop: var(--scout-backdrop-dusk); }
+html[data-scout-frame][data-scout-frame-backdrop="aurora"] { --scout-frame-backdrop: var(--scout-backdrop-aurora); }
+html[data-scout-frame][data-scout-frame-backdrop="plain"] { --scout-frame-backdrop: var(--scout-backdrop-plain); }
+html[data-scout-frame][data-scout-frame-backdrop="custom"] { --scout-frame-backdrop: var(--scout-backdrop-custom); }
+
+/* The frame's sidebar backdrop. "same" (the default) leaves it on the frame's
+   paint; anything else repaints the sidebar column alone, under the same veil. */
+html[data-scout-frame][data-scout-frame-sidebar-backdrop="plain"] { --scout-frame-sidebar-backdrop: var(--scout-backdrop-plain); }
+html[data-scout-frame][data-scout-frame-sidebar-backdrop="smooth"] { --scout-frame-sidebar-backdrop: var(--scout-backdrop-smooth); }
+html[data-scout-frame][data-scout-frame-sidebar-backdrop="dusk"] { --scout-frame-sidebar-backdrop: var(--scout-backdrop-dusk); }
+html[data-scout-frame][data-scout-frame-sidebar-backdrop="aurora"] { --scout-frame-sidebar-backdrop: var(--scout-backdrop-aurora); }
+html[data-scout-frame][data-scout-frame-sidebar-backdrop="custom"] { --scout-frame-sidebar-backdrop: var(--scout-backdrop-custom); }
+
+/* ── the page ───────────────────────────────────────────────────────────────
+   Frame › Page › Pane › Section. The page is the content area behind the
+   panes. Solid (the default) leaves it on the theme's ground, as it always
+   was. Any other page backdrop draws a preset under a heavy veil of that
+   ground, so it reads as a faint wash in the gaps and margins between panes,
+   while the panes keep their own solid surfaces. The veil is the ground
+   itself, so it follows the light and dark themes. Not gated on the frame:
+   the Mac app's web seats (/embed/…) are pages without Scout's frame, so the
+   body carries the paint too. In the full app the frame's own ground covers
+   the body, and the page card (app.css, [data-pane="center"]) shows it. A screen that paints its own ground
+   lets it through while a page backdrop is on (Settings: .sq-win). */
+:root {
+  --scout-page-veil: color-mix(in srgb, var(--hud-bg) 60%, transparent);
+  --scout-page-backdrop: var(--hud-bg);
+}
+html[data-scout-page-backdrop="smooth"] { --scout-page-backdrop: var(--scout-backdrop-smooth); }
+html[data-scout-page-backdrop="dusk"] { --scout-page-backdrop: var(--scout-backdrop-dusk); }
+html[data-scout-page-backdrop="aurora"] { --scout-page-backdrop: var(--scout-backdrop-aurora); }
+html[data-scout-page-backdrop="custom"] { --scout-page-backdrop: var(--scout-backdrop-custom); }
+html[data-scout-page-backdrop]:not([data-scout-page-backdrop="solid"]) {
+  --scout-page-paint: linear-gradient(var(--scout-page-veil), var(--scout-page-veil)), var(--scout-page-backdrop);
+}
+html[data-scout-page-backdrop]:not([data-scout-page-backdrop="solid"]) body {
+  background: var(--scout-page-paint);
+  background-attachment: fixed;
+}
+/* Reduce Transparency: the page stays solid, whatever is chosen. */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-scout-page-backdrop]:not([data-scout-page-backdrop="solid"]) { --scout-page-paint: var(--hud-bg); }
+}
+
+/* ── the frame surfaces ─────────────────────────────────────────────────── */
+
+/* One paint, pinned to the viewport, so the sidebar, top row, page band,
+   status bar, seam and corner caps read as one continuous surface. The page
+   band is frame: the sheet, with its rounded corners, starts under it. */
+/* The container, not its inner: the container's 1px edge (now transparent)
+   would otherwise show the dark canvas behind it as a line. */
+html[data-scout-frame] [data-slot="sidebar-container"][data-presentation="scout"],
+html[data-scout-frame] .scout-center-pane-header--top-row,
+html[data-scout-frame] .scout-page-band,
+html[data-scout-frame] [data-frame-panel="status-bar"],
+.scout-frame-seam,
+.scout-frame-cap {
+  background: var(--scout-frame-paint);
+  background-attachment: fixed;
+}
+
+html[data-scout-frame] [data-slot="sidebar-container"][data-presentation="scout"] {
+  border-color: transparent;
+}
+html[data-scout-frame][data-scout-frame-sidebar-backdrop]:not([data-scout-frame-sidebar-backdrop="same"]) [data-slot="sidebar-container"][data-presentation="scout"] {
+  background: linear-gradient(var(--scout-frame-veil), var(--scout-frame-veil)), var(--scout-frame-sidebar-backdrop);
+  background-attachment: fixed;
+}
+html[data-scout-frame] [data-presentation="scout"] [data-slot="sidebar-inner"] {
+  background: transparent;
+}
+html[data-scout-frame] [data-presentation="scout"] [data-slot="sidebar-header"],
+html[data-scout-frame] [data-presentation="scout"] [data-slot="sidebar-footer"] {
+  border-color: transparent;
+}
+html[data-scout-frame] .scout-center-pane-header--top-row {
+  border-bottom-color: transparent;
+}
+html[data-scout-frame] [data-frame-panel="status-bar"],
+html[data-scout-frame] [data-frame-panel="status-bar"] > [class*="border"] {
+  border-color: transparent !important;
+}
+/* The side rail and inspector sit flush inside the sheet, so the sheet's edge
+   is their outer edge. Their own outer borders doubled it (a brighter line
+   along the rail than along the center) and their panel shadow had nothing to
+   lift off. Only the side that parts them from the center keeps its line. */
+html[data-scout-frame] [data-frame-panel="manifest"] {
+  border-top-color: transparent !important;
+  border-bottom-color: transparent !important;
+  border-left-color: transparent !important;
+  box-shadow: none;
+}
+html[data-scout-frame] [data-frame-panel="inspector"] {
+  border-top-color: transparent !important;
+  border-bottom-color: transparent !important;
+  border-right-color: transparent !important;
+  box-shadow: none;
+}
+/* The look's own status-bar plate (:root[data-scout-look] … in the looks)
+   outranks the frame paint above, which left a flat band under the sheet and a
+   tinted notch where its bottom corners meet it. One more attribute wins it
+   back. */
+html[data-scout-frame][data-scout-look] [data-frame-panel="status-bar"] {
+  background: var(--scout-frame-paint);
+  background-attachment: fixed;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* ── the sheet ──────────────────────────────────────────────────────────── */
+
+.scout-frame-seam,
+.scout-frame-cap,
+.scout-frame-edge {
+  position: fixed;
+  pointer-events: none;
+  /* Above the side rail and inspector (z-40), under the rail toggles (45). */
+  z-index: 41;
+}
+
+.scout-frame-cap {
+  width: var(--scout-sheet-radius);
+  height: var(--scout-sheet-radius);
+}
+/* Each cap paints the frame outside the sheet's arc, starting at the arc's
+   outer edge, so the 1px edge on the curve sits over the sheet as it does on
+   the straight sides. Starting half a pixel inside put half the curved edge on
+   the paler frame and made the corners read brighter. */
+.scout-frame-cap[data-corner="tl"] {
+  -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+  mask-image: radial-gradient(circle at 100% 100%, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+}
+.scout-frame-cap[data-corner="tr"] {
+  -webkit-mask-image: radial-gradient(circle at 0 100%, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+  mask-image: radial-gradient(circle at 0 100%, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+}
+.scout-frame-cap[data-corner="bl"] {
+  -webkit-mask-image: radial-gradient(circle at 100% 0, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+  mask-image: radial-gradient(circle at 100% 0, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+}
+.scout-frame-cap[data-corner="br"] {
+  -webkit-mask-image: radial-gradient(circle at 0 0, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+  mask-image: radial-gradient(circle at 0 0, transparent var(--scout-sheet-radius), #000 calc(var(--scout-sheet-radius) + 0.5px));
+}
+
+.scout-frame-edge {
+  border: 1px solid var(--scout-sheet-edge);
+  border-radius: var(--scout-sheet-radius);
+}
+
+/* ── sidebar: areas only, quieter ───────────────────────────────────────── */
+
+/* The head band keeps its height (the collapse chevron centres in it) but no
+   label, rule or fill: the list starts with New chat. */
+html[data-scout-frame] [data-presentation="scout"] [data-slot="sidebar-group-label"][data-sidebar-head] {
+  border-bottom: 0;
+  background: none;
+}
+
+/* System: one quiet sentence-case label. */
+html[data-scout-frame] [data-presentation="scout"] [data-slot="sidebar-group-label"][data-sidebar-system] {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: color-mix(in srgb, var(--sidebar-foreground) 48%, transparent);
+}
+
+/* Expanded navigation has a hairline before Board and Control; the icon rail keeps its pitch. */
+html[data-scout-frame] [data-slot="sidebar"][data-state="expanded"] [data-presentation="scout"] [data-slot="sidebar-group-content"] > [data-nav-group] + [data-nav-group] {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--scout-line, var(--hud-chrome-border));
+}
+
+/* Rows: thinner plates. The selection is a light wash, not a slab. */
+html[data-scout-frame] [data-presentation="scout"] [data-slot="sidebar-menu-button"] {
+  border-radius: var(--radius-md);
+}
+html[data-scout-frame] [data-presentation="scout"] [data-slot="sidebar-menu-button"][data-active] {
+  background: color-mix(in srgb, var(--hud-ink) 6%, transparent);
+}
+
+/* ── top row: one strip, sentence case, thin ────────────────────────────── */
+
+html[data-scout-frame] .scout-area-subnav-item {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-scout-frame] .scout-area-subnav-item--active,
+html[data-scout-frame][data-scout-look="sharp"] .scout-area-subnav-item--active {
+  box-shadow: inset 0 -1px 0 0 var(--hud-accent);
+}
+
+html[data-scout-frame] .scout-center-pane-header--top-row .scout-nav-crumb {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Utilities share one treatment: quiet sans text, no boxes until hover. */
+html[data-scout-frame] .scout-top-row-docs {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--scout-chrome-ink-faint);
+}
+html[data-scout-frame] .scout-top-row-identity {
+  font-size: 12px;
+}
+
+/* The view's Layout control, when it sits in the top row: the same quiet
+   sans text as Docs, a plate only on hover or while open. */
+html[data-scout-frame] .scout-center-pane-header--top-row .hud-layout-btn {
+  border-color: transparent;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--scout-chrome-ink-faint);
+}
+html[data-scout-frame] .scout-center-pane-header--top-row .hud-layout-btn:is(:hover, [aria-expanded="true"]) {
+  background: color-mix(in srgb, var(--hud-ink) 7%, transparent);
+  color: var(--scout-chrome-ink);
+}
+
+/* ── status bar: the frame's bottom edge, on the sheet's keylines ───────── */
+
+/* The rail's column runs down to the window; the status bar's text starts
+   where the panels' text does (the sheet's left edge plus 12) and ends on the
+   same line on the right. One voice: quiet sans, the build hash alone mono. */
+html[data-scout-frame] [data-frame-panel="status-bar"] {
+  padding-left: calc(var(--scout-sheet-left, 48px) + 16px);
+  padding-right: calc(var(--scout-sheet-right, 6px) + 12px);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--scout-chrome-ink-faint);
+}
+html[data-scout-frame] [data-frame-panel="status-bar"] > div {
+  gap: 18px;
+}
+html[data-scout-frame] [data-frame-panel="status-bar"] :is(.font-mono, .uppercase, .chip) {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-scout-frame] [data-frame-panel="status-bar"] .text-foreground {
+  color: var(--scout-chrome-ink);
+}
+/* the build label is a ref and a hash: keep it mono, a step smaller */
+html[data-scout-frame] [data-frame-panel="status-bar"] [title].truncate.font-mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+}
+/* spacing separates the items; the middots go */
+html[data-scout-frame] [data-frame-panel="status-bar"] span[aria-hidden="true"].select-none {
+  display: none;
+}
+/* chips lose their boxes; a plate shows on hover. Voice keeps its coloured
+   box while it is live, connecting or failing. */
+html[data-scout-frame] [data-frame-panel="status-bar"] .chip {
+  text-transform: capitalize;
+  height: auto;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+html[data-scout-frame] [data-frame-panel="status-bar"] button[aria-controls="scoutbot-realtime-voice-menu"].border-transparent {
+  padding-inline: 0;
+}
+
+/* ── Plain: one surface (design/studio › rooms-look, WebChrome) ──────────────
+   The default frame backdrop. The sidebar, the top row, the status bar and the page
+   are one plane; hairlines part them, and the sheet's edge is those hairlines.
+   One selection shade marks what is open: the area, the page tab, a panel
+   toggle. Corners follow the look through --radius-sm. Smooth, Dusk, Aurora
+   and Your own keep the tinted frame above. */
+html[data-scout-frame][data-scout-frame-backdrop="plain"] {
+  --scout-frame-paint: var(--hud-bg);
+  --scout-sheet-radius: 8px;
+  --scout-select: color-mix(in srgb, var(--hud-ink) 9%, var(--hud-bg));
+}
+/* Where the sidebar meets the top row (and the status bar), the sheet's corner
+   follows Corners: Rounded 8px, Near-square 2px, Square 90 degrees. */
+html[data-scout-frame][data-scout-frame-backdrop="plain"][data-hudson-template="editorial"] { --scout-sheet-radius: 2px; }
+html[data-scout-frame][data-scout-frame-backdrop="plain"][data-hudson-template="drafting"] { --scout-sheet-radius: 0px; }
+
+/* Sidebar: the wordmark in the sans, 28px rows, hairlines between groups. */
+html[data-scout-frame][data-scout-frame-backdrop="plain"] [data-sidebar="brand-row"] [data-slot="sidebar-menu-button"],
+html[data-scout-frame][data-scout-frame-backdrop="plain"] [data-sidebar="brand-row"] [data-slot="sidebar-menu-button"] > span {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"] [data-presentation="scout"] [data-slot="sidebar-menu-button"]:not([data-size="lg"]) {
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--scout-chrome-ink-soft);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"] [data-presentation="scout"] [data-slot="sidebar-menu-button"]:not([data-size="lg"]):hover {
+  background: color-mix(in srgb, var(--hud-ink) 5%, transparent);
+  color: var(--scout-chrome-ink);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"][data-scout-look] [data-presentation="scout"] [data-slot="sidebar-menu-button"][data-active] {
+  background: var(--scout-select);
+  color: var(--scout-chrome-ink);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"] [data-presentation="scout"] [data-slot="sidebar-group-label"][data-sidebar-system] {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--scout-chrome-ink-faint);
+}
+
+/* Top row: the open page tab sits on the selection shade, not on a line. */
+html[data-scout-frame][data-scout-frame-backdrop="plain"] .scout-area-subnav-item {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--scout-chrome-ink-soft);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"] .scout-area-subnav-item:hover {
+  color: var(--scout-chrome-ink);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"] .scout-area-subnav-item--active,
+html[data-scout-frame][data-scout-frame-backdrop="plain"][data-scout-look] .scout-area-subnav-item--active {
+  background: var(--scout-select);
+  box-shadow: none;
+  color: var(--scout-chrome-ink);
+}
+
+/* Search: a field on the plane, outlined by a hairline. */
+html[data-scout-frame][data-scout-frame-backdrop="plain"] .scout-top-row-search {
+  top: 6px;
+  height: 28px;
+  border-color: var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: var(--hud-bg);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"] .scout-top-row-search:hover {
+  border-color: var(--scout-line-strong);
+}
+@media (min-width: 1101px) {
+  html[data-scout-frame][data-scout-frame-backdrop="plain"] .scout-top-row-search { width: 360px; }
+}
+
+/* Icon buttons: 28px, faint until hovered; an open panel's toggle on the shade. */
+html[data-scout-frame][data-scout-frame-backdrop="plain"] :is(.scout-top-row-back, .scout-top-row-new, .scout-top-row-panel-toggle) {
+  width: 28px;
+  height: 28px;
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--scout-chrome-ink-faint);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"] :is(.scout-top-row-back, .scout-top-row-new, .scout-top-row-panel-toggle):hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--hud-ink) 6%, transparent);
+  color: var(--scout-chrome-ink);
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"][data-scout-look] .scout-top-row-panel-toggle--active {
+  border-color: transparent;
+  background: var(--scout-select);
+  color: var(--scout-chrome-ink);
+}

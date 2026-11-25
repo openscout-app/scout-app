@@ -1,0 +1,40 @@
+/* ---------- the quick terminal (QuickTerminal.tsx) ----------
+ * A session's pane in a pop-up of the companion's own, beside the board:
+ * what it is and whose, one line each, then the pane, watching until you
+ * jump in. The board's face and edge; the accent only on the kind and on
+ * Jump in (the pane's own bar). Position: fixed in viewport pixels. */
+.qtp {
+  --scx-accent: var(--accent, oklch(0.72 0.15 160));
+  --scx-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  --scx-sans: var(--font-sans, -apple-system, "SF Pro Text", system-ui, sans-serif);
+  position: fixed; z-index: 3; box-sizing: border-box; display: flex; flex-direction: column;
+  padding: 10px 12px 12px; overflow: hidden; pointer-events: auto;
+  border: 1px solid var(--arv-edge); border-radius: var(--arv-r-out);
+  background: var(--arv-face); box-shadow: var(--arv-shadow);
+  color: var(--arv-ink); font: 12px/1.4 var(--scx-sans); text-align: left;
+}
+.qtp__head { display: flex; align-items: baseline; gap: 10px; padding-right: 24px; }
+.qtp__kind { font: 400 11.5px var(--scx-sans); color: var(--scx-accent); }
+.qtp__who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 10.5px var(--scx-mono); color: var(--arv-ink-3); }
+.qtp__close {
+  position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 20px; height: 20px;
+  padding: 0; border: 0; border-radius: var(--arv-r-in); background: none; color: var(--arv-ink-3); cursor: pointer;
+}
+.qtp__close:hover, .qtp__close:focus-visible { background: var(--arv-wash); color: var(--arv-ink); outline: none; }
+.qtp__title { margin: 4px 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12.5px/1.4 var(--scx-sans); color: var(--arv-ink); }
+/* The pane fills the rest: its bar, then the screen. */
+.qtp__pane { display: flex; flex: 1 1 auto; min-height: 0; }
+.qtp__pane > .scout-pane-terminal, .qtp__pane > .scout-terminal-screen { flex: 1 1 auto; min-height: 0; }
+.qtp .scout-pane-terminal__screen { height: auto; min-height: 0; }
+
+/* Opening rises and fades in; closing fades out over QUICK_TERMINAL_LEAVE_MS,
+ * clicks passing through. The pane comes up a beat after its frame. */
+.qtp { animation: qtp-in 160ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.qtp.is-leaving { animation: qtp-out 120ms ease-in both; pointer-events: none; }
+.qtp__pane { animation: qtp-fade 180ms 60ms ease-out both; }
+@keyframes qtp-in { from { opacity: 0; transform: translateY(6px) scale(0.985); } }
+@keyframes qtp-out { to { opacity: 0; transform: translateY(6px) scale(0.985); } }
+@keyframes qtp-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .qtp, .qtp.is-leaving, .qtp__pane { animation-duration: 1ms; animation-delay: 0ms; }
+}

@@ -1,0 +1,24 @@
+/* Providers panels: the Providers screen's Subscriptions, Routing and Cloud
+ * accounts sections inside view panels. The sections bring their own styles
+ * (harnesses-screen.css); here they only lose the page's margins and the
+ * section title the panel head already carries. Every rule is scoped to
+ * .vw-hs, so /providers draws exactly as before wherever it still draws its
+ * own screen. */
+
+.vw-hs {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-xl);
+  color: var(--ink);
+}
+
+/* the panel head names the section */
+.vw-hs .hs-section-head h3 {
+  display: none;
+}
+
+.vw-hs .hs-error {
+  padding: var(--space-sm) var(--space-lg);
+}

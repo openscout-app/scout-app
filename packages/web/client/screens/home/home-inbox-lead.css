@@ -1,0 +1,68 @@
+/* Home's Inbox lead (HomeInboxLead.tsx): the items waiting on the operator,
+ * above Home's panels while any wait. The frame, head and title are the grid
+ * panel's own classes (hud-grid.css, and each look's rules for them), so it
+ * reads as the page's first panel; its rows are the Inbox panel's rows
+ * (views.css › .vw-row--req). The head's count is the one accent mark. */
+
+.s-home-inbox {
+  container-type: inline-size;
+  flex: none;
+}
+
+/* a head that does not drag: this panel is not on the grid */
+.s-home-inbox-head {
+  cursor: default;
+}
+
+.s-home-inbox-title {
+  margin: 0;
+}
+
+/* the count is the signal, as on the Inbox panel's head and the Home row */
+.s-home-inbox-count {
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  background: var(--signal);
+  line-height: 16px;
+  color: var(--hud-bg);
+}
+
+.s-home-inbox-note {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.s-home-inbox-rows {
+  height: auto;
+  overflow: visible;
+}
+
+.s-home-inbox-rows > li:last-child > .vw-row {
+  border-bottom: 0;
+}
+
+.s-home-inbox-more {
+  padding: 6px 12px;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  background: none;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--muted);
+  cursor: pointer;
+}
+.s-home-inbox-more:hover {
+  color: var(--ink);
+}
+
+/* Sharp look: the count is a bare ink numeral, as on the Inbox panel. */
+:root[data-scout-look="sharp"] .s-home-inbox-count {
+  padding: 0;
+  background: none;
+  color: var(--ink);
+}

@@ -1,0 +1,54 @@
+/* Plan panel: the list of plans found, or one plan read in place. One accent:
+ * an active plan's status; every other status is plain text. */
+
+.vw-row--plan { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
+.vw-row--plan > :nth-child(3) { grid-column: 1; font-size: 0.92em; }
+.vw-row--plan > :nth-child(4) { grid-column: 2; grid-row: 2; }
+
+.vw-plan-status {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+  white-space: nowrap;
+}
+.vw-plan-status.is-active { color: var(--accent); }
+
+.vw-plan { display: flex; flex-direction: column; min-width: 0; }
+.vw-plan-head { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.vw-plan-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.vw-plan-title h3 { margin: 0; min-width: 0; font-size: var(--text-md); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.vw-plan-meta { font-size: 0.92em; }
+.vw-plan-summary { margin: 0; color: var(--muted); font-size: 0.95em; line-height: 1.45; }
+.vw-plan-modes { display: flex; gap: 4px; }
+
+.vw-plan-body { padding: 10px 12px; min-width: 0; }
+.vw-plan-body .s-text-document-code { max-height: none; }
+
+.vw-plan-prov { margin: 0; padding: 8px 12px 12px; border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); display: grid; gap: 4px; }
+.vw-plan-prov > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; }
+.vw-plan-prov dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+}
+.vw-plan-prov dd { margin: 0; min-width: 0; color: var(--muted); font-size: 0.92em; overflow-wrap: anywhere; }
+.vw-plan-file { padding: 0; border: 0; background: none; font: inherit; color: var(--ink); text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.vw-plan-file:hover { color: var(--accent); }
+
+.vw-plan-missing { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-bottom: 12px; }
+.vw-plan-missing > .vw-chip { margin-left: 12px; }
+
+@container (max-width: 300px) {
+  .vw-plan-prov > div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+
+/* ── Sharp look ── */
+
+/* an active plan's status is an ink word; a file link hovers to ink */
+:root[data-scout-look="sharp"] .vw-plan-status { font-weight: var(--w-label); letter-spacing: var(--tr-label); }
+:root[data-scout-look="sharp"] .vw-plan-status.is-active { color: var(--ink); }
+:root[data-scout-look="sharp"] .vw-plan-file:hover { color: var(--ink); text-decoration: underline; }

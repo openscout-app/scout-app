@@ -1,0 +1,79 @@
+/* The Initials avatar (InitialsAvatar.tsx). Ink on surface, no hue: the
+ * letters say which project, the shape says project or person. */
+.scout-initials {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  /* The template's corner, capped so a small tile never turns into a pill. */
+  border-radius: min(var(--radius-md, 6px), 26%);
+  background: color-mix(in oklab, var(--ink, currentColor) 7%, var(--surface, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink, currentColor) 10%, transparent);
+  color: color-mix(in oklab, var(--ink, currentColor) 82%, var(--surface, transparent));
+  font-family: var(--font-sans, var(--hud-font-sans, system-ui));
+  font-weight: 560;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  font-variant-numeric: normal;
+  user-select: none;
+}
+
+.scout-initials[data-shape="circle"] { border-radius: 999px; }
+
+/* A person's mark (LedInitial.tsx): the initial on the LED board, ink on a
+ * dark circle, the unlit dots faint behind it. */
+.scout-led-initial {
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: oklch(var(--foreground));
+  line-height: 0;
+}
+/* Two classes, so a host's blanket icon size (the sidebar menu button's
+ * [&_svg]:size-4) cannot shrink the board into the circle's corner. */
+.scout-led-initial .scout-led-board { display: block; width: 100%; height: 100%; flex-shrink: 0; }
+/* Lit and unlit dots share the fill; LedInitial sets the unlit opacity (ghost). */
+.scout-led-initial rect { fill: oklch(var(--background)); }
+
+/* The operator's photo (OperatorMark.tsx), the same circle as the board.
+ * Two classes, so a host's blanket icon sizing cannot reach it either. */
+img.scout-operator-photo {
+  display: block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: inset 0 0 0 1px oklch(var(--foreground) / 0.08);
+}
+
+/* Fill placements: the host sizes the box, the letters follow it. */
+.scout-initials[data-fill] {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  container-type: inline-size;
+}
+.scout-initials[data-fill] .scout-initials-letters { font-size: 44cqi; }
+.scout-initials[data-fill][data-letters="2"] .scout-initials-letters { font-size: 38cqi; }
+
+.scout-initials-letters { display: block; }
+
+.scout-initials-dot {
+  position: absolute;
+  right: -4%;
+  bottom: -4%;
+  width: 28%;
+  height: 28%;
+  min-width: 6px;
+  min-height: 6px;
+  border-radius: 999px;
+  background: var(--dot);
+  box-shadow: 0 0 0 2px var(--scout-chrome-surface, var(--surface, var(--hud-bg, #000)));
+}
+.scout-initials-dot[data-pulse] {
+  box-shadow:
+    0 0 0 2px var(--scout-chrome-surface, var(--surface, var(--hud-bg, #000))),
+    0 0 0 4px color-mix(in oklab, var(--dot) 32%, transparent);
+}

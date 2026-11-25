@@ -1,0 +1,64 @@
+import "./ops-screen.css";
+
+
+import { useScout } from "../../scout/Provider.tsx";
+import { CompositionHost } from "../views/CompositionHost.tsx";
+import { shippedView } from "../views/views-model.ts";
+import { PageStatusBar } from "../../components/PageStatusBar.tsx";
+import { AgentLanesView } from "./AgentLanesView.tsx";
+import { MissionControlView } from "./MissionControlView.tsx";
+import { OpsAgentsView } from "./OpsAgentsView.tsx";
+import { AtopView } from "./AtopView.tsx";
+import { TailView } from "../shared/TailView.tsx";
+import type { OpsMode, Route } from "../../lib/types.ts";
+import { useFollowTailQuery } from "./follow-tail-query.ts";
+import { useContentOwnsSecondaryNav } from "../../scout/sidebar/useContentSecondaryNav.ts";
+import { OpsSubnav } from "./OpsSubnav.tsx";
+import { FleetRollCallHud } from "./FleetRollCallHud.tsx";
+
+
+export function OpsScreen({
+  navigate,
+  mode = "mission",
+  tailQuery,
+  showSecondaryNav,
+}: {
+  navigate: (r: Route) => void;
+  mode?: OpsMode;
+  tailQuery?: string;
+  showSecondaryNav?: boolean;
+}) {
+  const { agents, route } = useScout();
+  const contentOwnsSecondaryNav = useContentOwnsSecondaryNav();
+  const resolvedTailQuery = useFollowTailQuery(route, tailQuery);
+
+  return (
+    <div className="s-ops">
+      {(showSecondaryNav ?? contentOwnsSecondaryNav) ? (
+        <div className="s-ops-header">
+          <OpsSubnav activeRoute={route} navigate={navigate} />
+        </div>
+      ) : null}
+      <div className="s-ops-body">
+        {mode === "lanes" && <FleetRollCallHud />}
+        {mode === "mission" && <MissionControlView navigate={navigate} agents={agents} />}
+        {mode === "agents" && <OpsAgentsView navigate={navigate} agents={agents} />}
+        {/* In flight (was Host Advisor): the same composed page the web draws at /ops/in-flight */}
+        {mode === "advisor" && <CompositionHost view={shippedView("ops-advisor")} route={route} navigate={navigate} />}
+        {mode === "issues" && <TailView navigate={navigate} initialFilter={tailQuery} variant="issues" />}
+        {mode === "tail" && (
+          <TailView
+            navigate={navigate}
+            initialFilter={resolvedTailQuery.query}
+            sessionId={resolvedTailQuery.sessionId}
+            variant="tail"
+          />
+        )}
+        {mode === "atop" && <AtopView />}
+        {mode === "lanes" && <AgentLanesView navigate={navigate} agents={agents} />}
+
+      </div>
+      <PageStatusBar />
+    </div>
+  );
+}

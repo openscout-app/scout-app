@@ -1,0 +1,397 @@
+/* Health module. The Dispatch tokens (dispatch-focus.css › .dsp-root): the
+ * accent is the one sage, amber is kept for what needs attention, and nothing
+ * else carries a hue. Sizes against the panel, never the window. */
+
+.vw-dhealth {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+  padding: 10px 12px 12px;
+  container: dispatch-health / inline-size;
+}
+
+.vw-dhealth > .vw-quiet {
+  padding: 2px 0;
+}
+
+/* ── The three counts ──────────────────────────────────────────────────── */
+
+.vw-dhealth-tally {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vw-dhealth-stat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "num   share"
+    "label label";
+  align-items: baseline;
+  gap: 2px 6px;
+  min-width: 0;
+  padding: 7px 9px 8px;
+  border: 1px solid var(--sys-hairline-soft, var(--sys-hairline));
+  border-radius: var(--radius-md, 6px);
+  background: var(--dsp-panel);
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+}
+
+button.vw-dhealth-stat {
+  cursor: pointer;
+}
+
+button.vw-dhealth-stat:hover {
+  border-color: var(--dsp-sage-line);
+  color: var(--ink);
+}
+
+button.vw-dhealth-stat[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--dsp-sage-soft);
+}
+
+.vw-dhealth-stat:focus-visible,
+.vw-dhealth-row:focus-visible,
+.vw-dhealth-route:focus-visible,
+.vw-dhealth-more:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 1px;
+}
+
+.vw-dhealth-num {
+  grid-area: num;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+}
+
+.vw-dhealth-stat--attention .vw-dhealth-num {
+  color: var(--dsp-attn);
+}
+
+.vw-dhealth-stat--pending .vw-dhealth-num,
+.vw-dhealth-stat--quiet .vw-dhealth-num {
+  color: var(--muted);
+}
+
+.vw-dhealth-share {
+  grid-area: share;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.vw-dhealth-label {
+  grid-area: label;
+  overflow: hidden;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-overflow: ellipsis;
+  text-transform: var(--voice-case, uppercase);
+  white-space: nowrap;
+}
+
+/* One bar: delivered in the accent, what needs attention in amber, the rest
+   (pending) left as track. */
+.vw-dhealth-bar {
+  display: flex;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.vw-dhealth-bar > b {
+  display: block;
+  height: 100%;
+}
+
+.vw-dhealth-bar > .is-delivered {
+  background: var(--dsp-sage);
+}
+
+.vw-dhealth-bar > .is-attention {
+  background: var(--dsp-attn);
+}
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+
+.vw-dhealth-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vw-dhealth-section > h3 {
+  margin: 0;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  font-weight: 500;
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+}
+
+.vw-dhealth-none {
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--text-xs);
+}
+
+.vw-dhealth-list,
+.vw-dhealth-mix {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vw-dhealth-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "mark title time"
+    ".    route route";
+  align-items: baseline;
+  gap: 1px 6px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: var(--radius-sm, 4px);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-align: left;
+  cursor: pointer;
+}
+
+.vw-dhealth-row:hover,
+.vw-dhealth-route:hover {
+  background: var(--sys-row-hover, color-mix(in srgb, var(--ink) 4%, transparent));
+}
+
+.vw-dhealth-row > .dsp-status-mark {
+  grid-area: mark;
+  color: var(--dsp-attn);
+}
+
+.vw-dhealth-row-title {
+  grid-area: title;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vw-dhealth-row-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+
+.vw-dhealth-row > .vw-dhealth-row-route {
+  grid-area: route;
+}
+
+.vw-dhealth-row-route svg {
+  flex: none;
+  color: var(--dim);
+}
+
+.vw-dhealth-row-time {
+  grid-area: time;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.vw-dhealth-more {
+  margin: 2px 0 0 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-2xs);
+  cursor: pointer;
+}
+
+.vw-dhealth-more:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.vw-dhealth-more:disabled {
+  cursor: default;
+}
+
+.vw-dhealth-route {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: var(--radius-sm, 4px);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vw-dhealth-route > .vw-dhealth-row-route {
+  color: var(--ink);
+  font-size: var(--text-xs);
+}
+
+.vw-dhealth-route-count {
+  flex: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.vw-dhealth-route-attn {
+  color: var(--dsp-attn);
+}
+
+.vw-dhealth-mix > li {
+  display: grid;
+  grid-template-columns: minmax(0, 84px) minmax(40px, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  font-size: var(--text-2xs);
+}
+
+.vw-dhealth-mix-label {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vw-dhealth-mix-meter {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.vw-dhealth-mix-meter > b {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--muted);
+  opacity: 0.7;
+}
+
+.vw-dhealth-mix-count {
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.vw-dhealth-foot {
+  margin: auto 0 0;
+  color: var(--dim);
+  font-size: var(--text-2xs);
+}
+
+/* A narrow panel: the counts stack as rows, label beside number. */
+@container dispatch-health (max-width: 300px) {
+  .vw-dhealth-tally {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .vw-dhealth-stat {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "num label share";
+    align-items: center;
+    padding: 5px 8px;
+  }
+
+  .vw-dhealth-num {
+    font-size: var(--text-md);
+  }
+}
+
+/* ── Sharp look ────────────────────────────────────────────────────────────
+ * The counts are rule cells, not boxes; the bars are square; attention reads
+ * as the hatch, delivered as muted ink. Classic is untouched. */
+
+/* the three counts: no gap, a bottom rule, each count a left-ruled cell */
+:root[data-scout-look="sharp"] .vw-dhealth-tally {
+  gap: 0;
+  border-bottom: 1px solid var(--edge-soft, var(--border));
+}
+:root[data-scout-look="sharp"] .vw-dhealth-stat {
+  border: 0;
+  border-left: 1px solid var(--edge-soft, var(--border));
+  border-radius: 0;
+  background: transparent;
+}
+:root[data-scout-look="sharp"] .vw-dhealth-stat:first-child {
+  border-left: 0;
+}
+:root[data-scout-look="sharp"] button.vw-dhealth-stat:hover {
+  background: var(--row-hover, transparent);
+}
+:root[data-scout-look="sharp"] button.vw-dhealth-stat[aria-pressed="true"] {
+  background: var(--select-bg, var(--surface));
+  color: var(--ink);
+}
+:root[data-scout-look="sharp"] .vw-dhealth-num {
+  font-weight: var(--w-stat, 300);
+}
+
+/* focus: a 1px ink ring */
+:root[data-scout-look="sharp"] .vw-dhealth-stat:focus-visible,
+:root[data-scout-look="sharp"] .vw-dhealth-row:focus-visible,
+:root[data-scout-look="sharp"] .vw-dhealth-route:focus-visible,
+:root[data-scout-look="sharp"] .vw-dhealth-more:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+/* labels: 10px mono caps, light, 0.02em */
+:root[data-scout-look="sharp"] .vw-dhealth-label,
+:root[data-scout-look="sharp"] .vw-dhealth-section > h3 {
+  font-size: var(--fs-label, 10px);
+  font-weight: var(--w-label, 300);
+  letter-spacing: var(--tr-label, 0.02em);
+}
+
+/* bars and meters: square, an ink track; attention is the hatch */
+:root[data-scout-look="sharp"] .vw-dhealth-bar,
+:root[data-scout-look="sharp"] .vw-dhealth-mix-meter {
+  border-radius: 0;
+  background: var(--edge-soft, color-mix(in srgb, var(--ink) 8%, transparent));
+}
+:root[data-scout-look="sharp"] .vw-dhealth-bar > .is-delivered {
+  background: var(--muted);
+}
+:root[data-scout-look="sharp"] .vw-dhealth-bar > .is-attention {
+  background: var(--hatch, var(--ink));
+}

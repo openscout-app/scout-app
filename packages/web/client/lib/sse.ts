@@ -1,9 +1,10 @@
-import { readOnlyPreview } from "./preview-capabilities.ts";
 import { useEffect, useRef } from "react";
-import { createTRPCUntypedClient, createWSClient, wsLink } from "@trpc/client";
+import { createTRPCClient, createWSClient, wsLink } from "@trpc/client";
 import type { ControlEvent } from "@openscout/protocol";
-import { resolveScoutEventsStreamUrl } from "./runtime-config.ts";
+import type { BrokerRouter } from "@openscout/runtime/broker-trpc-router";
+import { resolveScoutEventsStreamUrl, SAME_ORIGIN_RUNTIME } from "./runtime-config.ts";
 import { BROKER_RECONCILE_REASON } from "./broker-refresh-controller.ts";
+import { focusedStreamHost } from "./hosts/host-fleet.ts";
 
 export { isBrokerReconcileEvent } from "./broker-refresh-controller.ts";
 
@@ -48,7 +49,7 @@ export function isBrokerDataEvent(event: BrokerEvent): boolean {
 }
 
 let wsClient: ReturnType<typeof createWSClient> | null = null;
-let trpc: ReturnType<typeof createTRPCUntypedClient> | null = null;
+let trpc: ReturnType<typeof createTRPCClient<BrokerRouter>> | null = null;
 let activeSub: { unsubscribe: () => void } | null = null;
 let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -88,18 +89,40 @@ function ensureSubscribed(): void {
     return;
   }
 
+  // A host reached through the bridge carries the stream itself, resuming on
+  // its own after a drop; each (re)start reconciles like the socket path below.
+  const host = focusedStreamHost();
+  if (host) {
+    activeSub = {
+      unsubscribe: host.subscribe("control.events", {
+        onStarted: () => {
+          setStreamLive(true);
+          dispatchBrokerEvent({ kind: "unknown", payload: { reason: BROKER_RECONCILE_REASON } });
+        },
+        onData: (data) => {
+          if (data) dispatchBrokerEvent(data as BrokerEvent);
+        },
+        onInterrupted: () => setStreamLive(false),
+      }),
+    };
+    return;
+  }
+
+  if (!SAME_ORIGIN_RUNTIME) {
+    return;
+  }
+
   if (!wsClient) {
-    const client = createWSClient({
+    wsClient = createWSClient({
       url: resolveScoutEventsStreamUrl(),
       // The socket reconnects on its own and re-sends the subscription; only
       // `onStarted` below marks the stream live again.
-      onClose: () => { if (wsClient === client) setStreamLive(false); },
+      onClose: () => setStreamLive(false),
     });
-    wsClient = client;
-    trpc = createTRPCUntypedClient({ links: [wsLink({ client })] });
+    trpc = createTRPCClient<BrokerRouter>({ links: [wsLink({ client: wsClient })] });
   }
 
-  activeSub = trpc!.subscription("control.events", undefined, {
+  activeSub = trpc!.control.events.subscribe(undefined, {
     // The control stream is an invalidation hint, not a source of truth. A
     // subscription can be restarted after a broker/web restart with a gap that
     // is no longer present in the in-memory backlog, so consumers reconcile
@@ -128,10 +151,6 @@ function teardown(): void {
   }
   activeSub?.unsubscribe();
   activeSub = null;
-  const client = wsClient;
-  wsClient = null;
-  trpc = null;
-  void client?.close();
   setStreamLive(false);
 }
 
@@ -139,8 +158,7 @@ function teardown(): void {
  * Subscribe outside React (stores). Holds the socket open until the last
  * subscriber leaves, as `useBrokerEvents` does.
  */
-export function subscribeBrokerEvents(handler: BrokerEventSubscription, enabled = !readOnlyPreview): () => void {
-  if (!enabled) return () => {};
+export function subscribeBrokerEvents(handler: BrokerEventSubscription): () => void {
   subscribers.add(handler);
   ensureSubscribed();
 
@@ -157,13 +175,47 @@ export function subscribeBrokerEvents(handler: BrokerEventSubscription, enabled 
  * Subscribe to broker control events over the broker tRPC WebSocket.
  * Calls `onEvent` with the parsed event whenever the broker emits one.
  */
-export function useBrokerEvents(onEvent: (event: BrokerEvent) => void, enabled = !readOnlyPreview) {
+export function useBrokerEvents(onEvent: (event: BrokerEvent) => void) {
   const cbRef = useRef(onEvent);
   cbRef.current = onEvent;
 
   useEffect(() => {
     return subscribeBrokerEvents((event) => {
       cbRef.current(event);
-    }, enabled);
-  }, [enabled]);
+    });
+  }, []);
+}
+
+/**
+ * Debounced refetch-on-broker-event: a burst of matching events collapses
+ * into one `refresh()` per debounce window. Use this instead of calling a
+ * fetch directly from `useBrokerEvents` — event storms otherwise fan out
+ * into back-to-back full refetches.
+ */
+export function useBrokerEventsRefresh(
+  matches: (event: BrokerEvent) => boolean,
+  refresh: () => void,
+  debounceMs = 250,
+) {
+  const matchesRef = useRef(matches);
+  matchesRef.current = matches;
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useBrokerEvents((event) => {
+    if (!matchesRef.current(event)) return;
+    if (timerRef.current) return;
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      refreshRef.current();
+    }, debounceMs);
+  });
+
+  useEffect(() => () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 }

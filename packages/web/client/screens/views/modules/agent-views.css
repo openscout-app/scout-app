@@ -1,0 +1,131 @@
+/* The Agents and Agent views' modules (agent-activity, agent, agent-session,
+ * agent-card): the Agents screens (the activity feed, the agent profile, the
+ * agent inspector) inside view panels. Every rule is scoped to a module root
+ * (.vw-agf, .vw-ag), so the full-bleed screens, the macOS embed and
+ * /agent/:conversationId draw exactly as before.
+ *
+ * The panel is the stage: no page padding, and the screens' @media
+ * (max-width) rules come back here as @container rules on the panel body (a
+ * query container, views.css), so a narrow panel reflows the way a narrow
+ * window did. */
+
+/* ── Agent activity: the feed's stage, and the page's peek beside it ── */
+
+.vw-agf {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+}
+.vw-agf > .ahf-stage {
+  min-width: 0;
+}
+/* the page's column padding is the panel's */
+.vw-agf > .ahf-stage > .cw-root[data-home] {
+  padding: 0 12px 24px;
+}
+.vw-agf > .ahf-stage .s-ahf[data-inset] {
+  margin-top: 0;
+  border-top: 0;
+}
+
+/* the peek takes the inspector's place: a column at the panel's right */
+.vw-agf-peek {
+  flex: 0 0 min(360px, 42%);
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  border-left: 1px solid var(--sys-hairline, var(--hud-border));
+}
+/* projects-inbox.css hides the aside under an 860px window; here the panel decides */
+.vw-agf-peek > .s-pi-aside {
+  display: flex;
+  flex: 1;
+  border-left: 0;
+}
+
+/* a narrow panel: the peek rises over the feed's lower part */
+@container (max-width: 640px) {
+  .vw-agf-peek {
+    position: absolute;
+    z-index: 6;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 62%;
+    border-top: 1px solid var(--sys-hairline, var(--hud-border));
+    border-left: 0;
+    background: var(--hud-bg);
+    box-shadow: 0 -12px 32px -16px color-mix(in oklab, black 45%, transparent);
+  }
+}
+
+/* ── Agent: the profile without the page's frame ── */
+
+.vw-ag {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.vw-ag-profile > .s-av2-profileShell {
+  flex: 1;
+}
+.vw-ag-profile > .s-av2-profileShell .s-secondary-nav-bar {
+  min-height: 40px;
+  padding-inline: 12px;
+}
+.vw-ag-profile > .s-av2-profileShell .s-sess-head {
+  padding: 10px 12px;
+}
+.vw-ag-profile > .s-av2-profileShell .av2-profileTabs {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* was @media (max-width: 720px) in agents-screen.css */
+@container (max-width: 720px) {
+  .vw-ag-profile .s-sess-head {
+    flex-wrap: wrap;
+  }
+
+  .vw-ag-profile .s-sess-id {
+    align-items: flex-start;
+    flex: 1 1 100%;
+  }
+
+  .vw-ag-profile .s-sess-head-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    margin-left: calc(46px + var(--space-lg));
+    width: 100%;
+  }
+}
+
+@container (max-width: 420px) {
+  .vw-ag-profile .s-sess-head-actions {
+    margin-left: 0;
+  }
+}
+
+/* ── Agent session and Agent card: the inspector's body, filling the panel ── */
+
+.vw-ag-session > *,
+.vw-ag-card > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Sharp look ── */
+
+/* the risen peek is flat: its top edge is a strong line, no drop shadow */
+@container (max-width: 640px) {
+  :root[data-scout-look="sharp"] .vw-agf-peek {
+    border-top-color: var(--edge-strong, var(--hud-border));
+    box-shadow: none;
+  }
+}
