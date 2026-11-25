@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig, type Plugin, type UserConfig } from "vite";
+import { build as viteBuild, defineConfig, type Plugin, type UserConfig } from "vite";
 import {
   BOOT_SHELL_CRITICAL_CSS,
   renderBootShellHtml,
@@ -31,6 +31,8 @@ export interface ScoutThinViteOptions {
   port?: number;
   /** Optional Node HTTP middleware for `/api/*` during `vite` dev. */
   apiHandler?: (req: IncomingMessage, res: ServerResponse) => Promise<boolean> | boolean;
+  /** Optional server entry bundled to `<outDir>/thin-server.mjs` during `vite build`. */
+  serverEntry?: string;
   /** Output directory (defaults to `dist`). */
   outDir?: string;
 }
@@ -90,6 +92,53 @@ export function defineScoutThinViteConfig(options: ScoutThinViteOptions): UserCo
     });
   }
 
+  const outDir = options.outDir ?? "dist";
+
+  if (options.serverEntry) {
+    const serverEntry = options.serverEntry;
+    let buildingServer = false;
+    plugins.push({
+      name: "scout-thin-server-bundle",
+      apply: "build",
+      async closeBundle() {
+        if (buildingServer) return;
+        buildingServer = true;
+        try {
+          await viteBuild({
+            configFile: false,
+            clearScreen: false,
+            logLevel: "warn",
+            resolve: {
+              alias: {
+                "scout-app/thin-server": resolve(webDir, "thin-server/index.ts"),
+              },
+            },
+            ssr: {
+              noExternal: true,
+              external: [/^node:/, /^@openscout\/scout(\/.*)?$/],
+            },
+            build: {
+              ssr: serverEntry,
+              outDir,
+              emptyOutDir: false,
+              sourcemap: false,
+              target: "node20",
+              rollupOptions: {
+                external: [/^node:/, /^@openscout\/scout(\/.*)?$/],
+                output: {
+                  format: "es",
+                  entryFileNames: "thin-server.mjs",
+                },
+              },
+            },
+          });
+        } finally {
+          buildingServer = false;
+        }
+      },
+    });
+  }
+
   return defineConfig({
     clearScreen: false,
     plugins,
@@ -105,7 +154,7 @@ export function defineScoutThinViteConfig(options: ScoutThinViteOptions): UserCo
       strictPort: false,
     },
     build: {
-      outDir: options.outDir ?? "dist",
+      outDir,
       emptyOutDir: true,
       sourcemap: false,
     },

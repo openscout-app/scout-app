@@ -23,7 +23,7 @@
 .s-surface-rail[data-rail="full"] { max-width: none; padding-inline: 0; }
 
 /* A standalone surface can also mount inside a frame that already owns its rail. */
-.s-thin-content-rail > .s-surface-rail {
+.s-thin-content-rail .s-surface-rail {
   max-width: none;
   margin-inline: 0;
   padding-inline: 0;

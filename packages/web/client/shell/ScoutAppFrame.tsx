@@ -43,8 +43,8 @@ export interface ScoutSetupCallout {
 export interface ScoutAppFrameProps {
   /** Short product noun, e.g. "Feed", "Sessions", "Search", "Boards". */
   product: string;
-  /** Declarative page entries. Single-page apps render a slim header; multi-page apps render the Scout sidebar. */
-  pages: readonly ScoutPageTab[];
+  /** Declarative page entries. Omit or pass a single entry for a slim chromeless masthead; multi-page apps render the Scout sidebar. */
+  pages?: readonly ScoutPageTab[];
   activePageId?: string;
   navigate?: (href: string) => void;
   status?: ScoutRuntimeBadge | null;
@@ -93,7 +93,7 @@ function SetupBanner({ callout, rail }: { callout: ScoutSetupCallout; rail: Scou
 
 function ScoutAppFrameInner({
   product,
-  pages,
+  pages = [],
   activePageId,
   navigate = navigateBrowser,
   status,
