@@ -23,7 +23,7 @@ import { agentOf, clip, feedLine, firstSentence, isReviewPass, operatorLine, pos
 import { plainTextExcerpt } from "../../shared/plain-excerpt.ts";
 
 /** An operator-attention queue item, joined to a post by its work or conversation. */
-export type FeedAttention = { id: string; workId: string | null; conversationId: string | null; label: string };
+export type FeedAttention = { id: string; workId: string | null; conversationId: string | null; label: string; detail?: string | null };
 
 export type PostContext = LinkContext & {
   originHost: string;
@@ -69,7 +69,7 @@ function threadName(tasks: readonly WebFeedTask[], ctx: PostContext): string | n
 function forYouOf(tasks: readonly WebFeedTask[], pulls: readonly WebFeedPull[], ctx: PostContext): FeedForYou | null {
   for (const task of tasks) {
     const hit = ctx.attentionByKey.get(`work:${task.id}`);
-    if (hit) return { reason: "attention", label: hit.label };
+    if (hit) return { reason: "attention", label: hit.label, ...(hit.detail ? { detail: hit.detail } : {}) };
   }
   const draft = pulls.find((p) => p.state === "draft");
   if (draft) return { reason: "draft", label: `Draft ${draft.repo.split("/")[1] ?? draft.repo}#${draft.number} awaits review` };

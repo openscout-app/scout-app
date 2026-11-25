@@ -10,7 +10,7 @@
 
 import type { FeedPostHead } from "../../../shared/api/feed.ts";
 import type { FeedActivity, FeedOutsideThread, FeedQuotaEvent, FeedSources } from "../../../shared/api/feed-sources.ts";
-import { aheadOfPace, runsOutAt, windowLength } from "../../../shared/quota-pace.ts";
+import { aheadOfPace, runsOutAt, windowLength } from "../../lib/quota-pace.ts";
 import { currentWindowFill, isQuotaGauge, quotaWindows, usageWindow, type ServiceGauge } from "../home/quota-gauge.ts";
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

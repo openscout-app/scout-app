@@ -99,8 +99,8 @@ describe("assembly helpers", () => {
       { id: "q:2", title: "Question", conversationId: "c2", actions: [{ recordKind: "work_item", recordId: "w2" }] },
       { id: "ask:inv-3", kind: "ask", title: "Ask failed", conversationId: "c3" },
     ])).toEqual([
-      { id: "work_item:w1", workId: "w1", conversationId: "c1", label: "Waiting on you" },
-      { id: "q:2", workId: "w2", conversationId: "c2", label: "Question" },
+      { id: "work_item:w1", workId: "w1", conversationId: "c1", label: "Waiting on you", detail: "Waiting on you" },
+      { id: "q:2", workId: "w2", conversationId: "c2", label: "Waiting on you", detail: "Question" },
     ]);
   });
 
@@ -109,8 +109,8 @@ describe("assembly helpers", () => {
       { id: "ready:flt-1", kind: "ready", title: "Ranger is ready", conversationId: "c1", ready: { workId: "w1" } },
       { id: "ready:flt-2", kind: "ready", title: "Kit is ready", conversationId: "c2", ready: { workId: null } },
     ])).toEqual([
-      { id: "ready:flt-1", workId: "w1", conversationId: "c1", label: "Ranger is ready" },
-      { id: "ready:flt-2", workId: null, conversationId: "c2", label: "Kit is ready" },
+      { id: "ready:flt-1", workId: "w1", conversationId: "c1", label: "Ready" },
+      { id: "ready:flt-2", workId: null, conversationId: "c2", label: "Ready" },
     ]);
   });
 

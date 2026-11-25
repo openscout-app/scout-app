@@ -5,13 +5,16 @@
  * never reads a session or a diff.
  */
 import { useEffect, useMemo, useState } from "react";
-import { formatSessionRouteRef } from "../../../shared/session-route-ref.ts";
+import { recordedSession } from "../../lib/post-record-routes.ts";
+import { formatSessionRouteRef } from "../../lib/session-route-ref.ts";
 import type { FeedPostHead } from "../../../shared/api/feed.ts";
-import { useSessionRefLookup } from "../sessions/SessionRefScreen.tsx";
+import { useSessionRefLookup } from "../sessions/use-session-ref-lookup.ts";
 import { api } from "../../lib/api.ts";
-import type { ScoutRepoDiffSnapshot } from "../../scout/repo-diff/types.ts";
 import { ChangeLine, G, Glyph } from "./post-parts.tsx";
+import { useFeedCapabilities } from "./feed-capabilities.tsx";
 import { mergeDiffFiles, patchFiles, readSession, type BriefStep, type DiffFile, type SessionRead } from "./post-session-model.ts";
+
+type ScoutRepoDiffSnapshot = { layers: Array<{ rawPatch?: string | null }> };
 
 export type SessionReadState = {
   read: SessionRead | null;
@@ -68,8 +71,10 @@ function useCommitDiff(sha: string | null, cwd: string | null | undefined): Diff
 
 /** The owner's session, read once the item opens. A post with no session reads nothing. */
 export function useSessionRead(post: FeedPostHead, sha: string | null): SessionReadState {
-  const ref = post.owner.sessionId ? formatSessionRouteRef(post.agent.harness, post.owner.sessionId) ?? post.owner.sessionId : "";
-  const { lookup, loading, error } = useSessionRefLookup(ref);
+  const { readOnly } = useFeedCapabilities();
+  const id = post.owner.sessionId;
+  const ref = readOnly ? recordedSession(post) ?? "" : id ? formatSessionRouteRef(post.agent.harness, id) ?? id : "";
+  const { lookup, loading, error } = useSessionRefLookup(ref, !readOnly);
   const data = lookup?.kind === "observe" ? lookup.observe.data : null;
   const read = useMemo(() => (data ? readSession(data, post.at) : null), [data, post.at]);
   const commit = useCommitDiff(sha, post.owner.cwd);

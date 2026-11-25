@@ -1,8 +1,8 @@
 /*
  * The feed's stream: the most useful finished work, led by what was made.
- * The server's engine (server/feed/engine.ts) groups, scores and ranks; this
- * renders its All and Reviewed views. Every post is one FeedItem at one of
- * three sizes (post-size.ts): the day's chosen posts at M, the folded rest
+ * The server groups, scores and ranks posts. This stream renders its All and
+ * Reviewed views. Every post is one FeedItem at one of three sizes
+ * (post-size.ts): the day's chosen posts at M, the folded rest
  * and a session's run at S, and any post opened in place at L, where its
  * extras load. Enter grows the focused item one size and Escape puts it back;
  * a click anywhere on a post opens L (links and buttons in it keep their own
@@ -10,11 +10,10 @@
  * thread, session and pull requests are references inside L. /?post=<id>
  * opens the stream with that post at L.
  *
- * Home is the Feed: Home draws FeedStream as its centre column, under its
- * placements (home-stream.ts). FeedContent draws the stream alone, for the
- * Mac app's Feed row until that row goes.
+ * FeedContent draws the stream alone for the embedded Feed surface.
  */
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ScoutPageSkeleton } from "../../shell/ScoutPageSkeleton.tsx";
 import "./feed.css";
 import { api } from "../../lib/api.ts";
 import { useBrokerRefresh } from "../../lib/broker-refresh.ts";
@@ -24,28 +23,31 @@ import type { FeedPostHead, FeedResponse, FeedViewId } from "../../../shared/api
 import type { FeedSources } from "../../../shared/api/feed-sources.ts";
 import { isEditableTarget, isModalShortcutContext } from "../../lib/keyboard-nav-core.ts";
 import { appendPage, dayDate, dayLabel, emptyFeed, feedPath, mergeFeed, refillDay, type FeedState } from "./feed-store.ts";
-import { ARRIVAL_HIGHLIGHT_MS, diffNewPostIds, pendingArrivalSummary, shouldQueueArrival } from "./arrival-model.ts";
+import { collectWaitingPosts, foldInventoryLabel, isVisualOrShippedResult, partitionDayPosts } from "./attention-model.ts";
+import { GitHubCatchUp } from "./GitHubCatchUp.tsx";
 import { mergedDays, sourcePostsByDay, type SourcePost } from "./source-model.ts";
 import { Mark, OutsideThread, PostHead, QuotaWarning, useFeedSources, WaitsDot } from "./sources.tsx";
 import { HideAct, MoveToast, undoLast } from "./PostActions.tsx";
 import { usePendingHides } from "./feed-hides.ts";
 import { hiddenPosts, useHeldMoves } from "./pending-moves.ts";
+import { FeedCapabilitiesProvider, useFeedCapabilities, type FeedCapabilities } from "./feed-capabilities.tsx";
 import { feedCommand } from "./post-actions.ts";
 import { clock, G, Glyph, isNotModified, type Navigate } from "./post-parts.tsx";
 import { FeedItem, type ItemHandle, type Register } from "./FeedItem.tsx";
 import { dismissTarget, grow, type PostSize } from "./post-size.ts";
-import { ScoutPageSkeleton } from "../../shell/ScoutPageSkeleton.tsx";
 
 /* Work finishing is a fleet event; the live net catches pull requests merging on GitHub. */
 /* A stream left open beside another app keeps taking new posts: it refreshes while visible, focused or not. */
 const FEED_REFRESH_POLICY = { matches: matchesKinds(FLEET_EVENT_KINDS), fallbackPollMs: 30_000, livePollMs: 120_000, activeWhen: "visible" as const };
+
+/** How many decisions show at full size before the rest fold. */
+const WAITING_SHOWN = 3;
 
 /** Sets a post's size; `from` is what was clicked, which stays where it is on screen. */
 type SetSize = (id: string, size: PostSize, from?: Element | null) => void;
 type StreamState = {
   navigate: Navigate;
   focusedId: string | null;
-  arrivingIds: ReadonlySet<string>;
   /** The size a post was set to, else its place's size: M among the day's posts, S in a fold. */
   sizeOf: (id: string, base: PostSize) => PostSize;
   setSize: SetSize;
@@ -64,7 +66,6 @@ function Item({ post, base, stream }: { post: FeedPostHead; base: PostSize; stre
       size={stream.sizeOf(post.id, base)}
       onSize={onSize}
       focused={stream.focusedId === post.id}
-      arriving={stream.arrivingIds.has(post.id)}
       register={stream.register}
     />
   );
@@ -83,9 +84,9 @@ function FoldSummary({ posts }: { posts: readonly FeedPostHead[] }) {
   const { harnesses, threads, moreThreads } = foldSummary(posts);
   return (
     <>
-      {harnesses.length ? <span className="fd-foldMarks" aria-hidden>{harnesses.map((h) => <Mark key={h} harness={h} size={12} />)}</span> : null}
+      {harnesses.length ? <span className="fd-foldMarks" aria-hidden>{harnesses.map((h) => <Mark key={h} harness={h} compact />)}</span> : null}
       {threads.length ? (
-        <span className="fd-foldList" title={posts.map((p) => p.title).join("\n")}>
+        <span className="fd-foldList">
           {threads.join(", ")}{moreThreads ? ` and ${moreThreads} more` : ""}
         </span>
       ) : null}
@@ -93,7 +94,7 @@ function FoldSummary({ posts }: { posts: readonly FeedPostHead[] }) {
   );
 }
 
-function Folded({ posts, stream }: { posts: FeedPostHead[]; stream: StreamState }) {
+function Folded({ posts, stream, label }: { posts: FeedPostHead[]; stream: StreamState; label?: string }) {
   const [unfolded, setUnfolded] = useState(false);
   // A fold opens when it holds a post someone grew (a link to one of its posts).
   const holds = posts.some((p) => stream.sizeOf(p.id, "s") !== "s");
@@ -103,7 +104,7 @@ function Folded({ posts, stream }: { posts: FeedPostHead[]; stream: StreamState 
     <div className="fd-folded">
       <button type="button" className="fd-fold" onClick={() => setUnfolded(!unfolded)} aria-expanded={unfolded}>
         <span className="fd-foldIcon" data-open={unfolded || undefined}><Glyph d={G.chevron} size={11} /></span>
-        <span>{posts.length} more</span>
+        <span className="fd-foldCount">{label ?? foldInventoryLabel(posts)}</span>
         {unfolded ? null : <FoldSummary posts={posts} />}
       </button>
       {unfolded ? <div className="fd-foldItems">{posts.map((p) => <Item key={p.id} post={p} base="s" stream={stream} />)}</div> : null}
@@ -113,6 +114,7 @@ function Folded({ posts, stream }: { posts: FeedPostHead[]; stream: StreamState 
 
 /** An outside thread or a quota warning, drawn among the day's posts. */
 function SourcePostView({ post, now }: { post: SourcePost; now: number }) {
+  const { readOnly } = useFeedCapabilities();
   return (
     <article className="fd-post fd-sourcePost" data-kind={post.kind}>
       <div className="fd-postBody">
@@ -122,13 +124,13 @@ function SourcePostView({ post, now }: { post: SourcePost; now: number }) {
           at={clock(post.at)}
         />
         {post.kind === "outside" ? <OutsideThread thread={post.thread} nowMs={now} /> : <QuotaWarning event={post.event} nowMs={now} />}
-        <div className="pa-strip">
+        {readOnly ? null : <div className="pa-strip">
           <div className="pa-row">
             {post.kind === "outside"
               ? <HideAct id={post.thread.id} at={post.thread.at} title={post.thread.channel.title} />
               : <HideAct id={post.event.id} at={post.event.crossedAt} title="Quota warning" />}
           </div>
-        </div>
+        </div>}
       </div>
     </article>
   );
@@ -155,7 +157,7 @@ function firstOnScreen(order: readonly string[], el: (id: string) => HTMLElement
 }
 
 function scrollerOf(el: Element): Element {
-  for (let node: Element | null = el; node; node = node.parentElement) {
+  for (let node = el.parentElement; node; node = node.parentElement) {
     const { overflowY } = getComputedStyle(node);
     if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) return node;
   }
@@ -165,19 +167,23 @@ function scrollerOf(el: Element): Element {
 /* ── the page ──────────────────────────────────────────────────────────── */
 
 /** The stream alone, with its own sources read: the Mac app's Feed row. */
-export function FeedContent({ navigate }: { navigate: Navigate }) {
-  const sources = useFeedSources();
-  return <FeedStream navigate={navigate} sources={sources} />;
+export function FeedContent({ capabilities, ...props }: {
+  navigate: Navigate;
+  expand?: string;
+  capabilities?: Partial<FeedCapabilities>;
+}) {
+  return (
+    <FeedCapabilitiesProvider capabilities={capabilities}>
+      <FeedWithSources {...props} />
+    </FeedCapabilitiesProvider>
+  );
 }
 
-/**
- * The feed's days, every post kind in its own presentation, and the Slack
- * threads and quota warnings on their day. `exclude` leaves out posts and
- * threads a placement above already shows. `embedded`: Home scrolls the
- * page, so the stream does not scroll on its own or draw its own toast.
- * `onFeed` hears every read of the unfiltered stream ("all"), so the page
- * around it can summarise the same posts without a read of its own.
- */
+function FeedWithSources({ navigate, expand }: { navigate: Navigate; expand?: string }) {
+  const sources = useFeedSources();
+  return <FeedStreamView navigate={navigate} sources={sources} expand={expand} />;
+}
+
 /**
  * A fixed placement in the stream: something that is not a post (Home's canvas), drawn once after the `after`-th
  * post shown, counted across days. `closesFirstDay` draws it at the end of the first day instead (after its fold)
@@ -186,33 +192,38 @@ export function FeedContent({ navigate }: { navigate: Navigate }) {
  */
 export type FeedSlot = { key: string; after: number; closesFirstDay?: boolean; node: ReactNode };
 
-export function FeedStream({ navigate, sources, exclude, embedded = false, expand, onFeed, slots }: {
+type FeedStreamProps = {
   navigate: Navigate;
   sources: FeedSources | null;
+  /** Omit posts or source rows the host shows elsewhere. */
   exclude?: ReadonlySet<string>;
+  /** The host owns scrolling and the undo toast. */
   embedded?: boolean;
   /** A post to open expanded once it loads: the post a link (/?post=<id>) names. */
   expand?: string;
+  /** Receives each updated snapshot of the unfiltered stream. */
   onFeed?: (feed: FeedState) => void;
-  /** fixed placements, in post order; see FeedSlot */
+  /** Fixed placements in post order. */
   slots?: readonly FeedSlot[];
-}) {
+};
+
+/** The Feed's days and source rows. Use when the host already reads the sources. */
+export function FeedStream({ capabilities, ...props }: FeedStreamProps & { capabilities?: Partial<FeedCapabilities> }) {
+  return (
+    <FeedCapabilitiesProvider capabilities={capabilities}>
+      <FeedStreamView {...props} />
+    </FeedCapabilitiesProvider>
+  );
+}
+
+function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, onFeed, slots }: FeedStreamProps) {
+  const { readOnly, handoff } = useFeedCapabilities();
   const [view, setView] = useState<Exclude<FeedViewId, "home" | "following">>("all");
-  const [density, setDensity] = useState<"m" | "s">("m");
+  const [resultsOnly, setResultsOnly] = useState(false);
   const [feed, setFeed] = useState<FeedState>(() => emptyFeed("all"));
   const [failed, setFailed] = useState(false);
   const [paging, setPaging] = useState(false);
-  const [arrivingIds, setArrivingIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [queued, setQueued] = useState<{ response: FeedResponse; posts: FeedPostHead[] } | null>(null);
-  const feedRef = useRef(feed);
-  const commitFeed = useCallback((next: FeedState) => {
-    feedRef.current = next;
-    setFeed(next);
-  }, []);
-  const viewRequest = useRef<AbortController | null>(null);
-  const refreshing = useRef<AbortSignal | null>(null);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const arrivalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const versionRef = useRef(-1);
   // Posts out of the list for a moment: a Done or Drop under undo, a hide the Feed's last read still had.
   const pendingHides = usePendingHides();
   const held = new Set([...hiddenPosts(useHeldMoves()), ...pendingHides]);
@@ -285,7 +296,7 @@ export function FeedStream({ navigate, sources, exclude, embedded = false, expan
       }
       const command = feedCommand(event);
       if (!command) return;
-      if (command === "undo") { undoLast(); event.preventDefault(); return; }
+      if (command === "undo") { if (readOnly) return; undoLast(); event.preventDefault(); return; }
       const order = [...document.querySelectorAll<HTMLElement>(".s-feed .fd-post[data-post-id]")].map((n) => n.dataset.postId!).filter((id) => handles.current.has(id));
       if (!order.length) return;
       const at = focusedId ? order.indexOf(focusedId) : -1;
@@ -319,107 +330,53 @@ export function FeedStream({ navigate, sources, exclude, embedded = false, expan
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [focusedId, setSize, dismiss]);
-
-  const markArriving = useCallback((ids: readonly string[]) => {
-    if (ids.length === 0) return;
-    setArrivingIds(new Set(ids));
-    if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
-    arrivalTimerRef.current = setTimeout(() => {
-      setArrivingIds(new Set());
-      arrivalTimerRef.current = null;
-    }, ARRIVAL_HIGHLIGHT_MS);
-  }, []);
-
-  useEffect(() => () => {
-    if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
-  }, []);
-
-  const pullQueued = useCallback(() => {
-    if (!queued) return;
-    const { response, posts } = queued;
-    if (response.view !== feedRef.current.view) return;
-    setQueued(null);
-    commitFeed(mergeFeed(feedRef.current, response));
-    markArriving(posts.map((post) => post.id));
-    const scroller = rootRef.current ? scrollerOf(rootRef.current) : null;
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    rootRef.current?.focus({ preventScroll: true });
-    scroller?.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
-  }, [queued, markArriving, commitFeed]);
+  }, [focusedId, setSize, dismiss, readOnly]);
 
   const load = useCallback(async () => {
-    const signal = viewRequest.current?.signal;
-    if (!signal || signal.aborted || refreshing.current === signal) return;
-    refreshing.current = signal;
-    const since = feedRef.current.version;
     try {
-      const res = await api<FeedResponse>(feedPath(view, { since }), { signal });
-      const previous = feedRef.current;
-      // A view switch or a pull can finish while this delta is in flight.
-      if (signal.aborted || previous.version !== since || res.view !== view) return;
-      const hadLoadedSameView = previous.version >= 0 && previous.view === res.view;
-      if (hadLoadedSameView) {
-        const next = mergeFeed(previous, res);
-        const newIds = diffNewPostIds(new Set(previous.posts.keys()), next);
-        const scrollTop = rootRef.current ? scrollerOf(rootRef.current).scrollTop : 0;
-        if (newIds.length > 0 && shouldQueueArrival(scrollTop)) {
-          const posts = newIds.map((id) => next.posts.get(id)).filter((post): post is FeedPostHead => Boolean(post));
-          setQueued({ response: res, posts });
-          setFailed(false);
-          return;
-        }
-        commitFeed(next);
-        setQueued(null);
-        markArriving(newIds);
-      } else {
-        commitFeed(mergeFeed(emptyFeed(res.view), res));
-        setQueued(null);
-      }
+      const res = await api<FeedResponse>(feedPath(view, { since: versionRef.current }));
+      versionRef.current = res.version;
+      setFeed((state) => (state.view === res.view ? mergeFeed(state, res) : mergeFeed(emptyFeed(res.view), res)));
       setFailed(false);
     } catch (error) {
       // 304: nothing moved. A failed refresh keeps what is shown; only a first load that fails says so.
-      if (!signal.aborted && feedRef.current.version === since && !isNotModified(error)) setFailed(true);
-    } finally {
-      if (refreshing.current === signal) refreshing.current = null;
+      if (!isNotModified(error)) setFailed(true);
     }
-  }, [view, markArriving, commitFeed]);
+  }, [view]);
 
   useEffect(() => {
-    const request = new AbortController();
-    viewRequest.current = request;
-    setQueued(null);
-    setArrivingIds(new Set());
-    setFailed(false);
-    setPaging(false);
-    commitFeed(emptyFeed(view));
+    versionRef.current = -1;
+    setFeed(emptyFeed(view));
     void load();
-    return () => request.abort();
-  }, [view, load, commitFeed]);
-  useBrokerRefresh(() => void load(), FEED_REFRESH_POLICY);
+  }, [view, load]);
+  useBrokerRefresh(() => void load(), FEED_REFRESH_POLICY, !readOnly);
   usePageRefresh(load);
   useEffect(() => {
     if (feed.view === "all" && feed.version >= 0) onFeed?.(feed);
   }, [feed, onFeed]);
 
   const older = async () => {
-    const signal = viewRequest.current?.signal;
-    if (!feed.cursor || paging || !signal || signal.aborted) return;
+    if (!feed.cursor || paging) return;
     setPaging(true);
     try {
-      const res = await api<FeedResponse>(feedPath(view, { cursor: feed.cursor }), { signal });
-      if (!signal.aborted && res.view === feedRef.current.view) commitFeed(appendPage(feedRef.current, res));
+      const res = await api<FeedResponse>(feedPath(view, { cursor: feed.cursor }));
+      setFeed((state) => appendPage(state, res));
     } catch { /* the button stays */ }
-    if (!signal.aborted) setPaging(false);
+    setPaging(false);
   };
 
   const loaded = feed.version >= 0;
   const now = Date.now();
+  const waiting = loaded ? collectWaitingPosts(feed, hidden) : [];
+  const waitingIds = new Set(waiting.map((p) => p.id));
+  const dayHidden = waitingIds.size ? new Set([...hidden, ...waitingIds]) : hidden;
   const loadedDays = feed.days.map((d) => d.day);
-  const bySourceDay = sourcePostsByDay(view === "all" ? sources : null, loadedDays, Boolean(feed.cursor));
+  const bySourceDay = sourcePostsByDay(view === "all" && !resultsOnly ? sources : null, loadedDays, Boolean(feed.cursor));
   const days = loaded ? mergedDays(loadedDays, bySourceDay.keys()) : [];
   const feedDay = new Map(feed.days.map((d) => [d.day, d]));
-  const showFilters = feed.size.reviewed > 0 || view === "reviewed";
+  const resultCount = loaded ? [...feed.posts.values()].filter((p) => !dayHidden.has(p.id) && isVisualOrShippedResult(p)).length : 0;
+  const showReviewed = feed.size.reviewed > 0 || view === "reviewed";
+  const showFilters = loaded && (days.length > 0 || waiting.length > 0 || showReviewed);
   // fixed placements: each drawn once, after the post it names (or after the last)
   let counted = 0;
   const placed = new Set<string>();
@@ -448,59 +405,95 @@ export function FeedStream({ navigate, sources, exclude, embedded = false, expan
     };
     window.requestAnimationFrame(bring);
   }, [expand, feed]);
-  const stream: StreamState = {
-    navigate,
-    focusedId,
-    arrivingIds,
-    sizeOf: (id, base) => sizes.get(id) ?? (density === "s" ? "s" : base),
-    setSize,
-    register,
-    headOf: (id) => feed.posts.get(id),
-  };
+  const stream: StreamState = { navigate, focusedId, sizeOf: (id, base) => sizes.get(id) ?? base, setSize, register, headOf: (id) => feed.posts.get(id) };
+
+  const visibleDays = days.map((key) => {
+    const day = feedDay.get(key) ?? { day: key, ids: [], folded: [] };
+    const extra = (bySourceDay.get(key) ?? []).filter((p) => !dayHidden.has(p.kind === "outside" ? p.thread.id : p.event.id));
+    const { shown, folded } = refillDay(day.ids, day.folded, dayHidden, (id) => feed.posts.get(id));
+    const partitioned = partitionDayPosts(shown, folded);
+    if (!resultsOnly) return { day, extra, ...partitioned };
+    return {
+      day,
+      extra: [] as SourcePost[],
+      github: partitioned.github,
+      featured: partitioned.featured.filter(isVisualOrShippedResult),
+      folded: partitioned.folded.filter(isVisualOrShippedResult),
+    };
+  }).filter(({ extra, github, featured, folded }) => extra.length > 0 || github.rows.length > 0 || featured.length > 0 || folded.length > 0);
 
   return (
-    <div ref={rootRef} tabIndex={-1} className="s-feed" data-embedded={embedded || undefined} data-density={density}>
+    <div className="s-feed" data-embedded={embedded || undefined} data-lens={resultsOnly ? "results" : view}>
       <div className="fd-column">
-        {queued && queued.posts.length > 0 ? (
-          <div className="fd-arrivalDock">
-            <button type="button" className="fd-arrivalPill" onClick={pullQueued}>
-              <span className="fd-arrivalArrow" aria-hidden="true">↑</span>
-              <span role="status">{pendingArrivalSummary(queued.posts)}</span>
-              <span className="fd-arrivalCta">Pull into feed</span>
-            </button>
-          </div>
-        ) : null}
-        {loaded ? (
+        {showFilters ? (
           <div className="fd-bar">
-            {showFilters ? (
-              <div className="fd-filters" role="group" aria-label="Show">
-                {(["all", "reviewed"] as const).map((filter) => (
-                  <button key={filter} type="button" className="fd-filter" data-on={view === filter || undefined} onClick={() => setView(filter)}>
-                    {filter === "all" ? "All" : "Reviewed"}
-                  </button>
-                ))}
-              </div>
-            ) : <span />}
-            <div className="fd-barRight">
-              {failed ? <span className="fd-stale" role="status">Couldn&apos;t refresh — showing the last loaded feed</span> : null}
-              <div className="fd-density" role="group" aria-label="Post density">
-                <button type="button" className="fd-densityBtn" data-on={density === "m" || undefined} aria-pressed={density === "m"} onClick={() => setDensity("m")} title="Stream view">M</button>
-                <button type="button" className="fd-densityBtn" data-on={density === "s" || undefined} aria-pressed={density === "s"} onClick={() => setDensity("s")} title="Compact scan view">S</button>
-              </div>
+            <div className="fd-filters" role="group" aria-label="View">
+              <button
+                type="button"
+                className="fd-filter"
+                data-on={(view === "all" && !resultsOnly) || undefined}
+                onClick={() => { setView("all"); setResultsOnly(false); }}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className="fd-filter"
+                data-on={(view === "all" && resultsOnly) || undefined}
+                onClick={() => { setView("all"); setResultsOnly(true); }}
+              >
+                Results{resultCount > 0 ? <span className="fd-filterCount">{resultCount}</span> : null}
+              </button>
+              {showReviewed ? (
+                <button
+                  type="button"
+                  className="fd-filter"
+                  data-on={view === "reviewed" || undefined}
+                  onClick={() => { setView("reviewed"); setResultsOnly(false); }}
+                >
+                  My activity
+                </button>
+              ) : null}
             </div>
+            {loaded && failed ? (
+              <span className="fd-stale" role="status">Couldn&apos;t refresh — showing last loaded feed</span>
+            ) : null}
+          </div>
+        ) : loaded && failed ? (
+          <div className="fd-bar">
+            <span className="fd-stale" role="status">Couldn&apos;t refresh — showing last loaded feed</span>
           </div>
         ) : null}
 
-        {!loaded && failed ? <p className="fd-empty">Couldn't load the feed. Retrying.</p> : null}
+        {!loaded && failed ? <p className="fd-empty">Couldn&apos;t load the feed. Retrying.</p> : null}
         {!loaded && !failed ? <ScoutPageSkeleton variant="feed" label="Loading Feed" /> : null}
-        {loaded && days.length === 0 ? <p className="fd-empty">Nothing finished yet.</p> : null}
 
-        {days.map((key, dayIndex) => {
-          const day = feedDay.get(key) ?? { day: key, ids: [], folded: [] };
-          const extra = (bySourceDay.get(key) ?? []).filter((p) => !hidden.has(p.kind === "outside" ? p.thread.id : p.event.id));
+        {loaded && waiting.length > 0 ? (
+          <section className="fd-attention" aria-label="Waiting on you">
+            <header className="fd-attentionHead">
+              <span className="fd-attentionDot" aria-hidden="true" />
+              <h2>Waiting on you</h2>
+              <span className="fd-attentionCount">{waiting.length}</span>
+            </header>
+            {/* The first few decisions at full size; the rest one quiet row away, so the day still shows below. */}
+            <div className="fd-attentionList">
+              {waiting.slice(0, WAITING_SHOWN).map((post) => <Item key={post.id} post={post} base="m" stream={stream} />)}
+            </div>
+            <Folded posts={waiting.slice(WAITING_SHOWN)} stream={stream} label={`${waiting.length - WAITING_SHOWN} more waiting`} />
+          </section>
+        ) : null}
+
+        {loaded && visibleDays.length === 0 && waiting.length === 0 ? (
+          <p className="fd-empty">
+            {resultsOnly ? "No visual or code results in this range yet." : view === "reviewed" ? "No activity from you in this range yet." : "Nothing finished yet."}
+          </p>
+        ) : null}
+
+        {visibleDays.map(({ day, extra, github, featured, folded }, dayIndex) => {
           const label = dayLabel(day.day, now);
-          // Posts Home places elsewhere leave the day; the newest folded ones take their places.
-          const { shown, folded } = refillDay(day.ids, day.folded, hidden, (id) => feed.posts.get(id));
+          const openGithubPosts = new Map(github.rows
+            .filter(({ post }) => stream.sizeOf(post.id, "s") === "l")
+            .map(({ post }) => [post.id, post]));
           return (
             <section key={day.day} className="fd-day" aria-label={label || dayDate(day.day)}>
               <h2 className="fd-dayHead">
@@ -508,18 +501,26 @@ export function FeedStream({ navigate, sources, exclude, embedded = false, expan
                 <span className={label ? "fd-faint" : undefined}>{dayDate(day.day)}</span>
               </h2>
               {extra.map((p) => <SourcePostView key={p.kind === "outside" ? p.thread.id : p.event.id} post={p} now={now} />)}
-              {shown.map((post) => {
-                counted += 1;
-                const here = slotsAfter(counted);
-                return (
-                  <Fragment key={post.id}>
-                    <Item post={post} base="m" stream={stream} />
-                    {here}
-                  </Fragment>
-                );
-              })}
+              <GitHubCatchUp summary={github} onOpenPost={(id, from) => stream.setSize(id, "l", from)} />
+              {[...openGithubPosts.values()].map((post) => (
+                <div key={`gh-open:${post.id}`} className="fd-ghOpenHost">
+                  <Item post={post} base="s" stream={stream} />
+                </div>
+              ))}
+              <div className={resultsOnly && featured.length > 1 ? "fd-showcaseGrid" : undefined}>
+                {featured.map((post) => {
+                  counted += 1;
+                  const here = slotsAfter(counted);
+                  return (
+                    <Fragment key={post.id}>
+                      <Item post={post} base="m" stream={stream} />
+                      {here}
+                    </Fragment>
+                  );
+                })}
+              </div>
               <Folded posts={folded} stream={stream} />
-              {dayIndex === days.length - 1 ? slotsAfter(Infinity) : dayIndex === 0 ? slotsAfter(counted, true) : null}
+              {dayIndex === visibleDays.length - 1 ? slotsAfter(Infinity) : dayIndex === 0 ? slotsAfter(counted, true) : null}
             </section>
           );
         })}
@@ -527,8 +528,15 @@ export function FeedStream({ navigate, sources, exclude, embedded = false, expan
         {loaded && feed.cursor ? (
           <button type="button" className="fd-older" onClick={() => void older()} disabled={paging}>{paging ? "Loading" : "Older"}</button>
         ) : null}
+
+        {loaded && readOnly && !embedded && handoff ? (
+          <footer className="fd-handoff">
+            {handoff.detail ? <span>{handoff.detail}</span> : null}
+            <a className="fd-handoffLink" href={handoff.href} target="_blank" rel="noreferrer">{handoff.label}</a>
+          </footer>
+        ) : null}
       </div>
-      {embedded ? null : <MoveToast />}
+      {embedded || readOnly ? null : <MoveToast />}
     </div>
   );
 }

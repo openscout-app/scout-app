@@ -97,7 +97,7 @@ export function resolveScoutTerminalRelayHealthUrl(): string {
  * False on web.openscout.app: no runtime serves that page, so there is no
  * socket to open beside it. Its reads go to the paired Mac (lib/hosts/paired).
  */
-export const SAME_ORIGIN_RUNTIME = import.meta.env.VITE_SCOUT_WEB_PROFILE !== "hosted";
+export const SAME_ORIGIN_RUNTIME = import.meta.env?.VITE_SCOUT_WEB_PROFILE !== "hosted";
 
 function resolveScoutWebSocketUrl(path: string): string {
   if (typeof window === "undefined") {

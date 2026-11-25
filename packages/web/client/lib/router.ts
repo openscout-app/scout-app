@@ -596,9 +596,11 @@ function readRoute(urlLike: string | URL): Route {
   if (parts[0] === "status") return scoped({ view: "status" });
   // /c/{conversationId} always opens the conversation surface directly.
   if (parts[0] === "c" && parts[1]) {
+    const workId = url.searchParams.get("workId");
     return scoped({
       view: "conversation",
       conversationId: decodeURIComponent(parts[1]),
+      ...(workId ? { workId } : {}),
     });
   }
   if (parts[0] === "flights" && parts[1] && parts[2] === "observe") {
@@ -944,6 +946,7 @@ export function routePath(r: Route, pathname?: string): string {
       return pathWithMachineScope("/status", r);
     case "conversation": {
       const params = new URLSearchParams();
+      if (r.workId) params.set("workId", r.workId);
       appendMachineScope(params, r);
       return `/c/${encodeURIComponent(r.conversationId)}${searchSuffix(params)}`;
     }

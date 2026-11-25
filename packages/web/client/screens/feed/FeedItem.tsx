@@ -23,10 +23,12 @@ import type { FeedPostHead } from "../../../shared/api/feed.ts";
 import { isEditableTarget } from "../../lib/keyboard-nav-core.ts";
 import { hasLargeLead, shownLead } from "./feed-store.ts";
 import { postKind } from "./source-model.ts";
-import { PostActions, type PostActionsHandle } from "./PostActions.tsx";
+import { useFeedCapabilities } from "./feed-capabilities.tsx";
+import { ReadOnlyPostActions } from "./ReadOnlyPostActions.tsx";
+import { PostActions as FullPostActions, type PostActionsHandle } from "./PostActions.tsx";
 import { PostDetail } from "./PostDetail.tsx";
-import { clock, Lead, Mark, MoveLine, PlateHead, PrLine, useDetail, useMissingPicture, type Navigate } from "./post-parts.tsx";
-import { isWaitingOnYou, smallModalityOf } from "./arrival-model.ts";
+import { ChangeLine, clock, Lead, Mark, MoveLine, PlateHead, PrLine, useDetail, useMissingPicture, type Navigate } from "./post-parts.tsx";
+import { decisionWords, isWaitingOnYou, waitingReasonLabel } from "./attention-model.ts";
 import { clip, grow, sizeForKey, WORDS, type PostSize } from "./post-size.ts";
 import { useTurnSummary } from "./turn-summaries.ts";
 
@@ -50,11 +52,11 @@ export type FeedItemProps = {
   /** The code-only posts folded under this one (head.joined, resolved). */
   joined?: readonly FeedPostHead[];
   focused?: boolean;
-  arriving?: boolean;
   register?: Register;
 };
 
-export function FeedItem({ post, navigate, size: controlled, onSize, defaultSize = "m", joined = [], focused = false, arriving = false, register }: FeedItemProps) {
+export function FeedItem({ post, navigate, size: controlled, onSize, defaultSize = "m", joined = [], focused = false, register }: FeedItemProps) {
+  const { readOnly } = useFeedCapabilities();
   const [own, setOwn] = useState<PostSize>(defaultSize);
   const size = controlled ?? own;
   const resize = useCallback<Resize>((next, from) => (onSize ? onSize(next, from) : setOwn(next)), [onSize]);
@@ -92,13 +94,14 @@ export function FeedItem({ post, navigate, size: controlled, onSize, defaultSize
   // The S thumbnail, dropped when its file is gone (hooks run before the size branches).
   const shownThumb = smallPicture(post);
   const [thumbMissing, thumbGone] = useMissingPicture(shownThumb && !shownThumb.video ? shownThumb.src : null);
+  const waiting = isWaitingOnYou(post);
   const common = {
     ref: (node: HTMLElement | null) => { el.current = node; },
     tabIndex: -1,
     "data-post-id": post.id,
     "data-size": size,
     "data-focused": focused || undefined,
-    "data-arriving": arriving || undefined,
+    "data-waiting": waiting || undefined,
     "data-agent-only": post.reviewed ? undefined : true,
     "data-class": post.class,
     "data-kind": postKind(post),
@@ -107,46 +110,17 @@ export function FeedItem({ post, navigate, size: controlled, onSize, defaultSize
 
   if (size === "s") {
     const thumb = shownThumb;
-    const modality = smallModalityOf(post);
-    const waiting = isWaitingOnYou(post);
-    const pr = post.prs[0] ?? null;
-    const change = post.change;
-    const additions = change?.additions ?? 0;
-    const deletions = change?.deletions ?? 0;
-    const totalDiff = additions + deletions;
-    const additionPercent = totalDiff > 0 ? Math.round((additions / totalDiff) * 100) : 0;
-    const pageLead = post.lead.kind === "page" ? post.lead : null;
     return (
-      <article {...common} className="fd-post fd-item" data-modality={modality}>
-        <button type="button" className="fd-s" data-thumb={thumb ? "" : undefined} onClick={(e) => resize(grow(size), e.currentTarget)} title={post.caption ? `${post.title}\n${post.caption}` : post.title}>
+      <article {...common} className="fd-post fd-item">
+        <button type="button" className="fd-s" data-thumb={thumb ? "" : undefined} onClick={(e) => resize(grow(size), e.currentTarget)}>
           <span className="fd-sHead">
             <Mark agent={post.agent} />
             <span className="fd-sName">{post.agent.name}</span>
-            {waiting ? <span className="fd-sWait">{post.forYou?.label || "Waiting on you"}</span> : null}
-            {!waiting && pr ? (
-              <span className="fd-sPr" data-state={pr.state}>
-                <span className="fd-sPrDot" aria-hidden="true" />
-                {pr.label}
-              </span>
-            ) : null}
-            {!waiting && !pr && post.agentPost?.milestone ? <span className="fd-sMilestone">Milestone</span> : null}
-            {!waiting && pageLead ? <span className="fd-sPage">{pageLead.ref.path}</span> : null}
+            {waiting ? <span className="fd-sWait">{waitingReasonLabel(post)}</span> : null}
             <span className="fd-when">{clock(post.at)}</span>
           </span>
           <span className="fd-sTitle">{clip(post.title, WORDS.s.title)}</span>
-          {totalDiff > 0 ? (
-            <span className="fd-sCode">
-              <span className="fd-sDiffBar" aria-hidden="true">
-                {additions > 0 ? <span className="fd-sDiffAdd" style={{ width: `${additionPercent}%` }} /> : null}
-                {deletions > 0 ? <span className="fd-sDiffDel" style={{ width: `${100 - additionPercent}%` }} /> : null}
-              </span>
-              <span className="fd-sDiffNum">
-                {additions > 0 ? <span className="fd-add">+{additions}</span> : null}
-                {deletions > 0 ? <span className="fd-del">-{deletions}</span> : null}
-              </span>
-              {change?.files ? <span className="fd-sFiles">{change.files} {change.files === 1 ? "file" : "files"}</span> : null}
-            </span>
-          ) : post.caption ? <span className="fd-sCaption">{clip(post.caption, WORDS.s.caption)}</span> : null}
+          {post.caption ? <span className="fd-sCaption">{clip(post.caption, WORDS.s.caption)}</span> : null}
           {thumb && !thumbMissing ? (
             <span className="fd-sThumb" data-video={thumb.video || undefined}>
               {/* A film's first frame is its poster; it never plays at S. */}
@@ -161,18 +135,23 @@ export function FeedItem({ post, navigate, size: controlled, onSize, defaultSize
 
   const open = size === "l";
   const large = hasLargeLead(post);
+  const { decision, title: outcome, caption: ask } = decisionWords(post);
   // Earlier turns on its thread, and the code-only posts folded under it.
   const more = post.updates + joined.length;
   // L opens above the stream as a lightbox; the post stays in the stream at M, so closing it returns the reader
   // to the same place. `lit` draws the lightbox's copy; the stream's copy is the one a click outside comes back to.
   const draw = (lit: boolean) => {
     const words = WORDS[lit ? "l" : "m"];
-    const caption = clip(post.caption, words.caption);
+    const caption = clip(ask, words.caption);
+    const title = clip(outcome, words.title);
     const flip = (event?: { currentTarget: Element }) => resize(lit ? "m" : "l", lit ? behind.current : event?.currentTarget);
     const joinedSlot: ReactNode = lit && joined.length
       ? <div className="fd-joined">{joined.map((p) => <FeedItem key={p.id} post={p} navigate={navigate} defaultSize="s" />)}</div>
       : null;
     const live = lit === open;
+    const postActions = live && (readOnly
+      ? <ReadOnlyPostActions post={post} navigate={navigate} />
+      : <FullPostActions post={post} detail={detail} navigate={navigate} ref={actions} sheet={lit} />);
     // At M a press anywhere on the post opens it; what has its own click (a link, a button, the film's controls, the
     // reply box) keeps it, and a drag that selected words is reading, not a press.
     const openAnywhere = live && !lit ? (event: MouseEvent<HTMLElement>) => {
@@ -198,17 +177,25 @@ export function FeedItem({ post, navigate, size: controlled, onSize, defaultSize
           <PlateHead post={post} />
           {lit && post.line ? <p className="fd-line">{post.line.text}</p> : null}
           {large ? <Lead post={post} onOpen={flip} /> : null}
-          <button type="button" className="fd-head" onClick={flip} aria-expanded={lit}>
-            <span className="fd-title">{clip(post.title, words.title)}</span>
-            {caption ? <span className="fd-caption">{caption}</span> : null}
-          </button>
+          {title || caption || !decision ? (
+            <button type="button" className="fd-head" onClick={flip} aria-expanded={lit}>
+              {title ? <span className="fd-title">{title}</span> : null}
+              {caption ? <span className="fd-caption">{caption}</span> : null}
+            </button>
+          ) : null}
+          {decision ? <p className="fd-decision"><span>{decision}</span></p> : null}
           <PrLine post={post} />
+          {!lit && post.change ? (
+            <div className="fd-meta">
+              <ChangeLine change={post.change} />
+            </div>
+          ) : null}
           <MoveLine move={post.move} />
           {/* Open, the moves and the box to write to the agent sit under the title, before the detail: what to do
               with the post is read with the post, not at the foot of everything it says. */}
           {live && lit ? (
             <div className="fd-sheetMoves">
-              <PostActions post={post} detail={detail} navigate={navigate} ref={actions} sheet />
+              {postActions}
             </div>
           ) : null}
           {live && lit ? <p className="fd-keysHint" aria-hidden><kbd>j</kbd><kbd>k</kbd> next and previous <kbd>Esc</kbd> close</p> : null}
@@ -218,7 +205,7 @@ export function FeedItem({ post, navigate, size: controlled, onSize, defaultSize
             fills on hover, focus or a key, so nothing below it moves. */}
         {live && !lit ? (
           <div className="fd-moves">
-            <PostActions post={post} detail={detail} navigate={navigate} ref={actions} />
+            {postActions}
             {more ? <button type="button" className="fd-more fd-movesMore" onClick={flip}>{more} more {more === 1 ? "update" : "updates"}</button> : null}
           </div>
         ) : null}

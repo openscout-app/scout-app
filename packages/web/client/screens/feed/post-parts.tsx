@@ -7,13 +7,14 @@ import { DiffStat } from "../../components/DiffStat.tsx";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
 import { api } from "../../lib/api.ts";
 import { routePath } from "../../lib/router.ts";
-import { fullTimestamp, timeAgo, timeAgoWithSuffix } from "../../lib/time.ts";
+import { timeAgo, timeAgoWithSuffix } from "../../lib/time.ts";
 import { moveWords, type FeedMove } from "../../../shared/api/feed-moves.ts";
 import type { Route } from "../../lib/types.ts";
 import type { FeedAgent, FeedChange, FeedDiffStat, FeedLead, FeedLive, FeedPostDetail, FeedPostHead, FeedPr } from "../../../shared/api/feed.ts";
 import { postKind } from "./source-model.ts";
 import { shownLead } from "./feed-store.ts";
-import { LiveDot, Mark as TintedMark, PostHead, WaitsDot } from "./sources.tsx";
+import { isWaitingOnYou, waitingReasonLabel } from "./attention-model.ts";
+import { LiveDot, Mark as SourceMark, PostHead, WaitsDot } from "./sources.tsx";
 
 const LIVE_POLL_MS = 4_000;
 
@@ -35,7 +36,7 @@ export function MoveLine({ move }: { move: FeedMove | null | undefined }) {
   // One line of it; the whole receipt is on hover.
   const label = move.label.length > 120 ? `${move.label.slice(0, 119)}…` : move.label;
   return (
-    <p className="fd-you" data-kind={move.kind} title={`${moveWords(move)}\n${fullTimestamp(move.at)}`}>
+    <p className="fd-you" data-kind={move.kind}>
       <span className="fd-youWords">{moveWords({ kind: move.kind, label })}</span>
       <span className="fd-faint"> · {timeAgoWithSuffix(move.at)}</span>
     </p>
@@ -134,12 +135,13 @@ export function VideoLead({ asset, caption }: { asset: string; caption: string |
   useEffect(() => {
     const el = video.current;
     if (!el) return;
-    if (near) void el.play().catch(() => {});
+    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (near && !reduced) void el.play().catch(() => {});
     else el.pause();
   }, [near, armed]);
   return (
     <div ref={ref} className="fd-media">
-      {/* Loads once near the screen; plays muted while on it. The first frame is its poster. */}
+      {/* Loads once near the screen; plays muted while on it unless reduced motion is requested. */}
       <video ref={video} src={armed ? asset : undefined} muted loop playsInline preload="metadata" controls aria-label={caption ?? "Recording"} />
     </div>
   );
@@ -155,18 +157,40 @@ export function useMissingPicture(src: string | null | undefined): [missing: boo
   return [!!src && failed === src, () => { if (src) setFailed(src); }];
 }
 
-/** A click expands the post, where the picture shows whole; a modified click opens the picture. */
+/**
+ * Where a picture's load stands: loading, shown, or gone. A pull request's screenshot is read through `gh` on its
+ * first view (server feed/pr-image.ts), which can take seconds or fail, so its frame must not stand empty meanwhile.
+ * `ref` catches a picture the browser already had, whose load fired before React listened. Keyed by the address.
+ */
+export function usePictureLoad(src: string | null | undefined): {
+  at: "loading" | "shown" | "gone";
+  ref: (img: HTMLImageElement | null) => void;
+  onLoad: () => void;
+  onError: () => void;
+} {
+  const [state, setState] = useState<{ src: string; at: "shown" | "gone" } | null>(null);
+  const settle = useCallback((at: "shown" | "gone") => { if (src) setState({ src, at }); }, [src]);
+  const ref = useCallback((img: HTMLImageElement | null) => { if (img?.complete && img.naturalWidth > 0) settle("shown"); }, [settle]);
+  return { at: src && state?.src === src ? state.at : "loading", ref, onLoad: () => settle("shown"), onError: () => settle("gone") };
+}
+
+/**
+ * A click expands the post, where the picture shows whole; a modified click opens the picture. While the picture
+ * loads, its slot keeps the frame's size but draws no frame; one that cannot load draws nothing.
+ */
 export function VisualLead({ asset, name, caption, onOpen }: { asset: string; name: string; caption: string | null; onOpen?: (event: { currentTarget: Element }) => void }) {
-  const [missing, onError] = useMissingPicture(asset);
-  if (missing) return null;
+  const picture = usePictureLoad(asset);
+  if (picture.at === "gone") return null;
   const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (!onOpen || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
     onOpen(event);
   };
+  const label = caption?.trim() || (name && name !== "Screenshot" ? name : null);
   return (
-    <a className="fd-media" href={asset} target="_blank" rel="noreferrer" onClick={onClick}>
-      <img src={asset} alt={caption ?? name} loading="lazy" decoding="async" onError={onError} />
+    <a className="fd-media fd-mediaVisual" data-loading={picture.at === "loading" || undefined} href={asset} target="_blank" rel="noreferrer" onClick={onClick}>
+      <img ref={picture.ref} src={asset} alt={caption ?? name} loading="lazy" decoding="async" onLoad={picture.onLoad} onError={picture.onError} />
+      {label && picture.at === "shown" ? <span className="fd-mediaCaption">{label}</span> : null}
     </a>
   );
 }
@@ -181,7 +205,7 @@ export function LiveLead({ workId }: { workId: string }) {
   return (
     <div ref={ref} className="fd-live" data-empty={text ? undefined : true}>
       <span className="fd-liveDot" role="img" aria-label="Running" />
-      <span className="fd-liveText" title={text || undefined}>{text}</span>
+      <span className="fd-liveText">{text}</span>
       {session ? <span className="fd-faint">{clock(session.at)}</span> : null}
     </div>
   );
@@ -230,12 +254,14 @@ export function shortPath(path: string): string {
 export function PageLead({ path, href }: { path: string; href: string | null }) {
   const [embed, setEmbed] = useState(false);
   return (
-    <div className="src-inPlace" data-open={embed || undefined} onKeyDown={(e) => { if (e.key === "Escape" && embed) { e.stopPropagation(); setEmbed(false); } }}>
-      <div className="fd-pageRow">
-        <Glyph d={G.page} />
-        <span className="fd-pagePath" title={path}>{shortPath(path)}</span>
-        {href ? <button type="button" className="fd-more" aria-expanded={embed} onClick={() => setEmbed((o) => !o)}>{embed ? "Close" : "Open here"}</button> : null}
-        {href ? <a className="fd-more" href={href} target="_blank" rel="noreferrer">New tab</a> : null}
+    <div className="src-inPlace fd-pageCard" data-open={embed || undefined} onKeyDown={(e) => { if (e.key === "Escape" && embed) { e.stopPropagation(); setEmbed(false); } }}>
+      <div className="fd-pageChrome">
+        <span className="fd-pageDots" aria-hidden="true"><span /><span /><span /></span>
+        <span className="fd-pagePath" title={path}><Glyph d={G.page} size={12} /><span>{shortPath(path)}</span></span>
+        <span className="fd-pageActions">
+          {href ? <button type="button" className="fd-pageBtn" aria-expanded={embed} onClick={() => setEmbed((o) => !o)}>{embed ? "Close preview" : "Preview"}</button> : null}
+          {href ? <a className="fd-pageBtn" href={href} target="_blank" rel="noreferrer">Open ↗</a> : null}
+        </span>
       </div>
       {href ? (
         <div className="src-region" inert={!embed}>
@@ -261,7 +287,7 @@ export function Lead({ post, onOpen }: { post: FeedPostHead; onOpen?: (event: { 
 /* ── a post ────────────────────────────────────────────────────────────── */
 
 export function Mark({ agent }: { agent: FeedAgent }) {
-  return <TintedMark harness={agent.harness} size={12} />;
+  return <SourceMark harness={agent.harness} compact />;
 }
 
 export function PrChip({ pr }: { pr: FeedPr }) {
@@ -305,35 +331,42 @@ export function Byline({ post, brief = false }: { post: FeedPostHead; brief?: bo
   );
 }
 
-/** The folder's last part ("demo-app" from "/workspace/demo-app"), or null. */
+/** The folder’s last path component, or null. */
 function folderName(cwd: string | null): string | null {
   const parts = cwd?.split("/").filter(Boolean);
   return parts?.length ? parts[parts.length - 1] ?? null : null;
 }
 
 /**
- * A post's head, the same on every kind: at the top left the plate (the harness's mark on a small square) with the
- * agent over where it worked, and at the top right the time alone. The post's moves are not here; they show on hover
- * in a row at its foot that the post always keeps (FeedItem.tsx).
+ * A post's head: harness monogram, agent name, repo/thread context pill,
+ * explicit wait cue when waiting on the operator, and timestamp.
  */
 export function PlateHead({ post }: { post: FeedPostHead }) {
   const live = post.lead.kind === "live";
   const where = post.thread ?? folderName(post.owner.cwd);
   const milestone = postKind(post) === "milestone";
-  // Waiting on you reads as how long, told quietly in the time's place; anything else reads as when.
-  const waiting = !!post.forYou && !post.settled;
+  const waiting = isWaitingOnYou(post);
+  const reason = waiting ? waitingReasonLabel(post) : null;
   return (
-    <div className="fd-plateHead" title={where ? (waiting ? `${where} · ${clock(post.at)}` : where) : undefined}>
-      <span className="fd-plate" aria-hidden><TintedMark harness={post.agent.harness} size={14} /></span>
+    <div className="fd-plateHead">
+      <span className="fd-plate"><SourceMark harness={post.agent.harness} compact /></span>
       <span className="fd-plateLines">
         <span className="fd-plateName">
           {post.reviewed ? <span className="fd-plateYou">You <span className="fd-faint">with</span></span> : null}
           <span className="fd-plateAgent">{post.agent.name}</span>
           {post.others ? <span className="fd-faint" title={`and ${post.others} more ${post.others === 1 ? "agent" : "agents"}`}>+{post.others}</span> : null}
+          {where ? <span className="fd-plateContext" title={where}>{where}</span> : null}
           {milestone ? <span className="fd-kindFlag" title="Milestone"><Glyph d={G.flag} /></span> : null}
           {live ? <LiveDot /> : null}
-          {post.forYou ? <WaitsDot label={post.forYou.label || undefined} /> : null}
-          <time className="fd-plateAt" dateTime={new Date(post.at).toISOString()}>{waiting ? `waiting ${timeAgo(post.at)}` : clock(post.at)}</time>
+          {waiting ? (
+            <span className="fd-waitBadge" data-reason={post.forYou?.reason}>
+              <span className="fd-waitDot" aria-hidden="true" />
+              <span>{reason}</span>
+              <span className="fd-waitAge">· {timeAgo(post.at)}</span>
+            </span>
+          ) : (
+            <time className="fd-plateAt" dateTime={new Date(post.at).toISOString()}>{clock(post.at)}</time>
+          )}
         </span>
       </span>
     </div>
@@ -346,7 +379,7 @@ export function PrLine({ post }: { post: FeedPostHead }) {
   const pr = post.prs[0];
   if (!pr || !(kind === "pr" || kind === "draft" || kind === "merged")) return null;
   return (
-    <a className="fd-prLine" data-state={pr.state} href={pr.url} target="_blank" rel="noreferrer" title={pr.title}>
+    <a className="fd-prLine" data-state={pr.state} href={pr.url} target="_blank" rel="noreferrer">
       <Glyph d={pr.state === "draft" ? G.draft : G.pr} />
       <span className="fd-prNum">{pr.label}</span>
       <span className="fd-prTitle">{pr.title}</span>

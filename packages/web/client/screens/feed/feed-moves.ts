@@ -1,7 +1,7 @@
 /*
  * The operator's latest move on a post, kept by the web server so the post
  * says what was last done on it after a reload, a restart or a rebuilt Feed
- * (POST /api/feed/moves, server/feed/moves.ts).
+ * (POST /api/feed/moves in hosts that support writes).
  *
  * Called once a move went through: the reply, reaction, decision or
  * follow-up already reached the runtime, or the question reached Scoutbot.
