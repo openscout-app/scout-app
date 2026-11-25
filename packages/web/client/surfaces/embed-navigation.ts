@@ -1,39 +1,8 @@
+import {
+  forwardScoutbotUiActionToNativeHost,
+  type ScoutbotUiAction,
+} from "../lib/scoutbot.ts";
 import type { Route } from "../lib/types.ts";
-
-type ScoutbotUiAction = { type: "navigate"; route: Route };
-
-type ScoutNativeUiActionHost = {
-  webkit?: {
-    messageHandlers?: {
-      scoutNativeUI?: {
-        postMessage: (message: unknown) => void;
-      };
-      scoutRealtimeVoice?: {
-        postMessage: (message: unknown) => void;
-      };
-    };
-  };
-};
-
-/**
- * Native embeds own app navigation. Their WebViews only own the embedded
- * document, so a UI action must leave that document instead of asking its
- * local router to become the destination screen.
- */
-export function forwardScoutbotUiActionToNativeHost(
-  action: ScoutbotUiAction,
-  host: ScoutNativeUiActionHost = globalThis.window as unknown as ScoutNativeUiActionHost,
-): boolean {
-  const handlers = host.webkit?.messageHandlers;
-  const handler = handlers?.scoutNativeUI ?? handlers?.scoutRealtimeVoice;
-  if (!handler) return false;
-  try {
-    handler.postMessage({ kind: "ui-action", action });
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 type NativeUiActionForwarder = (action: ScoutbotUiAction) => boolean;
 
@@ -55,4 +24,9 @@ export function routeEmbeddedNavigation(
 ): void {
   if (!isInternalRoute(route) && forwardToNative({ type: "navigate", route })) return;
   navigate(route);
+}
+
+/** Native Ops owns these sibling seats, so the web Ops embed must hand them back. */
+export function nativeOpsOwnsInternalRoute(route: Route): boolean {
+  return route.view === "ops" && !["tail", "atop", "lanes", "agents", "week"].includes(route.mode ?? "");
 }

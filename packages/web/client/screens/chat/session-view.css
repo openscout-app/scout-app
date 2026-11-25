@@ -1,0 +1,73 @@
+/* Session-only frame. Room styles and the shared context rail are unchanged. */
+.s-session-view .s-thread-feed { padding: 24px max(24px, calc((100% - 760px) / 2)); }
+.s-session-view .s-thread-feed-block { width: 100%; max-width: 760px; margin: 0 auto 12px; }
+.s-session-view .s-thread-msg { width: 100%; max-width: none; margin: 0; }
+.s-session-view .s-thread-msg-card { background: none; border: 0; box-shadow: none; padding: 0; }
+.s-session-view .s-thread-msg-card-content { width: 100%; min-width: 0; }
+.s-session-view .s-thread-msg-header { display: none; }
+.s-session-view .s-thread-msg--you { max-width: none; margin-left: 0; }
+.s-session-view .s-thread-msg--you .s-thread-msg-card { padding: 10px 0 0; border: 0; border-top: 1px solid var(--hud-border); border-radius: 0; background: none; }
+/* The operator's time under the row, on its right edge. */
+.s-session-you-time { display: block; margin-top: 5px; text-align: right; color: var(--hud-dim); font: 10.5px var(--hud-font-mono); font-variant-numeric: tabular-nums; }
+
+/* The embedded session's head band: who and where, said once. */
+.s-session-head { display: flex; align-items: center; gap: 10px; flex: none; min-height: 52px; padding: 0 14px 0 18px; border-bottom: 1px solid var(--hud-border); color: var(--hud-muted); }
+.s-session-head-coin { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; color: var(--hud-ink); background: color-mix(in srgb, currentColor 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent); }
+.s-session-head-text { display: grid; flex: 1; gap: 3px; min-width: 0; }
+.s-session-head-title { overflow: hidden; color: var(--hud-ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.s-session-head-meta { display: flex; align-items: center; min-width: 0; overflow: hidden; color: var(--hud-dim); font: 10.5px var(--hud-font-mono); white-space: nowrap; }
+/* inline-block, so the path's underline does not reach its dot */
+.s-session-head-meta > * + *::before { display: inline-block; margin: 0 7px; color: var(--hud-dim); content: "·"; text-decoration: none; }
+.s-session-head-path { overflow: hidden; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-overflow: ellipsis; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; cursor: copy; }
+.s-session-head-path:hover { color: var(--hud-ink); }
+.s-session-head-state { display: flex; align-items: center; flex: none; gap: 7px; margin-right: 6px; color: var(--hud-ink); font-size: 11.5px; }
+.s-session-head-state[data-state="request"] { color: var(--hud-accent); }
+.s-session-head-state[data-state="finished"] { color: var(--hud-dim); }
+.s-session-head-clock { color: var(--hud-muted); font: 10.5px var(--hud-font-mono); font-variant-numeric: tabular-nums; }
+.s-session-head-lamp { width: 6px; height: 6px; border-radius: 50%; background: var(--state-live, var(--green)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--state-live, var(--green)) 22%, transparent); animation: s-session-head-breathe 2.4s ease-in-out infinite; }
+.s-session-head-wait { width: 6px; height: 6px; border-radius: 50%; background: var(--hud-accent); }
+@keyframes s-session-head-breathe { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .s-session-head-lamp { animation: none; } }
+.s-session-head-button { flex: none; height: 24px; padding: 0 9px; border: 1px solid var(--hud-border); border-radius: 4px; background: none; color: var(--hud-muted); font-size: 11px; cursor: pointer; }
+.s-session-head-button:hover { color: var(--hud-ink); }
+.s-session-head-menu summary { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--hud-border); border-radius: 4px; }
+.s-session-head-menu div { border-radius: 4px; }
+.s-session-view .s-thread-msg-body { font-size: 14px; line-height: 1.7; }
+.s-session-view .s-thread-dock { background: var(--hud-bg); padding: 12px 24px; }
+.s-session-view .s-msg-compose { max-width: 760px; margin-inline: auto; }
+.s-session-view .s-msg-compose-shell { border: 1px solid var(--hud-border); background: var(--hud-surface); box-shadow: none; }
+.s-session-view .s-session-composer--armed .s-msg-compose-shell { border-color: var(--hud-accent); }
+.s-session-view .s-msg-compose-tools-hint { display: flex; gap: 16px; text-transform: none; }
+.s-session-send-hint { color: var(--hud-accent); }
+.s-session-location { max-width: 760px; margin: 8px auto 0; color: var(--hud-muted); font: 11px var(--hud-font-mono); }
+.s-session-header { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 24px; border-bottom: 1px solid var(--hud-border); color: var(--hud-muted); }
+.s-session-header strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--hud-ink); font-size: 13px; font-weight: 500; }
+.s-session-agent { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; padding: 6px 8px; border: 1px solid var(--hud-border); font-size: 12px; }
+/* The chat page's session header: one line on the shared 32px top band, so its
+   hairline runs on with the side rail's and the inspector's. The project never
+   wraps; the title gives way first. (SessionObserve's header shares the base
+   class and keeps its own two-line form.) */
+.s-session-header.s-session-header--band { box-sizing: border-box; height: var(--scout-rail-band, 32px); min-height: 0; padding: 0 20px; gap: 8px; font-size: 12px; }
+.s-session-header--band .s-session-project { flex: none; white-space: nowrap; }
+.s-session-header--band .s-session-sep { flex: none; opacity: 0.6; }
+.s-session-header--band strong { flex: 0 1 auto; font-size: 12.5px; }
+.s-session-header--band .s-session-agent { gap: 6px; height: 22px; box-sizing: border-box; padding: 0 8px; border-radius: 4px; font-size: 11.5px; white-space: nowrap; }
+.s-session-header--band .s-session-menu summary { padding: 4px 6px; }
+.s-session-menu { position: relative; }
+.s-session-menu summary { cursor: pointer; list-style: none; padding: 8px; }
+.s-session-menu div { position: absolute; right: 0; top: 100%; z-index: 10; padding: 12px; background: var(--hud-surface); border: 1px solid var(--hud-border); width: max-content; }
+.s-session-work { width: 100%; max-width: 760px; margin: 0 auto 12px; }
+/* "Worked for" is a one-line label above the answer; the card's own 8px gap
+   separates it from the body, so the fold adds no margin of its own. */
+/* Copy and Open session sit on the "Worked for" line at the right, out of the
+   flow, so a turn no longer reserves an empty row for controls that show only
+   on hover. The ground behind them masks a first line when a turn has no fold. */
+.s-session-view .s-thread-msg-card-content { position: relative; }
+.s-session-actions { position: absolute; top: 0; right: 0; z-index: 1; display: flex; gap: 16px; padding-left: 12px; background: var(--hud-bg); opacity: 0; }
+.s-thread-msg:hover .s-session-actions, .s-thread-msg:focus-within .s-session-actions { opacity: 1; }
+.s-session-actions button { border: 0; background: none; padding: 4px 0; color: var(--hud-muted); font-size: 12px; cursor: pointer; }
+.s-session-actions button:hover { color: var(--hud-ink); }
+@media (max-width: 640px) { .s-session-header { gap: 8px; padding-inline: 12px; } .s-session-agent { max-width: 40%; overflow: hidden; } .s-session-send-hint { display: none; } .s-session-view .s-thread-feed { padding-inline: 16px; } .s-session-actions { opacity: 1; } }
+.s-session-view .s-msg-compose-send--agent-stop { background: var(--hud-ink); color: var(--hud-bg); border: 1px solid var(--hud-border); box-shadow: none; }
+.s-session-view .s-msg-compose-send--agent-stop:hover { background: var(--hud-muted); }
+.s-session-view .s-thread-dock::before { display: none; }

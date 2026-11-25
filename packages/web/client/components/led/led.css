@@ -1,0 +1,11 @@
+/* LED sign dot colors. Lit dots are warm white; a sign that asks for you
+ * takes the one accent. Unlit dots stay faintly visible, like a real panel. */
+.led-sign {
+  display: block;
+  --led-on: #f4f1e8;
+  --led-off: rgba(244, 241, 232, 0.075);
+}
+.led-sign.is-accent {
+  --led-on: var(--accent, oklch(0.78 0.15 160));
+  --led-off: color-mix(in oklch, var(--accent, oklch(0.78 0.15 160)) 10%, transparent);
+}

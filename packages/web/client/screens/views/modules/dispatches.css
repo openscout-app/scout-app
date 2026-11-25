@@ -1,0 +1,120 @@
+/* Ledger module: the Dispatch screen (broker/BrokerScreen.tsx) inside a view
+ * panel. Every rule is scoped to the module root, so the full screen, the
+ * embed and basic web draw exactly as before.
+ *
+ * A view may not load ops-screen.css, so the panel draws the s-ops frame
+ * itself. The ledger and the open dispatch size against the panel, never the
+ * window: the root is a size container for the split, the ledger page one for
+ * its own reflow, and the screen's @media rules come back as @container
+ * rules below. */
+
+.vw-dispatches {
+  height: 100%;
+  min-height: 0;
+  container: dispatches / inline-size;
+}
+
+.vw-dispatches > .s-ops {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.vw-dispatches > .s-ops > .s-ops-body {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The ledger: the panel is its plate, so the page's wide margins go. */
+.vw-dispatches .sys-broker-page {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  container: dispatch-ledger / inline-size;
+}
+
+/* ── The open dispatch ────────────────────────────────────────────────────
+   Beside the ledger while the panel has room for both, over it when it does
+   not. The embed's own 900px window rule never applies here: a wide panel on
+   a narrow window still splits, a narrow one on a wide window still covers. */
+
+.vw-dispatches .s-broker-embed-detail {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  display: flex;
+  flex: 0 0 clamp(320px, 44cqi, 520px);
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--sys-hairline);
+  background: color-mix(in srgb, var(--surface) 42%, transparent);
+}
+
+@container dispatches (max-width: 679px) {
+  .vw-dispatches .s-broker-embed-detail {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    flex: 1 1 auto;
+    border-left: 0;
+    /* the panel's own plate, so the ledger never shows through */
+    background: color-mix(in srgb, var(--surface) 70%, var(--bg));
+  }
+}
+
+/* ── The ledger's reflow, by its own width ───────────────────────────────── */
+
+@container dispatch-ledger (max-width: 760px) {
+  .vw-dispatches .sys-broker-source-note > span:last-child {
+    display: none;
+  }
+}
+
+@container dispatch-ledger (max-width: 720px) {
+  .vw-dispatches .dsp-ledger-head,
+  .vw-dispatches .dsp-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .vw-dispatches .dsp-ledger-head span:nth-child(3),
+  .vw-dispatches .dsp-row-time {
+    display: none;
+  }
+}
+
+@container dispatch-ledger (max-width: 520px) {
+  .vw-dispatches .sys-ledger-actions .sys-sync-note {
+    display: none;
+  }
+
+  /* a narrow panel keeps its rows: the note on what focus changes goes */
+  .vw-dispatches .dsp-view-note {
+    display: none;
+  }
+}
+
+@container dispatch-ledger (max-width: 480px) {
+  .vw-dispatches .sys-broker-page .sys-tab-row--toolbar .sys-tab {
+    gap: 5px;
+    padding-inline: 8px;
+  }
+}
+
+/* ── Sharp look ──────────────────────────────────────────────────────────
+   The open dispatch sits on the opaque panel plane, not a wash. */
+:root[data-scout-look="sharp"] .vw-dispatches .s-broker-embed-detail {
+  background: var(--plane, color-mix(in srgb, var(--surface) 42%, transparent));
+}
+
+@container dispatches (max-width: 679px) {
+  :root[data-scout-look="sharp"] .vw-dispatches .s-broker-embed-detail {
+    background: var(--plane, color-mix(in srgb, var(--surface) 70%, var(--bg)));
+  }
+}

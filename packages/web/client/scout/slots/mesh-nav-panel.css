@@ -1,0 +1,245 @@
+/* ── Mesh primary nav left panel: search + filter pills + tree, with minimap at foot ── */
+
+.mesh-nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+}
+
+/* Head: search + filter pills */
+.mesh-nav-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
+}
+
+.mesh-nav-focus-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  align-self: flex-start;
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  cursor: pointer;
+}
+
+.mesh-nav-focus-chip:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.mesh-nav-focus-chip-clear {
+  font-size: var(--text-md);
+  line-height: var(--leading-none);
+  opacity: 0.7;
+}
+
+/* Tree */
+.mesh-nav-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-2xs) 0 var(--space-sm);
+}
+
+.mesh-nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.mesh-nav-group + .mesh-nav-group {
+  margin-top: var(--space-xs);
+}
+
+.mesh-nav-group-label {
+  padding: var(--space-sm) var(--space-lg) var(--space-2xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: color-mix(in srgb, var(--ink) 38%, transparent);
+}
+
+.mesh-nav-machine {
+  display: flex;
+  flex-direction: column;
+}
+
+.mesh-nav-machine + .mesh-nav-machine {
+  margin-top: var(--space-3xs);
+}
+
+.mesh-nav-find {
+  align-self: flex-start;
+  padding: var(--space-2xs) var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-md);
+  cursor: pointer;
+}
+
+.mesh-nav-find--on,
+.mesh-nav-find:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.mesh-host-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 1px var(--space-sm) 1px var(--space-xs);
+}
+
+.mesh-host-grip {
+  flex: 0 0 auto;
+  width: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 35%, transparent);
+  font-size: 11px;
+  line-height: 1;
+  cursor: grab;
+  opacity: 0;
+}
+
+.mesh-host-row:hover .mesh-host-grip,
+.mesh-host-row:focus-within .mesh-host-grip,
+.mesh-nav-machine.is-lifted .mesh-host-grip {
+  opacity: 1;
+}
+
+.mesh-host-grip:active,
+.mesh-nav-machine.is-lifted .mesh-host-grip {
+  cursor: grabbing;
+}
+
+.mesh-nav-machine.is-lifted {
+  position: relative;
+  z-index: 2;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.mesh-nav-machine.is-drop {
+  box-shadow: inset 0 2px 0 0 var(--accent);
+}
+
+.mesh-host-row--active {
+  box-shadow: inset 2px 0 0 0 var(--accent);
+}
+
+.mesh-nav-machine--hidden .mesh-host-name {
+  opacity: 0.45;
+}
+
+.mesh-host-fold {
+  flex: 0 0 auto;
+  width: 16px;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.mesh-host-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mesh-host-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mesh-host-reading {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--ink) 42%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.mesh-host-row .mesh-nav-menu-btn {
+  opacity: 0;
+}
+
+.mesh-host-row:hover .mesh-nav-menu-btn,
+.mesh-host-row:focus-within .mesh-nav-menu-btn {
+  opacity: 1;
+}
+
+/* Minimap section at the foot */
+.mesh-nav-minimap {
+  flex: 0 0 auto;
+  border-top: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
+  padding: var(--space-sm);
+  max-height: 50%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mesh-nav-minimap .mesh-rail {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Sharp look ── */
+/* Opaque lines; the focus chip is a scope chip, so it takes the select plate
+   in ink, not an emerald wash. Classic is untouched. */
+:root[data-scout-look="sharp"] .mesh-nav-head,
+:root[data-scout-look="sharp"] .mesh-nav-minimap {
+  border-color: var(--edge-soft, var(--border));
+}
+:root[data-scout-look="sharp"] .mesh-nav-focus-chip {
+  border-color: var(--edge-strong, var(--border));
+  background: var(--select-bg, var(--surface));
+  font-weight: var(--w-label, 300);
+}
+:root[data-scout-look="sharp"] .mesh-nav-focus-chip:hover {
+  border-color: var(--ink);
+  background: var(--select-bg, var(--surface));
+}
+:root[data-scout-look="sharp"] .mesh-nav-focus-chip:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 1px;
+}
+:root[data-scout-look="sharp"] .mesh-nav-group-label {
+  font-weight: var(--w-label, 300);
+  color: var(--dim);
+}

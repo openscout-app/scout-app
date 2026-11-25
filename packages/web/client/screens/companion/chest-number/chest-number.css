@@ -1,0 +1,2 @@
+/* A figure's roster code on its chest (ChestNumber.tsx): it takes no pointer and no selection. */
+.chest-no { pointer-events: none; user-select: none; z-index: 1; }

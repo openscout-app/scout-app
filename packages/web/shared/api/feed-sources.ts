@@ -5,14 +5,13 @@
  *   GET /api/feed/sources -> FeedSources
  *
  * - outside: Slack conversations the operator took part in, with who spoke
- *   last and when.
+ *   last and when (server/feed/outside.ts).
  * - quota: each time a provider window passed 90%, from the service budgets'
- *   stored history.
+ *   stored history (server/feed/quota-events.ts).
  * - activity: posts in the Feed per day and project over the last week, split
  *   by harness (server/feed/activity.ts).
  *
- * The local preview supplies activity only. It reports outside threads as
- * disconnected and quota events as empty.
+ * Each part is empty, never filled in, when its source has nothing.
  */
 
 export type FeedOutsideMessage = {

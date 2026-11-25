@@ -1,0 +1,168 @@
+/* Requests panels: the Requests page's card (screens/requests/requests.css)
+ * inside view panels, and the rows the Requests panel lists. Every rule is
+ * scoped to a module root, so the page and the native embed draw exactly as
+ * before.
+ *
+ * The panel is the frame: the card loses its box, and the decisions keep the
+ * panel's corners. Sizes read the panel body (a query container), never the
+ * window. */
+
+.vw-requests,
+.vw-request {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.vw-requests:focus,
+.vw-request:focus {
+  outline: none;
+}
+
+.vw-requests > .vw-rows {
+  flex: 0 0 auto;
+  height: auto;
+  overflow: visible;
+}
+
+/* ── Rows ───────────────────────────────────────────────────────────── */
+
+.vw-row--req[aria-current] {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.vw-row--req[aria-current] > :nth-child(2) {
+  font-weight: 600;
+}
+
+.vw-row--req[aria-expanded="true"] {
+  border-bottom-color: transparent;
+}
+
+/* answered, and the source has let it go: only its receipt is left */
+.vw-row--req[data-settled] > :nth-child(2),
+.vw-row--req[data-settled] > :nth-child(3) {
+  color: var(--dim);
+}
+
+.vw-requests-stale,
+.vw-requests-note {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1.5;
+  color: var(--dim);
+  overflow-wrap: anywhere;
+}
+
+.vw-requests-stale {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  color: var(--muted);
+}
+
+/* the update note is a footnote: a narrow rail keeps its rows instead */
+@container (max-width: 219px) {
+  .vw-requests-note { display: none; }
+}
+
+.vw-request-marker {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* ── The card, open under its row or in the Request panel ───────────── */
+
+.vw-request-open {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+
+.vw-request .scout-request-card,
+.vw-request-open .scout-request-card {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  padding: var(--space-md) var(--space-lg) var(--space-lg);
+}
+
+.vw-request-open .scout-request-card {
+  padding: var(--space-xs) var(--space-md) var(--space-md);
+}
+
+.vw-request .scout-request-card h2 {
+  font-size: var(--text-2xl);
+}
+
+.vw-request-open .scout-request-card h2 {
+  margin-top: var(--space-xs);
+  font-size: var(--text-lg);
+}
+
+/* the decisions keep the panel's corners, not the shell button's */
+.vw-request .scout-request-actions [data-slot="button"],
+.vw-request-open .scout-request-actions [data-slot="button"] {
+  border-radius: var(--radius-sm);
+}
+
+.vw-request .scout-request-error,
+.vw-request-open .scout-request-error {
+  border-width: 1px 0;
+  border-radius: 0;
+}
+
+@container (max-width: 420px) {
+  .vw-request .scout-request-card {
+    padding: var(--space-sm) var(--space-md) var(--space-md);
+  }
+
+  .vw-request .scout-request-card header {
+    gap: var(--space-sm);
+  }
+}
+
+/* the head's count: only a positive real count gets signal, as the page's did */
+.vw-panel--requests .hud-grid-count[data-attention="true"] {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: var(--hud-bg);
+}
+
+/* the head's Refresh while a read is out */
+.vw-panel--requests .vw-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Sharp look ──────────────────────────────────────────────────────── */
+
+/* the open request is the selection plate in ink */
+:root[data-scout-look="sharp"] .vw-row--req[aria-current] {
+  background: var(--select-bg, color-mix(in srgb, var(--ink) 6%, transparent));
+  color: var(--ink);
+}
+
+/* the scroll roots take focus: an ink ring, not nothing */
+:root[data-scout-look="sharp"] .vw-requests:focus-visible,
+:root[data-scout-look="sharp"] .vw-request:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+/* the card open under its row: a well, flat */
+:root[data-scout-look="sharp"] .vw-request-open {
+  background: var(--well, color-mix(in srgb, var(--ink) 3%, transparent));
+}
+
+/* the head's count under attention: a bare ink numeral, no fill */
+:root[data-scout-look="sharp"] .vw-panel--requests .hud-grid-count[data-attention="true"] {
+  background: none;
+  color: var(--ink);
+}

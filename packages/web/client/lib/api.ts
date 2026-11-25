@@ -1,9 +1,19 @@
+import { hostFetch, hostFleet } from "./hosts/host-fleet.ts";
+import { recordApiTiming } from "./perf.ts";
+
 type ApiTextResponse = {
   text: string;
   contentType: string | null;
 };
 
 const inFlightGets = new Map<string, Promise<ApiTextResponse>>();
+const settledGets = new Map<string, { response: ApiTextResponse; receivedAt: number }>();
+const MAX_SETTLED_GETS = 128;
+/** Total text kept for peeks. Polled payloads (conversations, fleet, tail
+    with transcripts) run to MBs each; 128 of them stayed resident for good. */
+const MAX_SETTLED_CHARS = 8_000_000;
+let settledChars = 0;
+
 let inFlightAuthRefresh: Promise<boolean> | null = null;
 
 function resolveBootstrapPath(): string {
@@ -58,12 +68,15 @@ function normalizeHeaders(headers?: HeadersInit): string {
 
 function requestKey(path: string, init?: RequestInit): string {
   const method = (init?.method ?? "GET").toUpperCase();
-  return `${method}:${path}:${normalizeHeaders(init?.headers)}`;
+  // Keyed by host too: the same path on two hosts is two different answers.
+  return `${hostFleet.focused().id}:${method}:${path}:${normalizeHeaders(init?.headers)}`;
 }
 
 async function fetchApiText(path: string, init?: RequestInit): Promise<ApiTextResponse> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const startedAt = performance.now();
   const performFetch = async () =>
-    fetch(path, {
+    hostFetch(path, {
       ...init,
       headers: {
         ...(init?.headers ?? {}),
@@ -81,12 +94,18 @@ async function fetchApiText(path: string, init?: RequestInit): Promise<ApiTextRe
 
   if (!res.ok) {
     const text = await res.text();
+    recordApiTiming({ method, path, ms: performance.now() - startedAt, bytes: text.length, ok: false });
     let message = text || `HTTP ${res.status}`;
     let code: string | undefined;
     try {
       const body = JSON.parse(text);
       if (typeof body?.error === "string") message = body.error;
       if (typeof body?.code === "string") code = body.code;
+      // Older runtime bridges send the machine code as error and the copy as detail.
+      if (path.startsWith("/api/manual-review/") && typeof body?.detail === "string" && /^[a-z][a-z0-9_]*$/.test(message)) {
+        code ??= message;
+        message = body.detail;
+      }
     } catch {
       /* plain text */
     }
@@ -95,10 +114,50 @@ async function fetchApiText(path: string, init?: RequestInit): Promise<ApiTextRe
     throw Object.assign(new Error(message), { status: res.status, code });
   }
   const text = await res.text();
+  recordApiTiming({ method, path, ms: performance.now() - startedAt, bytes: text.length, ok: true });
   return {
     text,
     contentType: res.headers.get("content-type"),
   };
+}
+
+export function clearApiGetCache(): void {
+  inFlightGets.clear();
+  settledGets.clear();
+  settledChars = 0;
+}
+
+function forgetSettledGet(key: string): void {
+  const prior = settledGets.get(key);
+  if (!prior) return;
+  settledChars -= prior.response.text.length;
+  settledGets.delete(key);
+}
+
+function rememberSettledGet(key: string, response: ApiTextResponse): void {
+  forgetSettledGet(key);
+  // One response bigger than the whole budget is never worth keeping.
+  if (response.text.length > MAX_SETTLED_CHARS / 2) return;
+  settledGets.set(key, { response, receivedAt: Date.now() });
+  settledChars += response.text.length;
+  while (settledGets.size > MAX_SETTLED_GETS || settledChars > MAX_SETTLED_CHARS) {
+    const oldestKey = settledGets.keys().next().value;
+    if (typeof oldestKey !== "string") break;
+    forgetSettledGet(oldestKey);
+  }
+}
+
+/**
+ * Synchronously read a recent successful GET response. Route components use
+ * this to paint their last-known data on remount while their normal background
+ * refresh runs; writes and regular api() reads never consume stale data.
+ */
+export function peekApiGet<T>(path: string, maxAgeMs: number, init?: RequestInit): T | null {
+  const method = (init?.method ?? "GET").toUpperCase();
+  if (method !== "GET" || init?.body || maxAgeMs <= 0) return null;
+  const cached = settledGets.get(requestKey(path, init));
+  if (!cached || Date.now() - cached.receivedAt > maxAgeMs) return null;
+  return parseApiResponse<T>(path, cached.response.text, cached.response.contentType);
 }
 
 /** Typed fetch wrapper for Scout API endpoints. */
@@ -116,6 +175,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const existing = inFlightGets.get(key);
   if (existing) {
     const response = await existing;
+    rememberSettledGet(key, response);
     return parseApiResponse<T>(path, response.text, response.contentType);
   }
 
@@ -124,6 +184,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
   try {
     const response = await request;
+    rememberSettledGet(key, response);
     return parseApiResponse<T>(path, response.text, response.contentType);
   } finally {
     inFlightGets.delete(key);

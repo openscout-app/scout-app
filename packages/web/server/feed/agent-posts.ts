@@ -9,7 +9,7 @@
  * agent's own words, and one piece of work never shows twice.
  */
 import type { WebFeedAgentPost, WebFeedShow, WebFeedTask } from "../../shared/api/feed.ts";
-export const SHOW_ID = /^[A-Za-z0-9_-]{1,128}$/;
+import { SHOW_ID } from "../canvas-shows.ts";
 
 /** The runtime's post record (ScoutPost in @openscout/protocol), as far as the Feed reads it. */
 export type RuntimePost = {
@@ -26,6 +26,27 @@ export type RuntimePost = {
   milestone?: boolean;
   createdAt: number;
 };
+
+export type PostSource = {
+  /** Posts after `since`, oldest first; the newest `limit`. */
+  list(since: number, limit?: number): Promise<RuntimePost[]>;
+};
+
+/** The post store of the runtime at `baseUrl()`, over loopback HTTP. A runtime from before posts answers 404: no posts. */
+export function runtimePostSource(baseUrl: () => string, timeoutMs = 5000): PostSource {
+  return {
+    async list(since, limit = 500) {
+      const res = await fetch(new URL(`/v1/posts?since=${since}&limit=${limit}`, baseUrl()), { signal: AbortSignal.timeout(timeoutMs) });
+      if (!res.ok) {
+        await res.body?.cancel();
+        if (res.status === 404) return [];
+        throw new Error(`runtime posts answered ${res.status}`);
+      }
+      const body = (await res.json()) as { posts?: RuntimePost[] };
+      return Array.isArray(body.posts) ? body.posts : [];
+    },
+  };
+}
 
 /** A post counts toward a task from just before the task opened until shortly after its reply, like a show. */
 export const POST_LEAD_MS = 60_000;

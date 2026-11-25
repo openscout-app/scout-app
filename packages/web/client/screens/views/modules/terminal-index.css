@@ -1,0 +1,89 @@
+/* Terminals index as a panel: the rail (terminal-left-panel.css) inside a
+ * grid cell. The panel head says Terminals, so the rail's own head is gone and
+ * its count and Refresh sit in the panel head; the list scrolls inside
+ * whatever box the grid gives it. */
+
+.terminal-nav--panel {
+  height: 100%;
+  min-height: 0;
+  /* the panel's ground (hud-grid.css), for the rings that cut marks from it */
+  --terminal-index-ground: color-mix(in srgb, var(--surface) 70%, var(--bg));
+}
+
+.terminal-nav--panel .terminal-nav-mark-working,
+.terminal-nav--panel .terminal-nav-pane-chip,
+.terminal-nav--panel .terminal-nav-pane-count {
+  box-shadow: 0 0 0 2px var(--terminal-index-ground);
+}
+
+.terminal-nav--panel .terminal-nav-pane-chip {
+  background: color-mix(in srgb, var(--ink) 9%, var(--terminal-index-ground));
+}
+
+.terminal-nav--panel .terminal-nav-pane-count {
+  background: color-mix(in srgb, var(--ink) 16%, var(--terminal-index-ground));
+}
+
+.terminal-nav--panel .terminal-nav-pane-chip--working .terminal-nav-pane-count {
+  background: var(--green);
+}
+
+/* Head: the running count, then Refresh, in the grid head's own type. */
+.terminal-index-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.terminal-index-count {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-md));
+  text-transform: var(--voice-case, uppercase);
+  white-space: nowrap;
+  color: var(--dim);
+}
+
+.terminal-index-refresh {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.terminal-index-refresh:hover:not(:disabled),
+.terminal-index-refresh:focus-visible {
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+.terminal-index-refresh:focus-visible {
+  outline: none;
+}
+
+.terminal-index-refresh:disabled {
+  cursor: progress;
+  opacity: 0.55;
+}
+
+/* ── Sharp look ── */
+
+/* the working count is the one emerald mark; focus is an ink ring */
+:root[data-scout-look="sharp"] .terminal-nav--panel .terminal-nav-pane-chip--working .terminal-nav-pane-count {
+  background: var(--state-live, var(--green));
+}
+
+:root[data-scout-look="sharp"] .terminal-index-refresh:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}

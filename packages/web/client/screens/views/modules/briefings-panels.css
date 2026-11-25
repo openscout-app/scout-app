@@ -1,0 +1,399 @@
+/* The Briefings view's panels: the archive's rows and one briefing, drawn by
+   the Briefings screens' own parts (screens/briefings/), fitted to a panel.
+   The panel is the card: rows and layers lie flat on hairlines, no rounded
+   boxes inside a square frame, and the kind reads in words, not colour.
+   Sized by the panel (the body is a query container), never the window. */
+
+/* ── Briefings: the archive ──────────────────────────────────────────── */
+
+.vw-briefings-stale {
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  color: var(--dim);
+  font-size: var(--text-sm);
+}
+
+.briefings-list[data-variant="panel"] {
+  gap: 0;
+  padding: 2px 0;
+}
+
+.briefings-list[data-variant="panel"] .briefing-row {
+  gap: 3px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  transition: background-color 120ms ease;
+}
+
+.briefings-list[data-variant="panel"] .briefing-row:hover {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  border-color: color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.briefings-list[data-variant="panel"] .briefing-row:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.briefings-list[data-variant="panel"] .briefing-row[aria-current] {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.briefings-list[data-variant="panel"] .briefing-row[aria-current] .briefing-row-title {
+  font-weight: 600;
+}
+
+.briefings-list[data-variant="panel"] .briefing-row-head {
+  gap: 8px;
+  min-width: 0;
+}
+
+.briefings-list[data-variant="panel"] .briefing-kind {
+  flex: none;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-xl);
+  color: var(--dim);
+}
+
+.briefings-list[data-variant="panel"] .briefing-row-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: var(--text-lg);
+}
+
+.briefings-list[data-variant="panel"] .briefing-row-time {
+  color: var(--dim);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.briefings-list[data-variant="panel"] .briefing-row-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+
+.briefings-list[data-variant="panel"] .briefing-row-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  color: var(--dim);
+  font-size: var(--text-sm);
+}
+
+.briefings-list[data-variant="panel"] .briefing-row-meta > span + span {
+  margin-left: 4px;
+}
+
+@container (max-width: 300px) {
+  .briefings-list[data-variant="panel"] .briefing-kind { display: none; }
+  .briefings-list[data-variant="panel"] .briefing-row-summary { -webkit-line-clamp: 1; }
+}
+
+/* ── Briefing: one, read whole ───────────────────────────────────────── */
+
+.vw-briefing-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 12px;
+}
+
+.vw-briefing .briefing-detail--panel {
+  max-width: none;
+  margin: 0;
+  padding: 12px 14px 18px;
+  gap: 16px;
+  color: var(--ink);
+}
+
+.vw-briefing .briefing-detail-header h2 {
+  margin: 0 0 4px;
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.vw-briefing .briefing-detail-header-meta {
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 0;
+  color: var(--dim);
+  font-size: var(--text-sm);
+}
+
+.vw-briefing .briefing-kind {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-xl);
+  color: var(--dim);
+}
+
+.vw-briefing .briefing-detail-marker {
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-xl);
+}
+
+.vw-briefing .briefing-detail-summary {
+  margin-top: 10px;
+  font-size: var(--text-xl);
+  max-width: 72ch;
+}
+
+/* the recommendation: one accent hairline, square, no bar on its edge */
+.vw-briefing .briefing-detail-recommendation {
+  margin-top: 10px;
+  max-width: 72ch;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  font-size: var(--text-lg);
+}
+
+/* each layer is a section on a hairline, not a box */
+.vw-briefing .briefing-layer,
+.vw-briefing .briefing-layer-markdown,
+.vw-briefing .briefing-layer-presented {
+  gap: 10px;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: none;
+}
+
+.vw-briefing .briefing-layer-presented {
+  border-top-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.vw-briefing .briefing-layer-telemetry {
+  border-top-style: dashed;
+}
+
+.vw-briefing .briefing-layer-head {
+  padding-bottom: 0;
+  border-bottom: 0;
+  gap: 10px;
+}
+
+.vw-briefing .briefing-layer-eyebrow {
+  order: 2;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-xl);
+  color: var(--dim);
+}
+
+.vw-briefing .briefing-layer-title {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--muted);
+}
+
+.vw-briefing .briefings-placeholder {
+  padding: 0;
+  color: var(--dim);
+  font-size: var(--text-md);
+}
+
+.vw-briefing .briefing-markdown,
+.vw-briefing .briefing-presented-sentence,
+.vw-briefing .briefing-step-narration,
+.vw-briefing .briefing-observation-text {
+  color: var(--ink);
+  font-size: var(--text-lg);
+}
+
+.vw-briefing .briefing-telemetry-row,
+.vw-briefing .briefing-telemetry-model {
+  color: var(--ink);
+}
+
+.vw-briefing .briefing-telemetry-label,
+.vw-briefing .briefing-telemetry-stats,
+.vw-briefing .briefing-telemetry-response,
+.vw-briefing .briefing-presented-meta,
+.vw-briefing .briefing-step-label,
+.vw-briefing .briefing-snapshot-counts {
+  color: var(--dim);
+}
+
+.vw-briefing .briefing-telemetry-note {
+  color: var(--accent);
+}
+
+.vw-briefing .briefing-telemetry-stats {
+  gap: 4px 14px;
+}
+
+.vw-briefing .briefing-actions {
+  gap: 6px;
+}
+
+/* observations: rows on hairlines; a warning or an error says so in words */
+.vw-briefing .briefing-observations {
+  gap: 0;
+}
+
+.vw-briefing .briefing-observation {
+  gap: 6px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 0;
+  background: none;
+}
+
+.vw-briefing .briefing-observation:last-child {
+  border-bottom: 0;
+}
+
+.vw-briefing .briefing-observation-tone {
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-xl);
+  color: var(--accent);
+}
+
+.vw-briefing .briefing-ref-chip {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.vw-briefing button.briefing-ref-chip:hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+}
+
+.vw-briefing .briefing-ref-chip-static,
+.vw-briefing .briefing-ref-chip-static:hover {
+  border-style: dashed;
+  background: none;
+}
+
+.vw-briefing .briefing-snapshot-counts {
+  gap: 4px 14px;
+  font-size: var(--text-md);
+}
+
+.vw-briefing .briefing-snapshot-count strong {
+  color: var(--ink);
+}
+
+.vw-briefing .briefing-snapshot-section {
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.vw-briefing .briefing-snapshot-section-head {
+  color: var(--muted);
+  font-size: var(--text-md);
+}
+
+.vw-briefing .briefing-call-grid {
+  gap: 4px 12px;
+  font-size: var(--text-md);
+}
+
+.vw-briefing .briefing-call-grid dt {
+  color: var(--dim);
+}
+
+.vw-briefing .briefing-snapshot-raw,
+.vw-briefing .briefing-call-prompt {
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+
+.vw-briefing .briefing-snapshot-raw {
+  margin: 8px 0 0;
+}
+
+@container (max-width: 420px) {
+  .vw-briefing .briefing-detail--panel { padding: 10px 12px 14px; gap: 14px; }
+  .vw-briefing .briefing-detail-header h2 { font-size: var(--text-2xl); }
+  .vw-briefing .briefing-detail-summary { font-size: var(--text-lg); }
+  .vw-briefing .briefing-call-grid { grid-template-columns: minmax(0, 1fr); }
+  .vw-briefing .briefing-call-grid dd { margin-bottom: 6px; }
+  .vw-briefing .briefing-presented-sentences { padding-left: var(--space-xl); }
+}
+
+/* ── Recent: the Home rail ───────────────────────────────────────────── */
+
+/* the rail fills the panel and the panel body scrolls it (as Requests · Active) */
+.vw-home-recent {
+  height: auto;
+  min-height: 100%;
+}
+
+.vw-home-recent > .base-rail {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+/* ── Sharp look ──────────────────────────────────────────────────────── */
+
+/* archive rows: hover is a 3% plate, the open one the selection plate, focus an ink line */
+:root[data-scout-look="sharp"] .briefings-list[data-variant="panel"] .briefing-row:hover {
+  background: var(--row-hover, color-mix(in srgb, var(--ink) 3%, transparent));
+}
+:root[data-scout-look="sharp"] .briefings-list[data-variant="panel"] .briefing-row:focus-visible {
+  outline-color: var(--ink);
+}
+:root[data-scout-look="sharp"] .briefings-list[data-variant="panel"] .briefing-row[aria-current] {
+  background: var(--select-bg, color-mix(in srgb, var(--ink) 6%, transparent));
+  color: var(--ink);
+}
+
+/* the recommendation and the presented layer: a strong line, no emerald, no wash */
+:root[data-scout-look="sharp"] .vw-briefing .briefing-detail-recommendation {
+  border-color: var(--edge-strong, var(--border));
+  background: none;
+}
+:root[data-scout-look="sharp"] .vw-briefing .briefing-layer-presented {
+  border-top-color: var(--edge-strong, var(--border));
+}
+
+/* notes and tones are words in ink */
+:root[data-scout-look="sharp"] .vw-briefing .briefing-telemetry-note,
+:root[data-scout-look="sharp"] .vw-briefing .briefing-observation-tone {
+  color: var(--ink);
+}
+
+/* raw snapshot and prompt: a line, no fill */
+:root[data-scout-look="sharp"] .vw-briefing .briefing-snapshot-raw,
+:root[data-scout-look="sharp"] .vw-briefing .briefing-call-prompt {
+  border-color: var(--edge-soft, var(--border));
+  background: none;
+}

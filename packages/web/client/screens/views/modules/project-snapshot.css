@@ -1,0 +1,174 @@
+/* Projects › Overview (project-snapshot.tsx): the page head, five counts, and three columns of panes. Rows, not
+   cards; thin lines; the accent is the only colour. The page scrolls as one when the window is short. */
+
+.vw-ps {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px 20px;
+  color: var(--ink);
+}
+.vw-ps button { font: inherit; color: inherit; }
+
+/* ── head ─────────────────────────────────────────────────────────────── */
+
+.vw-ps-head { flex: none; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.vw-ps-title { margin: 0; font-size: var(--text-4xl); font-weight: 400; letter-spacing: -0.01em; }
+.vw-ps-subline { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--dim); font-size: var(--text-sm); white-space: nowrap; overflow: hidden; }
+.vw-ps-subline code { font-family: var(--font-mono); color: var(--muted); }
+.vw-ps-dot { flex: none; width: 2px; height: 2px; border-radius: 50%; background: currentColor; }
+
+.vw-ps-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 30px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  cursor: pointer;
+  text-align: left;
+}
+.vw-ps-alertMark { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.vw-ps-alertText { min-width: 0; color: var(--muted); }
+.vw-ps-alertGo { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; color: var(--dim); font-size: var(--text-sm); }
+.vw-ps-alert:hover .vw-ps-alertGo { color: var(--ink); }
+
+/* ── at a glance: the counts, joined by seams ─────────────────────────── */
+
+.vw-ps-glance {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.vw-ps-cell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 12px 14px;
+  border: 0;
+  border-left: 1px solid var(--scout-line);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+.vw-ps-cell:first-child { border-left: 0; }
+.vw-ps-cell:hover { background: var(--sys-row-hover, color-mix(in srgb, var(--ink) 4%, transparent)); }
+.vw-ps-cellLabel { grid-column: 1 / -1; color: var(--dim); font-size: var(--text-sm); }
+.vw-ps-cellValue { font-size: var(--text-6xl); font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
+.vw-ps-cell[data-hot] .vw-ps-cellValue { color: var(--accent); }
+.vw-ps-cellDetail { min-width: 0; color: var(--muted); font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── three columns of panes ───────────────────────────────────────────── */
+
+.vw-ps-grid {
+  flex: 1 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--scout-line);
+}
+.vw-ps-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.vw-ps-pane { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+.vw-ps-pane[data-quiet] { flex: none; background: color-mix(in srgb, var(--surface) 55%, var(--bg)); }
+.vw-ps-paneHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--scout-line);
+  font-size: var(--text-sm);
+}
+.vw-ps-paneTitle { color: var(--muted); }
+.vw-ps-pane[data-quiet] .vw-ps-paneTitle { color: var(--dim); }
+.vw-ps-paneCount { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); }
+.vw-ps-paneGo { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--dim); }
+.vw-ps-paneGo:hover { color: var(--ink); }
+.vw-ps-paneBody { display: flex; flex-direction: column; min-height: 0; }
+.vw-ps-arrow { flex: none; }
+
+.vw-ps-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--scout-line);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+.vw-ps-row:hover { background: var(--sys-row-hover, color-mix(in srgb, var(--ink) 4%, transparent)); }
+.vw-ps-row .harness-coin { flex: none; }
+.vw-ps-rowText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.vw-ps-rowTitle { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-sm); color: var(--muted); }
+.vw-ps-row[data-live] .vw-ps-rowTitle,
+.vw-ps-row:hover .vw-ps-rowTitle { color: var(--ink); }
+.vw-ps-rowMeta { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-xs); color: var(--dim); }
+.vw-ps-ref { margin-right: 6px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); }
+.vw-ps-age { flex: none; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
+.vw-ps-liveDot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+.vw-ps-churn { font-family: var(--font-mono); font-size: var(--text-xs); }
+.vw-ps-churn b { font-weight: 400; color: var(--muted); }
+.vw-ps-churn i { font-style: normal; color: var(--dim); }
+
+.vw-ps-fold { display: flex; align-items: center; gap: 4px; padding: 8px 14px; border: 0; background: none; cursor: pointer; text-align: left; font-size: var(--text-sm); color: var(--dim); }
+.vw-ps-fold:hover { color: var(--ink); }
+.vw-ps-quietLine { padding: 8px 14px; font-size: var(--text-sm); color: var(--dim); }
+.vw-ps-empty { margin: 0; max-width: 40ch; padding: 16px 14px; line-height: 1.5; font-size: var(--text-sm); color: var(--dim); }
+
+/* canvas: the newest pictures, two across */
+.vw-ps-thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--scout-line); border-bottom: 1px solid var(--scout-line); }
+.vw-ps-thumb { position: relative; display: block; aspect-ratio: 16 / 10; overflow: hidden; padding: 0; border: 0; background: var(--surface); cursor: pointer; }
+.vw-ps-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0.88; }
+.vw-ps-thumb:hover img { opacity: 1; }
+.vw-ps-thumbCap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.vw-ps-thumbCap > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* the quiet module: sessions, worktrees and disk, present but not leading */
+.vw-ps-struct {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--scout-line);
+  font-size: var(--text-sm);
+}
+.vw-ps-structMain { color: var(--muted); white-space: nowrap; }
+.vw-ps-structMeta { min-width: 0; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vw-ps-structMeta[data-warn] { color: var(--accent); }
+.vw-ps-structGo { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--dim); white-space: nowrap; }
+.vw-ps-structGo:hover { color: var(--ink); }

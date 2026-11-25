@@ -1,5 +1,6 @@
 import type { ObserveData, ObserveEvent } from "../../lib/types.ts";
 import { filesFromObserveEvents } from "../../lib/lane-observe.ts";
+import { shellCommandFromArg } from "../../lib/code-mode-command.ts";
 
 export type ObservedSessionTurn = {
   id: string;
@@ -18,6 +19,31 @@ export type ObservedSessionTurn = {
   working: boolean;
   fileCount: number;
 };
+/**
+ * Whether a session is in a turn. When its agent holds this session, the
+ * agent's own state says. Otherwise a live source says. A recorded trace
+ * cannot: a session that ended mid-turn or mid-call leaves that turn open in
+ * its transcript for good, so an open turn or call counts only while the board
+ * still has the session working.
+ */
+export function observedSessionWorking({ agentTurn, data, source, rowWorking }: {
+  /** The agent's own state, when the agent holds this session; null otherwise. */
+  agentTurn: boolean | null;
+  data: Pick<ObserveData, "live" | "events"> | null | undefined;
+  /** Where the trace came from. Only a live source reports a turn as it runs. */
+  source?: string | null;
+  /** The board row's state, when the board has the session. */
+  rowWorking?: boolean;
+}): boolean {
+  if (agentTurn !== null) return agentTurn;
+  if (!data) return Boolean(rowWorking);
+  if (data.live && source === "live") return true;
+  // Discovery can know a turn is active before the history reader marks an
+  // event live. Use the board's bounded activity evidence in both surfaces.
+  if (rowWorking !== undefined) return rowWorking;
+  return Boolean(data.live || data.events.some((event) => event.live));
+}
+
 /** Observed user requests delimit turns. Never invent broker turn ids or import
  * harness text into Scout records. An incomplete leading window stays labelled
  * as observed context; synthetic timestamps must not be advertised as duration. */
@@ -67,4 +93,55 @@ export function splitObservedTurn(turn: Pick<ObservedSessionTurn, "work" | "work
   let start = end;
   while (start > 0 && said(turn.work[start - 1]!)) start -= 1;
   return { trace: [...turn.work.slice(0, start), ...turn.work.slice(end)], answer: turn.work.slice(start, end) };
+}
+/** How long a turn may write nothing before the thread stops calling it Working. */
+export const QUIET_AFTER_MS = 10 * 60_000;
+
+/**
+ * When a session that is said to be in a turn last wrote anything, if that is
+ * longer ago than QUIET_AFTER_MS; otherwise null. A turn that stalls (its
+ * harness died mid-turn, or the runtime never heard it end) would otherwise
+ * read as Working for good. The time is observed, so the thread can say it.
+ */
+export function quietSince(events: readonly Pick<ObserveEvent, "at">[], working: boolean, now: number): number | null {
+  if (!working) return null;
+  let last = -Infinity;
+  for (const event of events) if (event.at != null && event.at > last) last = event.at;
+  return Number.isFinite(last) && now - last > QUIET_AFTER_MS ? last : null;
+}
+
+export function observedStepCount(turn: ObservedSessionTurn): number {
+  return turn.steps.filter((event) => event.kind === "tool" && event.tool !== "res" || event.kind === "think").length;
+}
+export function observedTurnDuration(turn: ObservedSessionTurn): string {
+  const seconds = Math.max(0, Math.round(turn.end - turn.start));
+  return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
+
+/** Activity wording mirrors the Codex thread, without inventing tool results. */
+export function sessionWorkLabel(event: ObserveEvent): string {
+  const tool = (event.tool ?? "").toLowerCase();
+  const arg = event.arg || event.text;
+  if (event.kind === "think") return event.live ? "Thinking" : "Thought";
+  if (event.kind !== "tool") return event.text;
+  if (tool === "res") return "Output";
+  if (/^(read|read_file|view_image)$/u.test(tool)) return `Read ${arg}`;
+  if (/^(edit|write|edit_file|write_file|apply_patch|multiedit)$/u.test(tool)) return `Edited ${arg}`;
+  if (/^(search|grep|glob|rg|web_search|web|find|web\.run)$/u.test(tool)) return `Searched ${arg}`;
+  if (/^(bash|shell|exec_command|run|terminal|command)$/u.test(tool)) return `Ran ${shellCommandFromArg(arg)}`;
+  return `${event.tool || "Tool"} ${arg}`;
+}
+
+/** Counts only explicit per-file diff evidence. Multi-file aggregate patches
+ * cannot be attributed to one file; missing counts stay missing, not zero. */
+export function observedFileEdits(events: ObserveEvent[]): Map<string, { add: number; del: number }> {
+  const counts = new Map<string, { add: number; del: number }>();
+  for (const event of events) {
+    if (!event.diff) continue;
+    const files = filesFromObserveEvents([event]);
+    if (files.length !== 1) continue;
+    const path = files[0]!.path, previous = counts.get(path) ?? { add: 0, del: 0 };
+    counts.set(path, { add: previous.add + event.diff.add, del: previous.del + event.diff.del });
+  }
+  return counts;
 }

@@ -1,0 +1,960 @@
+{
+  "note": "Client CSS that predates the token gate (scripts/css-tokens.mjs). Counts per file of literal line colors, literal radii and off-scale spacing. Never raise a number by hand; the gate lowers them on its own when a file is migrated.",
+  "totals": {
+    "line": 1225,
+    "radius": 918,
+    "spacing": 1540
+  },
+  "files": {
+    "app.css": {
+      "line": 20,
+      "radius": 10,
+      "spacing": 8
+    },
+    "components/agent-detail-card.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/agent-live-actions.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/brief-sequence/brief-sequence.css": {
+      "line": 8,
+      "radius": 2,
+      "spacing": 0
+    },
+    "components/CastPicker.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/connection-state.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 4
+    },
+    "components/crew-avatar.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/crew-photo.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 3
+    },
+    "components/DataTable/data-table.css": {
+      "line": 4,
+      "radius": 1,
+      "spacing": 0
+    },
+    "components/dictation-mic.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/document-focus-viewer.css": {
+      "line": 18,
+      "radius": 1,
+      "spacing": 2
+    },
+    "components/harness-coin.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/hud-grid/hud-grid.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/initials-avatar.css": {
+      "line": 0,
+      "radius": 3,
+      "spacing": 0
+    },
+    "components/keyboard-help.css": {
+      "line": 4,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/machine-scope-control.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/MessageComposer/message-composer.css": {
+      "line": 18,
+      "radius": 1,
+      "spacing": 0
+    },
+    "components/MessageComposer/runtime-picker.css": {
+      "line": 0,
+      "radius": 2,
+      "spacing": 2
+    },
+    "components/observed-topology-panel.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 5
+    },
+    "components/page-status-bar.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/pairing-request-prompt.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/scout-feature-flag-panel.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/scout-shimmer.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 0
+    },
+    "components/scoutbot-chip-popover.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "components/scoutbot-dock.css": {
+      "line": 0,
+      "radius": 3,
+      "spacing": 1
+    },
+    "components/secondary-nav.css": {
+      "line": 1,
+      "radius": 1,
+      "spacing": 0
+    },
+    "components/sprout-action-sprite.css": {
+      "line": 2,
+      "radius": 1,
+      "spacing": 0
+    },
+    "dev/dev-error-overlay.css": {
+      "line": 3,
+      "radius": 6,
+      "spacing": 10
+    },
+    "hosted-chat/hosted-chat-admin.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "hosted-chat/hosted-chat-brand.css": {
+      "line": 4,
+      "radius": 2,
+      "spacing": 11
+    },
+    "hosted-chat/hosted-chat-landing.css": {
+      "line": 5,
+      "radius": 7,
+      "spacing": 8
+    },
+    "hosted-chat/hosted-chat-room.css": {
+      "line": 2,
+      "radius": 7,
+      "spacing": 8
+    },
+    "lib/agent-autocomplete.css": {
+      "line": 4,
+      "radius": 0,
+      "spacing": 0
+    },
+    "native-surfaces/chat/messages-theme.css": {
+      "line": 8,
+      "radius": 20,
+      "spacing": 41
+    },
+    "native-surfaces/chat/scout-chat.css": {
+      "line": 19,
+      "radius": 49,
+      "spacing": 74
+    },
+    "native-surfaces/chat/scout-theme.css": {
+      "line": 6,
+      "radius": 4,
+      "spacing": 3
+    },
+    "native-surfaces/chat/whatsapp-theme.css": {
+      "line": 44,
+      "radius": 30,
+      "spacing": 28
+    },
+    "native-surfaces/deck/scout-deck.css": {
+      "line": 39,
+      "radius": 22,
+      "spacing": 37
+    },
+    "native-surfaces/deck/treatments/deck-brief.css": {
+      "line": 5,
+      "radius": 5,
+      "spacing": 10
+    },
+    "native-surfaces/deck/treatments/deck-console.css": {
+      "line": 1,
+      "radius": 2,
+      "spacing": 14
+    },
+    "native-surfaces/deck/treatments/deck-ops.css": {
+      "line": 27,
+      "radius": 11,
+      "spacing": 24
+    },
+    "native-surfaces/deck/treatments/deck-yoke.css": {
+      "line": 2,
+      "radius": 4,
+      "spacing": 8
+    },
+    "native-surfaces/shared/native-surface.css": {
+      "line": 4,
+      "radius": 2,
+      "spacing": 5
+    },
+    "scope/presentation.css": {
+      "line": 2,
+      "radius": 1,
+      "spacing": 0
+    },
+    "scope/views/scope-views.css": {
+      "line": 14,
+      "radius": 15,
+      "spacing": 3
+    },
+    "scoped-access/access.css": {
+      "line": 2,
+      "radius": 5,
+      "spacing": 32
+    },
+    "scout/context-capture.css": {
+      "line": 3,
+      "radius": 1,
+      "spacing": 0
+    },
+    "scout/file-preview-overlay.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/repo-diff/repo-diff.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 2
+    },
+    "scout/repo-watch/console.css": {
+      "line": 8,
+      "radius": 16,
+      "spacing": 48
+    },
+    "scout/repo-watch/repo-watch.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/scoutbot/direct-voice.css": {
+      "line": 14,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/sidebar/collapsed-strip.css": {
+      "line": 5,
+      "radius": 5,
+      "spacing": 5
+    },
+    "scout/sidebar/frame.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 1
+    },
+    "scout/sidebar/top-row-actions.css": {
+      "line": 2,
+      "radius": 2,
+      "spacing": 1
+    },
+    "scout/slots/back-to-picker.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/slots/ctx-panel.css": {
+      "line": 54,
+      "radius": 1,
+      "spacing": 2
+    },
+    "scout/slots/fleet-shared.css": {
+      "line": 4,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/slots/global-jump-dock.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/slots/mesh-nav-panel.css": {
+      "line": 4,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/slots/mesh-rail-rack.css": {
+      "line": 15,
+      "radius": 2,
+      "spacing": 0
+    },
+    "scout/slots/mission-left.css": {
+      "line": 14,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/slots/plan-archive-left.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 0
+    },
+    "scout/slots/rail-row.css": {
+      "line": 4,
+      "radius": 0,
+      "spacing": 2
+    },
+    "scout/slots/terminal-left-panel.css": {
+      "line": 12,
+      "radius": 6,
+      "spacing": 5
+    },
+    "screens/agents/agent-definitions.css": {
+      "line": 9,
+      "radius": 3,
+      "spacing": 4
+    },
+    "screens/agents/agents-console.css": {
+      "line": 0,
+      "radius": 10,
+      "spacing": 34
+    },
+    "screens/agents/agents-detail-redesign.css": {
+      "line": 30,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/agents/agents-directory.css": {
+      "line": 1,
+      "radius": 15,
+      "spacing": 24
+    },
+    "screens/agents/agents-feed-detail.css": {
+      "line": 0,
+      "radius": 8,
+      "spacing": 5
+    },
+    "screens/agents/agents-home-feed.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 1
+    },
+    "screens/agents/agents-project.css": {
+      "line": 0,
+      "radius": 16,
+      "spacing": 77
+    },
+    "screens/agents/agents-rail.css": {
+      "line": 15,
+      "radius": 4,
+      "spacing": 11
+    },
+    "screens/agents/agents-screen.css": {
+      "line": 31,
+      "radius": 2,
+      "spacing": 7
+    },
+    "screens/agents/agents-stations.css": {
+      "line": 1,
+      "radius": 4,
+      "spacing": 8
+    },
+    "screens/boards/boards.css": {
+      "line": 3,
+      "radius": 3,
+      "spacing": 0
+    },
+    "screens/briefings/briefings.css": {
+      "line": 7,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/broker/dispatch-focus.css": {
+      "line": 0,
+      "radius": 19,
+      "spacing": 20
+    },
+    "screens/canvas/canvas.module.css": {
+      "line": 1,
+      "radius": 2,
+      "spacing": 8
+    },
+    "screens/chat-space/chat-space.css": {
+      "line": 24,
+      "radius": 38,
+      "spacing": 20
+    },
+    "screens/chat/agent-master.css": {
+      "line": 0,
+      "radius": 5,
+      "spacing": 4
+    },
+    "screens/chat/chat-list.css": {
+      "line": 1,
+      "radius": 4,
+      "spacing": 5
+    },
+    "screens/chat/comms-canvas.css": {
+      "line": 0,
+      "radius": 2,
+      "spacing": 2
+    },
+    "screens/chat/comms-deck.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 3
+    },
+    "screens/chat/comms-flow.css": {
+      "line": 0,
+      "radius": 3,
+      "spacing": 2
+    },
+    "screens/chat/conversation-screen.css": {
+      "line": 58,
+      "radius": 3,
+      "spacing": 2
+    },
+    "screens/chat/inbox-thread-redesign.css": {
+      "line": 18,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/chat/queue-continuity.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 0
+    },
+    "screens/chat/session-turn-work.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 1
+    },
+    "screens/chat/session-view.css": {
+      "line": 0,
+      "radius": 4,
+      "spacing": 7
+    },
+    "screens/chat/turn-beats.css": {
+      "line": 0,
+      "radius": 13,
+      "spacing": 16
+    },
+    "screens/chat/turn-runs.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 1
+    },
+    "screens/code/code-screen.css": {
+      "line": 2,
+      "radius": 7,
+      "spacing": 11
+    },
+    "screens/companion/arrivals/arrivals.css": {
+      "line": 7,
+      "radius": 26,
+      "spacing": 63
+    },
+    "screens/companion/arrivals/tap-in.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 16
+    },
+    "screens/companion/companion-surface.css": {
+      "line": 1,
+      "radius": 1,
+      "spacing": 0
+    },
+    "screens/companion/companion.css": {
+      "line": 0,
+      "radius": 13,
+      "spacing": 11
+    },
+    "screens/companion/edge.css": {
+      "line": 0,
+      "radius": 34,
+      "spacing": 23
+    },
+    "screens/companion/led-figure/led-figure.css": {
+      "line": 2,
+      "radius": 1,
+      "spacing": 0
+    },
+    "screens/companion/scoutbot.css": {
+      "line": 0,
+      "radius": 8,
+      "spacing": 8
+    },
+    "screens/companion/system-corner/system-corner.css": {
+      "line": 0,
+      "radius": 9,
+      "spacing": 13
+    },
+    "screens/dashboard-redesign.css": {
+      "line": 12,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/glass/glass-app.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/glass/glass.css": {
+      "line": 0,
+      "radius": 3,
+      "spacing": 1
+    },
+    "screens/glass/reply-kit.css": {
+      "line": 1,
+      "radius": 11,
+      "spacing": 7
+    },
+    "screens/harnesses/harnesses-screen.css": {
+      "line": 0,
+      "radius": 2,
+      "spacing": 3
+    },
+    "screens/home/activity-stream.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/home/fleet-home.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 6
+    },
+    "screens/home/home-hero.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/home/home-inbox-lead.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/home/home-moving-signal.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/home/left.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/mesh/mesh-screen.css": {
+      "line": 60,
+      "radius": 4,
+      "spacing": 7
+    },
+    "screens/ops/adventure-evidence.css": {
+      "line": 2,
+      "radius": 2,
+      "spacing": 7
+    },
+    "screens/ops/adventure-reader.css": {
+      "line": 6,
+      "radius": 10,
+      "spacing": 19
+    },
+    "screens/ops/agent-adventures.css": {
+      "line": 25,
+      "radius": 23,
+      "spacing": 25
+    },
+    "screens/ops/agent-floor-world.css": {
+      "line": 1,
+      "radius": 11,
+      "spacing": 12
+    },
+    "screens/ops/agent-floor.css": {
+      "line": 1,
+      "radius": 19,
+      "spacing": 29
+    },
+    "screens/ops/agent-lane-card.css": {
+      "line": 8,
+      "radius": 7,
+      "spacing": 18
+    },
+    "screens/ops/agent-lanes.css": {
+      "line": 47,
+      "radius": 8,
+      "spacing": 4
+    },
+    "screens/ops/character-family-preview.css": {
+      "line": 1,
+      "radius": 3,
+      "spacing": 1
+    },
+    "screens/ops/fleet-groups.css": {
+      "line": 0,
+      "radius": 3,
+      "spacing": 5
+    },
+    "screens/ops/floor-context-sheet.css": {
+      "line": 0,
+      "radius": 5,
+      "spacing": 18
+    },
+    "screens/ops/floor-exchanges.css": {
+      "line": 3,
+      "radius": 3,
+      "spacing": 2
+    },
+    "screens/ops/floor-replay.css": {
+      "line": 2,
+      "radius": 6,
+      "spacing": 5
+    },
+    "screens/ops/floor-tactical-hud.css": {
+      "line": 0,
+      "radius": 2,
+      "spacing": 9
+    },
+    "screens/ops/host-advisor.css": {
+      "line": 3,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/ops/mission-control.css": {
+      "line": 27,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/ops/observatory/ObservatoryFloor.module.css": {
+      "line": 22,
+      "radius": 13,
+      "spacing": 18
+    },
+    "screens/ops/observatory/SceneMinimap.module.css": {
+      "line": 2,
+      "radius": 2,
+      "spacing": 1
+    },
+    "screens/ops/ops-agents.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/ops/ops-atop.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/ops/ops-screen.css": {
+      "line": 4,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/ops/ops-tail.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/ops/plan-archive.css": {
+      "line": 17,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/ops/replay/replay-outpost.css": {
+      "line": 0,
+      "radius": 14,
+      "spacing": 11
+    },
+    "screens/ops/sage-model-studio.css": {
+      "line": 1,
+      "radius": 2,
+      "spacing": 0
+    },
+    "screens/ops/shared-floor-character.css": {
+      "line": 1,
+      "radius": 4,
+      "spacing": 4
+    },
+    "screens/ops/shared-work-floor.css": {
+      "line": 14,
+      "radius": 24,
+      "spacing": 20
+    },
+    "screens/ops/work-run-view.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 6
+    },
+    "screens/projects/crew-workspaces.css": {
+      "line": 1,
+      "radius": 5,
+      "spacing": 7
+    },
+    "screens/projects/new-agent-modal.css": {
+      "line": 3,
+      "radius": 2,
+      "spacing": 11
+    },
+    "screens/projects/projects-inbox.css": {
+      "line": 0,
+      "radius": 34,
+      "spacing": 86
+    },
+    "screens/projects/projects-sheet.css": {
+      "line": 0,
+      "radius": 13,
+      "spacing": 23
+    },
+    "screens/projects/projects.css": {
+      "line": 0,
+      "radius": 14,
+      "spacing": 47
+    },
+    "screens/review/review.module.css": {
+      "line": 0,
+      "radius": 14,
+      "spacing": 33
+    },
+    "screens/search/knowledge-search.css": {
+      "line": 25,
+      "radius": 1,
+      "spacing": 3
+    },
+    "screens/sessions/flight-observe.css": {
+      "line": 7,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/sessions/session-observe.css": {
+      "line": 47,
+      "radius": 15,
+      "spacing": 41
+    },
+    "screens/sessions/session-work-read.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/sessions/sessions-slots.css": {
+      "line": 0,
+      "radius": 19,
+      "spacing": 11
+    },
+    "screens/settings/feedback.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 0
+    },
+    "screens/settings/hosts-section.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 7
+    },
+    "screens/settings/menu-settings.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/settings/scout-settings.css": {
+      "line": 1,
+      "radius": 3,
+      "spacing": 22
+    },
+    "screens/settings/settings-drawer.css": {
+      "line": 12,
+      "radius": 1,
+      "spacing": 17
+    },
+    "screens/settings/voice-permissions-panel.css": {
+      "line": 2,
+      "radius": 3,
+      "spacing": 1
+    },
+    "screens/swarm/swarm-canvas.css": {
+      "line": 0,
+      "radius": 7,
+      "spacing": 6
+    },
+    "screens/swarm/swarm-code.css": {
+      "line": 0,
+      "radius": 1,
+      "spacing": 2
+    },
+    "screens/swarm/swarm.css": {
+      "line": 4,
+      "radius": 14,
+      "spacing": 22
+    },
+    "screens/system-surfaces-redesign.css": {
+      "line": 16,
+      "radius": 6,
+      "spacing": 12
+    },
+    "screens/terminal/terminal-screen.css": {
+      "line": 103,
+      "radius": 9,
+      "spacing": 17
+    },
+    "screens/views/modules/activity-panels.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/views/modules/agent-views.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/views/modules/briefings-panels.css": {
+      "line": 6,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/views/modules/code-panels.css": {
+      "line": 1,
+      "radius": 1,
+      "spacing": 0
+    },
+    "screens/views/modules/dispatch-health.css": {
+      "line": 0,
+      "radius": 5,
+      "spacing": 5
+    },
+    "screens/views/modules/dispatches.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 1
+    },
+    "screens/views/modules/home-panels.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/views/modules/in-flight.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 3
+    },
+    "screens/views/modules/plan-document.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/views/modules/projects.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 5
+    },
+    "screens/views/modules/requests-panels.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/views/modules/search-panels.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/views/modules/sessions-panels.css": {
+      "line": 0,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/views/modules/terminal-target.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/views/modules/terminal-workspace.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    },
+    "screens/views/modules/work-board.css": {
+      "line": 4,
+      "radius": 2,
+      "spacing": 7
+    },
+    "screens/views/modules/work-panels.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 2
+    },
+    "screens/views/views.css": {
+      "line": 4,
+      "radius": 1,
+      "spacing": 2
+    },
+    "screens/voice/voice-paths.css": {
+      "line": 8,
+      "radius": 5,
+      "spacing": 10
+    },
+    "screens/voice/voice-turn.css": {
+      "line": 0,
+      "radius": 4,
+      "spacing": 2
+    },
+    "screens/work/board/board.css": {
+      "line": 4,
+      "radius": 23,
+      "spacing": 45
+    },
+    "screens/work/work-artifacts.css": {
+      "line": 1,
+      "radius": 2,
+      "spacing": 0
+    },
+    "screens/work/work-casefile.css": {
+      "line": 0,
+      "radius": 15,
+      "spacing": 9
+    },
+    "screens/work/work-detail.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 8
+    },
+    "studio/agent-directory-studio-injection.css": {
+      "line": 5,
+      "radius": 0,
+      "spacing": 0
+    },
+    "studio/studio-injection.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "styles/glass.css": {
+      "line": 2,
+      "radius": 0,
+      "spacing": 0
+    },
+    "styles/primitives.css": {
+      "line": 1,
+      "radius": 0,
+      "spacing": 0
+    }
+  }
+}

@@ -1,0 +1,639 @@
+/* Projects & Agents — durable directory views for /projects.
+   Lives inside .s-pi, so it inherits the --pi-* token bridge (which mirrors
+   --hud-*). Neutral specular highlights and 1px hairlines only — no glow. */
+
+.cw-root {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  /* Head → toolbar → eyebrow → rows stack on their own line heights; the
+     only beat is the 4px above the first row. */
+  gap: var(--space-2xs);
+  padding: 0 var(--space-2xl) var(--space-6xl);
+}
+.cw-root--scoped {
+  padding-top: var(--space-lg);
+}
+/* Keep names, status and actions within one reading column in the native
+   embed as well as the full web page. The scroller fills the available pane. */
+.cw-root > * {
+  width: 100%;
+  max-width: 1040px;
+}
+.cw-root { container-type: inline-size; }
+
+/* ── toolbar ── */
+
+/* One 36px line of words — view, find, lens, add. No boxed control anywhere:
+   the current word carries an ink wash and the rest sit muted, the same
+   grammar as the rows under it. (studio: scout-projects-lists, QuietToolbar) */
+
+.cw-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2xl);
+  min-height: 36px;
+}
+
+.cw-modeToggle,
+.cw-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.cw-modeToggle button,
+.cw-filters button {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--pi-muted);
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s var(--pi-ease), color 0.12s var(--pi-ease);
+}
+.cw-modeToggle button:hover,
+.cw-filters button:hover { color: var(--pi-ink); }
+.cw-modeToggle button[data-active],
+.cw-filters button[data-active] {
+  background: color-mix(in srgb, var(--hud-ink) 8%, transparent);
+  color: var(--pi-ink);
+}
+
+.cw-search {
+  flex: 0 1 200px;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--hud-ink) 4%, transparent);
+  color: var(--pi-dim);
+  transition: background 0.12s var(--pi-ease), color 0.12s var(--pi-ease);
+}
+.cw-search:focus-within {
+  background: color-mix(in srgb, var(--hud-ink) 8%, transparent);
+  color: var(--pi-muted);
+}
+.cw-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--pi-ink);
+  font-size: var(--text-md);
+  font-family: var(--pi-sans);
+}
+.cw-search input:focus { outline: none; }
+.cw-search input::placeholder { color: var(--pi-dim); }
+
+.cw-addProject {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--pi-muted);
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s var(--pi-ease), color 0.12s var(--pi-ease);
+}
+.cw-addProject:hover { color: var(--pi-ink); }
+.cw-addProject[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--hud-ink) 8%, transparent);
+  color: var(--pi-ink);
+}
+
+/* ── eyebrow ── */
+
+/* The census is the list's eyebrow, not a third header band: dim mono caps in
+   the sidebar head's register, the one accent spent on what is live. */
+
+.cw-digest {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  color: var(--pi-dim);
+  font-family: var(--pi-mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--voice-track, 0.12em);
+  text-transform: var(--voice-case, uppercase);
+  font-variant-numeric: tabular-nums;
+}
+.cw-digest span[data-tone="live"] { color: var(--pi-accent); }
+.cw-digest span[data-tone="needs"] { color: var(--pi-muted); }
+.cw-digestSep { opacity: 0.5; }
+
+/* ── empty ── */
+
+.cw-empty {
+  padding: 48px 12px;
+  text-align: center;
+  color: var(--pi-dim);
+  font-size: var(--text-sm);
+}
+
+/* ── agent directory ── */
+
+.cw-agentDirectory,
+.cw-agentSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.cw-agentDirectory { padding-top: var(--space-sm); }
+
+.cw-agentSectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--pi-hairline);
+}
+.cw-agentSectionHead h2 {
+  margin: 0;
+  color: var(--pi-ink);
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+.cw-agentSectionHead span {
+  color: var(--pi-dim);
+  font-family: var(--pi-mono);
+  font-size: var(--text-2xs);
+}
+
+.cw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-lg);
+}
+
+.cw-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border: 1px solid var(--pi-hairline);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 2.5%, transparent), transparent 40%),
+    color-mix(in srgb, var(--hud-surface) 30%, transparent);
+  transition: border-color 0.16s var(--pi-ease), transform 0.16s var(--pi-ease), background 0.16s var(--pi-ease);
+}
+.cw-card:hover {
+  border-color: var(--pi-hairline-strong);
+  transform: translateY(-1px);
+}
+.cw-card[data-status="needs"] {
+  border-color: color-mix(in srgb, #d9a441 45%, var(--pi-hairline));
+}
+.cw-card[data-status="working"] {
+  border-color: color-mix(in srgb, var(--pi-accent) 32%, var(--pi-hairline));
+}
+
+.cw-cardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.cw-cardIdentity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cw-cardNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cw-cardHarness {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--pi-ink);
+}
+.cw-cardHarness[data-idle] { color: var(--pi-dim); }
+.cw-cardNameRow b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pi-ink);
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.cw-statusPill {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--text-2xs);
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--pi-dim);
+  background: color-mix(in srgb, var(--hud-ink) 8%, transparent);
+  box-shadow: inset 0 0 0 1px var(--pi-hairline);
+}
+.cw-statusPill[data-status="needs"] {
+  color: color-mix(in srgb, #d9a441 88%, var(--pi-ink));
+  background: color-mix(in srgb, #d9a441 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #d9a441 40%, transparent);
+}
+.cw-statusPill[data-status="working"] {
+  color: color-mix(in srgb, var(--pi-accent) 84%, var(--pi-ink));
+  background: color-mix(in srgb, var(--pi-accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pi-accent) 32%, transparent);
+}
+.cw-statusPill[data-status="thinking"] {
+  color: color-mix(in srgb, #6fb7c7 86%, var(--pi-ink));
+  background: color-mix(in srgb, #6fb7c7 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #6fb7c7 32%, transparent);
+}
+
+.cw-cardSubline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--pi-muted);
+  font-size: var(--text-xs);
+}
+.cw-headline {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cw-substrates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cw-substrateChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--pi-hairline);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hud-surface) 26%, transparent);
+  color: var(--pi-muted);
+  font-size: var(--text-2xs);
+  cursor: pointer;
+  transition: border-color 0.15s var(--pi-ease), color 0.15s var(--pi-ease);
+}
+.cw-substrateChip:hover { border-color: var(--pi-hairline-strong); color: var(--pi-ink); }
+.cw-substrateChip[data-primary] {
+  color: var(--pi-ink);
+  background: color-mix(in srgb, var(--hud-ink) 6%, transparent);
+}
+.cw-substrateChip[data-live] {
+  border-color: color-mix(in srgb, var(--pi-accent) 34%, var(--pi-hairline));
+}
+.cw-substrateChip em {
+  font-style: normal;
+  color: var(--pi-dim);
+  font-family: var(--pi-mono);
+}
+
+.cw-work {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-2xs);
+  border-top: 1px solid var(--pi-hairline);
+}
+.cw-work p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pi-ink);
+  font-size: var(--text-sm);
+}
+.cw-work time {
+  flex: none;
+  color: var(--pi-dim);
+  font-size: var(--text-2xs);
+  font-family: var(--pi-mono);
+}
+
+.cw-cardActions {
+  display: flex;
+  gap: 6px;
+}
+.cw-cardActions:empty { display: none; }
+.cw-cardActions button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 26px;
+  border: 1px solid var(--pi-hairline);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--pi-muted);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s var(--pi-ease), color 0.15s var(--pi-ease), border-color 0.15s var(--pi-ease);
+}
+.cw-cardActions button:hover {
+  color: var(--pi-ink);
+  border-color: var(--pi-hairline-strong);
+  background: color-mix(in srgb, var(--hud-ink) 5%, transparent);
+}
+
+.cw-projectContext {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--pi-hairline);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--hud-surface) 28%, transparent);
+  color: var(--pi-muted);
+  font-size: var(--text-2xs);
+}
+.cw-projectContext span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--pi-mono);
+}
+.cw-projectContext em {
+  font-style: normal;
+  color: var(--pi-dim);
+}
+
+/* ── projects ── */
+
+/* Projects are rows on hairlines, not cards: one reading column, the
+   section links sit under the name they belong to. */
+.cw-workspaceList {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--pi-hairline);
+}
+.cw-workspace {
+  min-width: 0;
+  border-bottom: 1px solid var(--pi-hairline);
+}
+.cw-workspaceHead {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-md) var(--space-sm);
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cw-workspaceHead:hover { background: color-mix(in srgb, var(--hud-ink) 4%, transparent); }
+.cw-workspaceIcon { flex: none; color: var(--pi-muted); }
+.cw-workspaceIdentity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.cw-workspaceTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pi-ink);
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+.cw-workspaceRoot {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pi-muted);
+  font-size: var(--text-sm);
+}
+.cw-workspacePreview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pi-muted);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+.cw-workspaceMeta {
+  flex: none;
+  color: var(--pi-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.cw-workspaceMeta time[data-tone="live"] { color: var(--pi-accent); }
+.cw-workspaceArrow { flex: none; color: var(--pi-muted); }
+.cw-workspaceLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  /* under the name: past the folder icon (size 18 in CrewWorkspaces.tsx) and its gap */
+  --cw-folder-icon: 18px;
+  padding: 0 var(--space-md) var(--space-md) calc(var(--space-md) + var(--cw-folder-icon) + var(--space-lg) - var(--space-sm));
+}
+.cw-workspaceLinks button {
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  background: transparent;
+  color: var(--pi-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.cw-workspaceLinks button:hover { color: var(--pi-ink); background: color-mix(in srgb, var(--hud-ink) 8%, transparent); }
+.cw-workspaceLinks button:focus-visible { outline: 2px solid var(--pi-accent); outline-offset: 2px; }
+@container (max-width: 480px) {
+  .cw-workspaceHead { flex-wrap: wrap; }
+  .cw-workspaceIdentity { flex-basis: 60%; }
+}
+.cw-workspaceAsks {
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--pi-accent);
+  background: color-mix(in srgb, var(--pi-accent) 14%, transparent);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+}
+
+.cw-showMore {
+  align-self: flex-start;
+  height: 26px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--pi-muted);
+  font-size: var(--text-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.12s var(--pi-ease);
+}
+.cw-showMore:hover { color: var(--pi-ink); }
+
+.cw-modeToggle button:focus-visible,
+.cw-filters button:focus-visible,
+.cw-addProject:focus-visible,
+.cw-showMore:focus-visible,
+.cw-workspaceHead:focus-visible,
+.cw-substrateChip:focus-visible,
+.cw-cardActions button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--pi-accent) 70%, white);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .cw-toolbar { flex-direction: column; align-items: stretch; }
+  .cw-search {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  .cw-addProject { margin-left: 0; }
+  .cw-grid { grid-template-columns: 1fr; }
+  .cw-workspaceHead { flex-wrap: wrap; }
+  .cw-workspaceRoot { flex: 1 1 100%; order: 3; }
+  .cw-workspaceMeta { flex-wrap: wrap; }
+}
+
+/* ── Sharp look ──────────────────────────────────────────────────────────
+   Classic above stays untouched; everything below rides on
+   data-scout-look="sharp". Lives inside .s-pi, so --pi-accent is already
+   ink here and --pi-live is the emerald (projects-inbox.css). */
+
+/* square: toolbar words, find, cards, pills, chips, buttons, rows */
+:root[data-scout-look="sharp"] .cw-modeToggle button,
+:root[data-scout-look="sharp"] .cw-filters button,
+:root[data-scout-look="sharp"] .cw-search,
+:root[data-scout-look="sharp"] .cw-addProject,
+:root[data-scout-look="sharp"] .cw-card,
+:root[data-scout-look="sharp"] .cw-statusPill,
+:root[data-scout-look="sharp"] .cw-substrateChip,
+:root[data-scout-look="sharp"] .cw-cardActions button,
+:root[data-scout-look="sharp"] .cw-projectContext,
+:root[data-scout-look="sharp"] .cw-workspaceHead,
+:root[data-scout-look="sharp"] .cw-workspaceAsks {
+  border-radius: 0;
+}
+
+/* selection is the plate plus ink; hover is the 3% plate */
+:root[data-scout-look="sharp"] .cw-workspaceHead:hover {
+  background: var(--row-hover, color-mix(in srgb, var(--ink) 3%, transparent));
+}
+:root[data-scout-look="sharp"] .cw-modeToggle button[data-active],
+:root[data-scout-look="sharp"] .cw-filters button[data-active],
+:root[data-scout-look="sharp"] .cw-addProject[aria-expanded="true"],
+:root[data-scout-look="sharp"] .cw-workspace[data-selected] .cw-workspaceHead {
+  background: var(--select-bg, var(--surface));
+  color: var(--ink);
+}
+
+/* focus: a 1px ink ring; the find field's suppressed outline comes back on
+   its box */
+:root[data-scout-look="sharp"] .cw-modeToggle button:focus-visible,
+:root[data-scout-look="sharp"] .cw-filters button:focus-visible,
+:root[data-scout-look="sharp"] .cw-addProject:focus-visible,
+:root[data-scout-look="sharp"] .cw-showMore:focus-visible,
+:root[data-scout-look="sharp"] .cw-workspaceHead:focus-visible,
+:root[data-scout-look="sharp"] .cw-substrateChip:focus-visible,
+:root[data-scout-look="sharp"] .cw-cardActions button:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+:root[data-scout-look="sharp"] .cw-search:focus-within {
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+/* the eyebrow: 10px mono caps at the label weight; live is a mark, not a hue */
+:root[data-scout-look="sharp"] .cw-digest {
+  font-size: var(--fs-label, 10px);
+  font-weight: var(--w-label, 400);
+  letter-spacing: var(--tr-label, 0.02em);
+}
+:root[data-scout-look="sharp"] .cw-digest span[data-tone="live"],
+:root[data-scout-look="sharp"] .cw-workspaceMeta time[data-tone="live"] {
+  color: var(--pi-ink);
+}
+:root[data-scout-look="sharp"] .cw-digest span[data-tone="needs"] { color: var(--state-attention, var(--ink)); }
+
+/* agent cards: square, flat, no lift; status reads from the word, not the edge */
+:root[data-scout-look="sharp"] .cw-card {
+  background: none;
+}
+:root[data-scout-look="sharp"] .cw-card:hover { transform: none; }
+:root[data-scout-look="sharp"] .cw-card[data-status="needs"] { border-color: var(--edge-strong, var(--pi-hairline-strong)); }
+:root[data-scout-look="sharp"] .cw-card[data-status="working"] { border-color: var(--pi-hairline); }
+:root[data-scout-look="sharp"] .cw-substrateChip[data-live] { border-color: var(--edge-strong, var(--pi-hairline-strong)); }
+:root[data-scout-look="sharp"] .cw-agentSectionHead h2,
+:root[data-scout-look="sharp"] .cw-cardNameRow b {
+  font-weight: var(--w-heading, 600);
+}
+
+/* state is a word: the status pill and the asks count lose fill, edge and
+   hue and become mono caps; working and thinking carry the 6px live mark,
+   asking is ink */
+:root[data-scout-look="sharp"] .cw-statusPill,
+:root[data-scout-look="sharp"] .cw-statusPill[data-status],
+:root[data-scout-look="sharp"] .cw-workspaceAsks {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font: var(--w-label, 400) var(--fs-label, 10px)/1 var(--pi-mono);
+  letter-spacing: var(--voice-track, var(--tr-label, 0.02em));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--state-word, var(--pi-muted));
+}
+:root[data-scout-look="sharp"] .cw-statusPill[data-status="needs"],
+:root[data-scout-look="sharp"] .cw-workspaceAsks {
+  color: var(--state-attention, var(--ink));
+}
+:root[data-scout-look="sharp"] .cw-statusPill[data-status="working"]::before,
+:root[data-scout-look="sharp"] .cw-statusPill[data-status="thinking"]::before,
+:root[data-scout-look="sharp"] .cw-digest span[data-tone="live"]::before,
+:root[data-scout-look="sharp"] .cw-workspaceMeta time[data-tone="live"]::before {
+  content: "";
+  display: inline-block;
+  width: var(--mark, 6px);
+  height: var(--mark, 6px);
+  margin-right: 6px;
+  vertical-align: 1px;
+  background: var(--pi-live, var(--state-live, var(--accent)));
+}

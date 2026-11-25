@@ -1,5 +1,3 @@
-import "./diff-stat.css";
-
 /**
  * A change's size as "+120 −14": the added count in the theme's added colour,
  * the removed count in its removed colour (--diff-add, --diff-del in app.css).

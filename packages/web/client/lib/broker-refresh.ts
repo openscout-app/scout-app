@@ -6,7 +6,6 @@ import {
   type BrokerRefreshScheduler,
 } from "./broker-refresh-controller.ts";
 import { isBrokerEventStreamLive, useBrokerEvents } from "./sse.ts";
-import { readOnlyPreview } from "./preview-capabilities.ts";
 import {
   isScoutSurfaceActive,
   isScoutSurfaceVisible,
@@ -25,7 +24,7 @@ const browserScheduler: BrokerRefreshScheduler = {
  * Keep broker-backed data fresh from events, with a timer only as a net.
  * `refresh` is not called on mount; screens do their own first load.
  */
-export function useBrokerRefresh(refresh: () => void, policy: BrokerRefreshPolicy, live = !readOnlyPreview): void {
+export function useBrokerRefresh(refresh: () => void, policy: BrokerRefreshPolicy): void {
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
   const policyRef = useRef(policy);
@@ -39,7 +38,7 @@ export function useBrokerRefresh(refresh: () => void, policy: BrokerRefreshPolic
       isActive: () => policyRef.current.activeWhen === "visible"
         ? isScoutSurfaceVisible()
         : isScoutSurfaceActive(),
-      isLive: () => live && isBrokerEventStreamLive(),
+      isLive: isBrokerEventStreamLive,
       scheduler: browserScheduler,
     });
     controllerRef.current = controller;
@@ -53,7 +52,7 @@ export function useBrokerRefresh(refresh: () => void, policy: BrokerRefreshPolic
       controller.dispose();
       controllerRef.current = null;
     };
-  }, [live]);
+  }, []);
 
-  useBrokerEvents((event) => controllerRef.current?.onEvent(event), live);
+  useBrokerEvents((event) => controllerRef.current?.onEvent(event));
 }

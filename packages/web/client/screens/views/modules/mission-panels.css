@@ -1,0 +1,70 @@
+/* Ops › Control as panels: the Mission wall, its roster, the session context
+   beside it and the ops summary. The screen's own CSS draws them
+   (mission-control.css, mission-left.css, ctx-panel.css); this only fits them
+   to a panel body, by the panel's width (@container), never the window's. */
+
+.vw-mission-wall,
+.vw-mission-roster,
+.vw-mission-context,
+.vw-ops-summary {
+  height: 100%;
+  min-height: 0;
+}
+
+.vw-mission-wall,
+.vw-mission-context {
+  display: flex;
+  flex-direction: column;
+}
+
+.vw-mission-wall > .s-wall,
+.vw-mission-context > .s-wall {
+  flex: 1;
+  height: auto;
+}
+
+/* The status line keeps one row: in a narrow panel it scrolls sideways
+   instead of wrapping into the grid it sits on. */
+.vw-mission-wall .s-wall-status {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.vw-mission-wall .s-wall-status > * {
+  flex: none;
+}
+
+/* The wall's own rail (no context panel beside it) is sized by the panel. */
+.vw-mission-wall .s-wall-rail {
+  width: min(400px, 46cqw);
+}
+
+@container (max-width: 640px) {
+  .vw-mission-wall .s-wall-status-keys {
+    display: none;
+  }
+
+  .vw-mission-wall .s-mission-overlay {
+    padding: var(--space-md);
+  }
+}
+
+@container (max-width: 480px) {
+  .vw-mission-wall .s-wall-rail {
+    width: 100%;
+  }
+}
+
+/* The context rail as a panel: in flow, full height, no edge of its own. */
+.s-wall-rail--panel {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
+  flex: 1;
+  width: auto;
+  min-height: 0;
+  border-left: 0;
+  box-shadow: none;
+}

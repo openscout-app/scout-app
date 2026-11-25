@@ -1,3 +1,12 @@
+import { hostFetch, hostEventSource } from "./hosts/host-fleet.ts";
+import {
+  DEFAULT_VOICE_FX,
+  VOICE_FX_PRESETS,
+  decodeAudioFromBase64,
+  playWithVoiceFx,
+  type VoiceFxParams,
+} from "@voxd/client/fx";
+import type { ScoutVoicePlayback } from "../../shared/voice-playback.ts";
 import {
   formatScoutVoiceIssue,
   voiceIssueHostOffline,
@@ -7,7 +16,8 @@ import {
   type ScoutVoiceIssue,
   type ScoutVoiceIssueAction,
   type ScoutVoiceIssueCode,
-} from "./voice-issues.ts";
+} from "../../shared/voice-issues.ts";
+import { beginScoutSpeech, endScoutSpeech } from "./scout-audio-owners.ts";
 
 export {
   formatScoutVoiceIssue,
@@ -46,6 +56,113 @@ export type ScoutVoiceLiveCallbacks = {
 
 export type ScoutVoiceLiveOptions = {
   surface?: string;
+};
+
+export type ScoutSpeechResult = {
+  /** Empty when the utterance was spoken on the host instead of rendered. */
+  contentType: string;
+  audioBase64: string;
+  modelId: string;
+  voiceId: string;
+  audioBytes: number;
+  /**
+   * Scout Menu spoke it live on the Mac. The request resolved when playback
+   * ended, so there is nothing left for the page to play. `interrupted`
+   * marks an operator cut (hold-to-talk, a newer utterance), not a failure.
+   */
+  playedOnHost?: boolean;
+  interrupted?: boolean;
+  metrics?: Record<string, unknown>;
+  traceId?: string;
+  speechTiming?: ScoutSpeechTimingResult;
+  originAppId?: string;
+  utteranceId?: string;
+};
+
+export type ScoutSpeechHandle = {
+  promise: Promise<ScoutSpeechResult>;
+  stop: () => void;
+};
+
+export type ScoutSpeechOptions = {
+  signal?: AbortSignal;
+  modelId?: string;
+  voiceId?: string;
+  speed?: number;
+  instructions?: string;
+  originAppId?: string;
+  utteranceId?: string;
+  speechTiming?: ScoutSpeechTimingRequest;
+  /** Override the operator's "spoken on host" setting for this utterance. */
+  playback?: ScoutVoicePlayback;
+  /** Fires when audio actually starts moving — after generation, at playback start. */
+  onPlaybackStart?: () => void;
+};
+
+export type ScoutSpeechCatalogModel = {
+  id: string;
+  name: string;
+  provider: string;
+  /** `null` means Scout Menu has not queried native provider credentials. */
+  available: boolean | null;
+};
+
+export type ScoutSpeechCatalogVoice = {
+  id: string;
+  name: string;
+  language?: string;
+  provider: string;
+  modelId: string;
+  /** `null` means Scout Menu has not queried native provider credentials. */
+  available: boolean | null;
+  isDefault: boolean;
+};
+
+export type ScoutSpeechCatalog = {
+  defaultModelId: string;
+  defaultVoiceId?: string;
+  models: ScoutSpeechCatalogModel[];
+  voices: ScoutSpeechCatalogVoice[];
+  source: "scout-menu" | "nvidia-developer-inference" | "fallback";
+};
+
+export type ScoutSpeechTimingCueRequest = {
+  id: string;
+  textStart?: number;
+  textEnd?: number;
+  text?: string;
+};
+
+export type ScoutSpeechTimingRequest = {
+  enabled: true;
+  modelId?: string;
+  strict?: boolean;
+  cues?: ScoutSpeechTimingCueRequest[];
+};
+
+export type ScoutSpeechTimingWord = {
+  word: string;
+  startMs: number;
+  endMs: number;
+  confidence?: number;
+  sourceTextStart?: number;
+  sourceTextEnd?: number;
+};
+
+export type ScoutSpeechTimingCueResult = {
+  id: string;
+  startMs: number;
+  endMs?: number;
+  confidence?: number;
+  source?: string;
+};
+
+export type ScoutSpeechTimingResult = {
+  source?: string;
+  modelId?: string;
+  elapsedMs?: number;
+  words?: ScoutSpeechTimingWord[];
+  cues?: ScoutSpeechTimingCueResult[];
 };
 
 export type ScoutVoiceLaunchOptions = {
@@ -151,7 +268,7 @@ export async function executeScoutVoiceIssueAction(action: ScoutVoiceIssueAction
 export async function engageScoutVoiceDictation(
   options: ScoutVoiceEngageOptions = {},
 ): Promise<ScoutVoiceEngageResult> {
-  const response = await fetch("/api/voice/engage", {
+  const response = await hostFetch("/api/voice/engage", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(options),
@@ -442,7 +559,7 @@ export class ScoutVoiceClient {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch("/api/voice/health?quiet=1", { signal: controller.signal });
+      const response = await hostFetch("/api/voice/health?quiet=1", { signal: controller.signal });
       const body = await response.json().catch(() => ({})) as ScoutVoiceHealthBody;
       const hostReachable = Boolean(body.host?.hostId);
       const microphoneGranted = typeof body.microphoneGranted === "boolean"
@@ -538,7 +655,7 @@ async function startNativeScoutVoiceLive(
 ): Promise<ScoutVoiceLiveHandle> {
   callbacks.onState?.("starting");
 
-  const startResponse = await fetch("/api/voice/session", {
+  const startResponse = await hostFetch("/api/voice/session", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -596,7 +713,7 @@ async function startNativeScoutVoiceLive(
     resolveResult(final);
   };
 
-  const eventSource = new EventSource(`/api/voice/session/${encodeURIComponent(sessionId)}/events`);
+  const eventSource = hostEventSource(`/api/voice/session/${encodeURIComponent(sessionId)}/events`);
   const onNamedEvent = (eventName: "session.state" | "session.partial" | "session.final" | "session.error" | "session.cancelled") => {
     return (event: MessageEvent<string>) => {
       if (finalized) return;
@@ -667,7 +784,7 @@ async function startNativeScoutVoiceLive(
     stop: async () => {
       callbacks.onState?.("processing");
       armResultTimeout();
-      const response = await fetch(`/api/voice/session/${encodeURIComponent(sessionId)}/stop`, {
+      const response = await hostFetch(`/api/voice/session/${encodeURIComponent(sessionId)}/stop`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -679,7 +796,7 @@ async function startNativeScoutVoiceLive(
       finalized = true;
       clearResultTimeout();
       eventSource.close();
-      const response = await fetch(`/api/voice/session/${encodeURIComponent(sessionId)}/cancel`, {
+      const response = await hostFetch(`/api/voice/session/${encodeURIComponent(sessionId)}/cancel`, {
         method: "POST",
       });
       if (!response.ok) {
@@ -822,6 +939,380 @@ function parseScoutVoiceError(raw: string, status: number): string {
     return raw || `Scout voice returned HTTP ${status}`;
   }
 }
+
+export function isScoutSpeechStopped(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+export async function prepareScoutSpeech(
+  text: string,
+  options: ScoutSpeechOptions = {},
+): Promise<ScoutSpeechResult> {
+  const body: Record<string, unknown> = {
+    text,
+    speed: normalizeSpeechSpeed(options.speed),
+  };
+  if (options.modelId) body.modelId = options.modelId;
+  if (options.voiceId) body.voiceId = options.voiceId;
+  if (options.originAppId) body.originAppId = options.originAppId;
+  if (options.utteranceId) body.utteranceId = options.utteranceId;
+  if (options.instructions) body.instructions = options.instructions;
+  if (options.speechTiming?.enabled) body.speechTiming = options.speechTiming;
+  if (options.playback) body.playback = options.playback;
+
+  const response = await hostFetch("/api/voice/speak", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal: options.signal,
+  });
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    try {
+      const parsed = JSON.parse(raw) as { error?: string };
+      throw new Error(parsed.error ?? `Scout voice returned HTTP ${response.status}`);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(raw || `Scout voice returned HTTP ${response.status}`);
+      }
+      throw error;
+    }
+  }
+  return await response.json() as ScoutSpeechResult;
+}
+
+export async function fetchScoutSpeechCatalog(modelId?: string): Promise<ScoutSpeechCatalog> {
+  const query = modelId ? `?modelId=${encodeURIComponent(modelId)}` : "";
+  const response = await hostFetch(`/api/voice/catalog${query}`, { headers: { accept: "application/json" } });
+  if (!response.ok) {
+    throw new Error(`Scout voice catalog returned HTTP ${response.status}`);
+  }
+  return await response.json() as ScoutSpeechCatalog;
+}
+
+/**
+ * Reconcile only a voice that cannot belong to the selected model. Provider
+ * availability is host-query state, not permission to overwrite a persisted
+ * Deck choice, so the model id always remains operator-owned.
+ */
+export function reconcileScoutSpeechSelection(
+  catalog: ScoutSpeechCatalog,
+  modelId: string,
+  voiceId: string,
+): { modelId: string; voiceId: string } {
+  const selected = catalog.voices.find((voice) => (
+    voice.id === voiceId && voice.modelId === modelId
+  ));
+  if (selected) return { modelId, voiceId };
+
+  const voicesForModel = catalog.voices.filter((voice) => voice.modelId === modelId);
+  const next = voicesForModel.find((voice) => voice.isDefault && voice.available !== false)
+    ?? voicesForModel.find((voice) => voice.available !== false)
+    ?? voicesForModel[0];
+  return { modelId, voiceId: next?.id ?? voiceId };
+}
+
+let primedSpeechContext: AudioContext | null = null;
+
+function speechAudioContextCtor(): (typeof AudioContext) | null {
+  if (typeof window === "undefined") return null;
+  return window.AudioContext
+    ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    ?? null;
+}
+
+/** Call from a tap. Keeps an AudioContext unlocked so TTS after STT still plays. */
+export function primeScoutSpeechPlayback(): void {
+  const Ctor = speechAudioContextCtor();
+  if (!Ctor) return;
+  let src: AudioBufferSourceNode | null = null;
+  try {
+    if (!primedSpeechContext || primedSpeechContext.state === "closed") {
+      primedSpeechContext = new Ctor();
+    }
+    void primedSpeechContext.resume().catch(() => { /* best-effort unlock */ });
+    const silent = primedSpeechContext.createBuffer(1, 1, primedSpeechContext.sampleRate);
+    src = primedSpeechContext.createBufferSource();
+    src.buffer = silent;
+    src.connect(primedSpeechContext.destination);
+    const silentSource = src;
+    src.onended = () => silentSource.disconnect();
+    src.start(0);
+  } catch {
+    src?.disconnect();
+    // Best-effort; later play() still tries HTML Audio.
+  }
+}
+
+/** Neither autoplay permission nor decoding is allowed to retain a stopped turn. */
+function awaitSpeechPreparation<T>(prepare: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(stoppedSpeechError());
+      return;
+    }
+    const cleanup = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener("abort", onAbort);
+    };
+    const onAbort = () => {
+      cleanup();
+      reject(stoppedSpeechError());
+    };
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error("Scout audio preparation timed out."));
+    }, 1500);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    try {
+      void prepare().then((value) => {
+        cleanup();
+        resolve(value);
+      }, (error: unknown) => {
+        cleanup();
+        reject(error);
+      });
+    } catch (error) {
+      cleanup();
+      reject(error);
+    }
+  });
+}
+
+async function playScoutSpeechBuffer(
+  result: ScoutSpeechResult,
+  options: { signal?: AbortSignal; onPlaybackStart?: () => void },
+): Promise<void> {
+  const ctx = primedSpeechContext;
+  if (!ctx || ctx.state === "closed" || !result.audioBase64) throw new Error("no primed context");
+  if (ctx.state !== "running") {
+    await awaitSpeechPreparation(() => ctx.resume(), options.signal);
+  }
+  if (ctx.state !== "running") throw new Error("primed context is unavailable");
+  const binary = atob(result.audioBase64);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  // Decode on the unlocked context: the effects helper owns a different context.
+  const buffer = await awaitSpeechPreparation(() => ctx.decodeAudioData(bytes.buffer), options.signal);
+  if (options.signal?.aborted) throw stoppedSpeechError();
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  src.connect(ctx.destination);
+  await new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      src.onended = null;
+      options.signal?.removeEventListener("abort", stop);
+      src.disconnect();
+    };
+    const stop = () => {
+      cleanup();
+      try { src.stop(); } catch { /* not started or already stopped */ }
+      reject(stoppedSpeechError());
+    };
+    if (options.signal?.aborted) {
+      stop();
+      return;
+    }
+    options.signal?.addEventListener("abort", stop, { once: true });
+    src.onended = () => {
+      cleanup();
+      resolve();
+    };
+    try {
+      src.start(0);
+      options.onPlaybackStart?.();
+    } catch (error) {
+      cleanup();
+      try { src.stop(); } catch { /* not started */ }
+      reject(error);
+    }
+  });
+}
+
+export async function playPreparedScoutSpeech(
+  result: ScoutSpeechResult,
+  options: { signal?: AbortSignal; onPlaybackStart?: () => void } = {},
+): Promise<ScoutSpeechResult> {
+  if (options.signal?.aborted) throw stoppedSpeechError();
+  if (result.playedOnHost) {
+    // Scout Menu already spoke this on the Mac; the prepare call returned
+    // when playback ended. There are no bytes to play here.
+    options.onPlaybackStart?.();
+    return result;
+  }
+  if (!result.audioBase64) {
+    throw new Error("Scout voice returned no audio to play.");
+  }
+  try {
+    await playScoutSpeechBuffer(result, options);
+    return result;
+  } catch (error) {
+    if (isScoutSpeechStopped(error)) throw error;
+    // Fall through to HTML Audio when the primed context isn't ready.
+  }
+  if (options.signal?.aborted) throw stoppedSpeechError();
+  const audio = new Audio(`data:${result.contentType};base64,${result.audioBase64}`);
+  const stopPlayback = () => {
+    audio.pause();
+    audio.currentTime = 0;
+  };
+  options.signal?.addEventListener("abort", stopPlayback, { once: true });
+  await audio.play();
+  options.onPlaybackStart?.();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const cleanup = () => {
+        audio.removeEventListener("ended", onEnded);
+        audio.removeEventListener("error", onError);
+        options.signal?.removeEventListener("abort", onAbort);
+      };
+      const onEnded = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = () => {
+        cleanup();
+        reject(new Error("Scout voice playback failed."));
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(stoppedSpeechError());
+      };
+      if (options.signal?.aborted) {
+        onAbort();
+        return;
+      }
+      audio.addEventListener("ended", onEnded, { once: true });
+      audio.addEventListener("error", onError, { once: true });
+      options.signal?.addEventListener("abort", onAbort, { once: true });
+    });
+    return result;
+  } finally {
+    options.signal?.removeEventListener("abort", stopPlayback);
+  }
+}
+
+export async function speakWithScoutVoice(
+  text: string,
+  options: ScoutSpeechOptions = {},
+): Promise<ScoutSpeechResult> {
+  beginScoutSpeech();
+  try {
+    const result = await prepareScoutSpeech(text, options);
+    return await playPreparedScoutSpeech(result, { signal: options.signal, onPlaybackStart: options.onPlaybackStart });
+  } finally {
+    endScoutSpeech();
+  }
+}
+
+export function startScoutSpeech(text: string, options: Omit<ScoutSpeechOptions, "signal"> = {}): ScoutSpeechHandle {
+  const controller = new AbortController();
+  return {
+    promise: speakWithScoutVoice(text, { ...options, signal: controller.signal }),
+    stop: () => controller.abort(),
+  };
+}
+
+export type ScoutSpeakWithEffectsOptions = ScoutSpeechOptions & {
+  presetId?: string;
+  params?: Partial<VoiceFxParams>;
+};
+
+export async function speakWithEffects(
+  text: string,
+  options: ScoutSpeakWithEffectsOptions = {},
+): Promise<ScoutSpeechResult> {
+  beginScoutSpeech();
+  try {
+    const result = await prepareScoutSpeech(text, options);
+    if (options.signal?.aborted) throw stoppedSpeechError();
+    if (result.playedOnHost) {
+      options.onPlaybackStart?.();
+      return result;
+    }
+    const buffer = await decodeAudioFromBase64(result.audioBase64, result.contentType);
+    const params = resolveVoiceFxParams(options.presetId, options.params);
+    const handle = playWithVoiceFx(buffer, { params, signal: options.signal });
+    options.onPlaybackStart?.();
+    await handle.promise;
+    return result;
+  } finally {
+    endScoutSpeech();
+  }
+}
+
+export async function playPreparedScoutSpeechWithEffects(
+  result: ScoutSpeechResult,
+  options: { signal?: AbortSignal; presetId?: string; params?: Partial<VoiceFxParams>; onPlaybackStart?: () => void } = {},
+): Promise<ScoutSpeechResult> {
+  if (options.signal?.aborted) throw stoppedSpeechError();
+  if (result.playedOnHost) {
+    options.onPlaybackStart?.();
+    return result;
+  }
+  const buffer = await decodeAudioFromBase64(result.audioBase64, result.contentType);
+  const params = resolveVoiceFxParams(options.presetId, options.params);
+  const handle = playWithVoiceFx(buffer, { params, signal: options.signal });
+  options.onPlaybackStart?.();
+  await handle.promise;
+  return result;
+}
+
+export function startScoutSpeechWithEffects(
+  text: string,
+  options: Omit<ScoutSpeakWithEffectsOptions, "signal"> = {},
+): ScoutSpeechHandle {
+  const controller = new AbortController();
+  return {
+    promise: speakWithEffects(text, { ...options, signal: controller.signal }),
+    stop: () => controller.abort(),
+  };
+}
+
+export function startScoutSystemSpeech(
+  text: string,
+  options: { speed?: number } = {},
+): { promise: Promise<void>; stop: () => void } {
+  if (typeof window === "undefined" || typeof SpeechSynthesisUtterance === "undefined" || !window.speechSynthesis) {
+    return {
+      promise: Promise.reject(new Error("System speech synthesis is unavailable in this browser.")),
+      stop: () => {},
+    };
+  }
+
+  const synthesis = window.speechSynthesis;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = normalizeSpeechSpeed(options.speed) ?? 1;
+  let settled = false;
+  let rejectResult: ((error: Error) => void) | null = null;
+  const promise = new Promise<void>((resolve, reject) => {
+    rejectResult = reject;
+    utterance.onend = () => {
+      settled = true;
+      resolve();
+    };
+    utterance.onerror = (event) => {
+      settled = true;
+      if (event.error === "canceled" || event.error === "interrupted") {
+        reject(stoppedSpeechError());
+        return;
+      }
+      reject(new Error(`System speech synthesis failed: ${event.error}.`));
+    };
+  });
+
+  synthesis.cancel();
+  synthesis.speak(utterance);
+  return {
+    promise,
+    stop: () => {
+      if (settled) return;
+      settled = true;
+      synthesis.cancel();
+      rejectResult?.(stoppedSpeechError());
+    },
+  };
+}
+
 async function transcribeScoutVoiceAudio(
   audio: Blob,
   input: { sessionId: string },
@@ -832,7 +1323,7 @@ async function transcribeScoutVoiceAudio(
   form.append("sessionId", input.sessionId);
   if (format) form.append("format", format);
 
-  const response = await fetch("/api/voice/transcribe", {
+  const response = await hostFetch("/api/voice/transcribe", {
     method: "POST",
     body: form,
   });
@@ -854,6 +1345,12 @@ async function transcribeScoutVoiceAudio(
     text: result.text?.trim() ?? "",
     durationMs: Number(result.durationMs ?? 0),
   };
+}
+
+function stoppedSpeechError(): Error {
+  const error = new Error("Speech stopped.");
+  error.name = "AbortError";
+  return error;
 }
 
 function cancelledVoiceError(): Error {
@@ -901,6 +1398,25 @@ function extensionForMimeType(mimeType: string): string {
   return "audio";
 }
 
+function resolveVoiceFxParams(
+  presetId: string | undefined,
+  override: Partial<VoiceFxParams> | undefined,
+): VoiceFxParams {
+  const presetParams = presetId
+    ? VOICE_FX_PRESETS.find((p) => p.id === presetId)?.params
+    : undefined;
+  return {
+    ...DEFAULT_VOICE_FX,
+    ...(presetParams ?? {}),
+    ...(override ?? {}),
+  };
+}
+
+function normalizeSpeechSpeed(speed: number | undefined): number | undefined {
+  if (speed === undefined || !Number.isFinite(speed)) return undefined;
+  return Math.min(2, Math.max(0.5, Number(speed.toFixed(2))));
+}
+
 function createSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `scout-voice:${crypto.randomUUID()}`;
@@ -912,7 +1428,7 @@ export async function fetchScoutVoiceSettings(): Promise<{
   settings: ScoutVoiceSettings;
   devices: ScoutVoiceInputDevice[];
 }> {
-  const response = await fetch("/api/voice/settings");
+  const response = await hostFetch("/api/voice/settings");
   if (!response.ok) {
     const raw = await response.text().catch(() => "");
     throw new Error(parseScoutVoiceError(raw, response.status));
@@ -926,7 +1442,7 @@ export async function fetchScoutVoiceSettings(): Promise<{
 export async function openScoutVoicePrivacySettings(
   kind: "microphone" | "speechRecognition" = "microphone",
 ): Promise<void> {
-  const response = await fetch("/api/voice/permissions/open", {
+  const response = await hostFetch("/api/voice/permissions/open", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ kind }),
@@ -940,7 +1456,7 @@ export async function openScoutVoicePrivacySettings(
 export async function requestScoutVoicePermissions(
   kind: "microphone" | "speechRecognition" = "microphone",
 ): Promise<void> {
-  const response = await fetch("/api/voice/permissions/request", {
+  const response = await hostFetch("/api/voice/permissions/request", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ kind }),
@@ -949,4 +1465,48 @@ export async function requestScoutVoicePermissions(
     const raw = await response.text().catch(() => "");
     throw new Error(parseScoutVoiceError(raw, response.status));
   }
+}
+
+export type ScoutVoiceSessionHistoryEntry = {
+  sessionId: string;
+  status: string;
+  surface: string;
+  clientId: string;
+  createdAt: number;
+  updatedAt: number;
+  error: string | null;
+  eventCount: number;
+  lastEvent: string | null;
+  lastTranscript: string | null;
+};
+
+export async function fetchScoutVoiceHistory(limit = 12): Promise<ScoutVoiceSessionHistoryEntry[]> {
+  const response = await hostFetch(`/api/voice/history?limit=${limit}`);
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    throw new Error(parseScoutVoiceError(raw, response.status));
+  }
+  const body = await response.json() as { sessions?: ScoutVoiceSessionHistoryEntry[] };
+  return body.sessions ?? [];
+}
+
+export async function saveScoutVoiceSettings(
+  patch: Partial<Pick<ScoutVoiceSettings, "preference" | "inputDeviceId">>,
+): Promise<{
+  settings: ScoutVoiceSettings;
+  devices: ScoutVoiceInputDevice[];
+}> {
+  const response = await hostFetch("/api/voice/settings", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    throw new Error(parseScoutVoiceError(raw, response.status));
+  }
+  return await response.json() as {
+    settings: ScoutVoiceSettings;
+    devices: ScoutVoiceInputDevice[];
+  };
 }

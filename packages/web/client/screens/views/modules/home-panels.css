@@ -1,0 +1,561 @@
+/* The Home panels (home-cockpit, home-quotas, home-velocity, home-moving,
+   home-coord, home-message): Home's own parts (screens/home/home-panels.tsx,
+   HomeHero.tsx) fitted to a panel, as Home's grid fitted them
+   (fleet-home.css › "Home on the HUD grid"). The panel is the frame: lists lie
+   flat on hairlines, no rounded boxes inside it. Sized by the panel body (a
+   query container, views.css), never the window. Home's stylesheets are
+   imported by the module files and never edited from here. */
+
+/* Home's one row grid (fleet-home.css › .s-fleet-home-inner): the same
+   gutter, row height and columns in every Home list, so time, who and the
+   text line up across panels. */
+.vw-home {
+  --home-gutter: var(--space-lg);
+  --home-row-pad: var(--space-md);
+  --home-col-gap: var(--space-lg);
+  --home-cols: 44px 16px minmax(96px, 168px) minmax(0, 1fr) auto;
+  min-height: 100%;
+}
+
+/* Density › Compact fits more rows, as on Home. */
+:root[data-scout-avatar-size="compact"] .vw-home {
+  --home-row-pad: var(--space-sm);
+}
+
+/* 8px instrument labels lift to the 9px floor, as on Home. */
+.vw-home .label-xs {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-lg);
+}
+
+/* ── Lists: flat, scrolling in the panel ─────────────────────────────── */
+
+.vw-home .s-mc-stream,
+.vw-home .s-moving-signal-list,
+.vw-home .s-moving-ask-list {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  max-height: none;
+}
+
+.vw-home .s-moving-ask-list {
+  border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.vw-home .s-fleet-live-shape,
+.vw-home .s-fleet-live-empty {
+  margin-top: 0;
+  padding: var(--space-md) var(--home-gutter);
+}
+
+.vw-home .s-moving-signal-stage {
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+/* Coordination in a narrow panel: the kind column steps out and the sender
+   column tightens, so the message keeps the width. */
+@container (max-width: 680px) {
+  .vw-home--coord .s-mc-stream-row {
+    grid-template-columns: 44px 16px minmax(72px, 140px) minmax(0, 1fr);
+  }
+  .vw-home--coord .s-mc-stream-verb { display: none; }
+}
+
+@container (max-width: 420px) {
+  .vw-home--coord .s-mc-stream-row { grid-template-columns: 44px minmax(0, 96px) minmax(0, 1fr); }
+  .vw-home--coord .s-mc-stream-mark { display: none; }
+}
+
+/* ── Head controls: chip size, never wrapping ────────────────────────── */
+
+.vw-panel--home-moving .hud-grid-head .s-moving-controls,
+.vw-panel--home-moving .hud-grid-head .s-moving-controlset {
+  flex-wrap: nowrap;
+  gap: var(--space-sm);
+}
+
+.vw-panel--home-moving .hud-grid-head .s-mc-window,
+.vw-panel--home-coord .hud-grid-head .s-mc-window {
+  gap: var(--space-xs);
+}
+
+/* The group names itself to assistive tech (aria-label); in a 36px head the
+   word goes and the segments stay. Lookback keeps its refreshing mark. */
+.vw-panel--home-moving .hud-grid-head .s-mc-window-label { display: none; }
+.vw-panel--home-coord .hud-grid-head .s-mc-window-label { font-size: 0; letter-spacing: 0; }
+
+.vw-panel--home-moving .hud-grid-head .s-mc-window-tab,
+.vw-panel--home-coord .hud-grid-head .s-mc-window-tab {
+  height: 20px;
+  padding: 0 var(--space-sm);
+  font-size: var(--text-2xs);
+  line-height: 20px;
+}
+
+/* the selected segment is a soft accent plate, not a solid fill */
+.vw-panel--home-moving .hud-grid-head .s-mc-window-tab.is-active,
+.vw-panel--home-coord .hud-grid-head .s-mc-window-tab.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.vw-panel--home-moving .hud-grid-head .s-link-btn {
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+
+.vw-panel--home-quotas .hud-grid-head .hd-gauge-toggle,
+.vw-panel--home-velocity .hud-grid-head .hd-grid-sub {
+  white-space: nowrap;
+}
+
+/* ── Fleet cockpit ───────────────────────────────────────────────────── */
+
+.vw-home-cockpit-state {
+  padding: var(--space-md) var(--home-gutter);
+}
+
+.vw-home-cockpit-state .s-connection-state {
+  margin: 0;
+}
+
+.vw-home .s-connection-trace {
+  margin: 0;
+  padding: var(--space-md) var(--home-gutter);
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+/* The head: the title, then the subscription gauges in the room up to the
+   controls, then the controls, which never clip. The count slot takes the
+   head's free width whatever it holds (inline-size containment), so the room
+   CockpitGauges › useHeadGaugePlacement measures never depends on the gauges:
+   all in full, then without their countdowns, then on a row under the head. */
+.vw-panel--home-cockpit .hud-grid-title {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+}
+.vw-panel--home-cockpit .vw-title-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vw-panel--home-cockpit .vw-count-slot {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: var(--space-lg);
+  contain: inline-size;
+}
+/* a hairline between the title and the readings */
+.vw-cockpit-gauges--head {
+  padding-left: var(--space-lg);
+  border-left: 1px solid var(--hud-line, var(--border));
+}
+.vw-panel--home-cockpit .hud-grid-right { flex: none; }
+
+/* A gauge: name, a thin bar, percent used, time to reset. Light carries the
+   level, not hue: muted under 75%, ink to 90%, the accent past it. */
+.vw-cockpit-gauges {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  width: max-content;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--muted);
+}
+.vw-cockpit-gauges[data-tier="hidden"] { display: none; }
+.vw-cockpit-gauges[data-tier="compact"] .vw-cockpit-gauge-reset { display: none; }
+
+.vw-cockpit-gauge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.vw-cockpit-gauge:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.vw-cockpit-gauge-name,
+.vw-cockpit-gauge-reset { color: var(--dim); font-variant-numeric: tabular-nums; }
+.vw-cockpit-gauge-bar {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 3px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.vw-cockpit-gauge-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--muted);
+}
+.vw-cockpit-gauge-used {
+  min-width: 3ch;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.vw-cockpit-gauge--warn .vw-cockpit-gauge-fill { background: var(--ink); }
+.vw-cockpit-gauge--warn .vw-cockpit-gauge-used { color: var(--ink); }
+.vw-cockpit-gauge--err .vw-cockpit-gauge-fill { background: var(--accent); }
+.vw-cockpit-gauge--err .vw-cockpit-gauge-used { color: var(--accent); }
+.vw-cockpit-gauge--none .vw-cockpit-gauge-used { color: var(--dim); }
+.vw-cockpit-gauge:hover .vw-cockpit-gauge-name,
+.vw-cockpit-gauge:hover .vw-cockpit-gauge-used { color: var(--ink); }
+.vw-cockpit-gauge--none:only-child { color: var(--dim); }
+.vw-cockpit-gauge--none:only-child:hover { color: var(--ink); }
+.vw-cockpit-gauge.is-pending { cursor: default; }
+.vw-cockpit-gauge.is-pending .vw-cockpit-gauge-bar { width: 120px; opacity: 0.6; }
+
+/* Under the head: one row of shortcuts, or (gauges moved down) two short rows. */
+/* The panel takes its height from these rows, in whole grid rows, so a row
+ * asks for the least it needs (32px) and then fills what the grid gives it.
+ * A fixed 48px assumed a 32px head and 4px seams, and was cut off under a
+ * taller head or joined panels. */
+.vw-cockpit-rows {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+.vw-cockpit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+  flex: 1 1 32px;
+  min-height: 32px;
+  max-height: 48px;
+  padding: 0 8px 0 12px;
+}
+.vw-cockpit-rows.is-split .vw-cockpit-row { flex-basis: 24px; min-height: 24px; max-height: 25px; }
+.vw-cockpit-rows.is-split .vw-cockpit-row + .vw-cockpit-row {
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.vw-cockpit-row--gauges {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.vw-cockpit-row--gauges::-webkit-scrollbar { display: none; }
+@container (max-width: 560px) {
+  .vw-cockpit-gauges--row .vw-cockpit-gauge-reset { display: none; }
+}
+@container (max-width: 420px) {
+  .vw-cockpit-gauges--row { gap: var(--space-md); }
+  .vw-cockpit-gauges--row .vw-cockpit-gauge-bar { width: 24px; }
+}
+
+.vw-cockpit-label {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+}
+
+.vw-cockpit-shortcut-list {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.vw-cockpit-shortcut-list::-webkit-scrollbar { display: none; }
+.vw-cockpit-shortcut {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  max-width: 220px;
+  height: 22px;
+  padding: 0 var(--space-md);
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.vw-cockpit-shortcut:first-child { padding-left: 0; }
+.vw-cockpit-shortcut + .vw-cockpit-shortcut::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  border-left: 1px solid var(--hud-line, var(--border));
+}
+.vw-cockpit-shortcut-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vw-cockpit-shortcut:hover,
+.vw-cockpit-shortcut[aria-current="page"] { color: var(--ink); }
+/* the page on screen: a square strip under its name */
+.vw-cockpit-shortcut[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  right: var(--space-md);
+  bottom: 0;
+  left: var(--space-md);
+  height: 2px;
+  background: var(--accent);
+}
+.vw-cockpit-shortcut:first-child[aria-current="page"]::after { left: 0; }
+.vw-cockpit-shortcut:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+
+.vw-cockpit-shortcuts-empty {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@container (max-width: 560px) {
+  .vw-cockpit-shortcuts-hint { display: none; }
+}
+
+.vw-cockpit-shortcut-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+}
+.vw-cockpit-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  font: 400 10.5px/1 var(--font-mono);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.vw-cockpit-tool svg { color: var(--dim); }
+.vw-cockpit-tool:hover:not(:disabled),
+.vw-cockpit-tool[aria-expanded="true"] { color: var(--ink); border-color: var(--border); }
+.vw-cockpit-tool:hover:not(:disabled) svg { color: var(--accent); }
+.vw-cockpit-tool:disabled { opacity: 0.45; cursor: default; }
+.vw-cockpit-tool:focus-visible,
+.vw-cockpit-icon:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.vw-cockpit-tool--primary:not(:disabled) { color: var(--ink); border-color: var(--hud-line-strong, var(--border)); }
+
+/* The shortcuts editor: fixed under Add or Edit, over the page (a portal, so
+   no panel clips it). Sections on hairlines, rows rather than cards. */
+.vw-cockpit-editor {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, calc(100vw - 16px));
+  overflow-y: auto;
+  border: 1px solid var(--hud-line-strong, var(--border));
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.vw-cockpit-editor .vw-cockpit-tool { border-color: var(--border); }
+.vw-cockpit-editor-section {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 10px 12px;
+}
+.vw-cockpit-editor-section + .vw-cockpit-editor-section { border-top: 1px solid var(--border); }
+.vw-cockpit-editor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+  outline: none;
+}
+.vw-cockpit-editor-count { letter-spacing: var(--tracking-md); font-variant-numeric: tabular-nums; }
+.vw-cockpit-field {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+}
+.vw-cockpit-field-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-lg));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+}
+.vw-cockpit-input {
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+  color: var(--ink);
+  font: 400 var(--text-xs)/1 var(--font-sans);
+}
+.vw-cockpit-input::placeholder { color: var(--dim); }
+.vw-cockpit-input:focus { outline: none; border-color: var(--accent); }
+.vw-cockpit-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 20px;
+}
+.vw-cockpit-editor-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--dim);
+  font-size: var(--text-2xs);
+  line-height: 1.4;
+}
+.vw-cockpit-editor-note.is-error { color: var(--ink); }
+.vw-cockpit-editor-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vw-cockpit-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 32px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.vw-cockpit-editor-row:first-child { border-top: 0; }
+.vw-cockpit-editor-name,
+.vw-cockpit-editor-href {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vw-cockpit-editor-name { color: var(--ink); }
+.vw-cockpit-editor-href {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  color: var(--dim);
+}
+.vw-cockpit-editor-rename {
+  height: 24px;
+  padding: 0 6px;
+  border-color: transparent;
+  background: none;
+}
+.vw-cockpit-editor-rename:hover { border-color: var(--border); }
+.vw-cockpit-editor-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.vw-cockpit-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+.vw-cockpit-icon:hover:not(:disabled) { color: var(--ink); border-color: var(--border); }
+.vw-cockpit-icon:disabled { opacity: 0.35; cursor: default; }
+.vw-cockpit-editor-tools .vw-cockpit-tool { margin-left: 4px; }
+@media (max-width: 480px) {
+  .vw-cockpit-editor-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .vw-cockpit-editor-href { display: none; }
+}
+
+/* ── Subscriptions & quotas ──────────────────────────────────────────── */
+
+/* A narrow panel gives the bar the room and keeps the countdown. */
+@container (max-width: 520px) {
+  .vw-home--quotas .hd-gauge-table-head,
+  .vw-home--quotas .hd-gauge {
+    grid-template-columns: 80px 1fr auto;
+  }
+}
+
+/* ── Fleet velocity: the curve fills the panel ───────────────────────── */
+
+.vw-home--velocity {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.vw-home--velocity .hd-heartrate-plot-body--fill {
+  flex: 1;
+}
+
+/* ── Message: the composer is the panel ──────────────────────────────── */
+
+.vw-panel--home-message .hud-grid-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.vw-home--message {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.vw-home--message .s-quiet-panel {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+/* ── Sharp look ──────────────────────────────────────────────────────── */
+
+/* the selected window segment is the selection plate in ink, not an emerald plate */
+:root[data-scout-look="sharp"] .vw-panel--home-moving .hud-grid-head .s-mc-window-tab.is-active,
+:root[data-scout-look="sharp"] .vw-panel--home-coord .hud-grid-head .s-mc-window-tab.is-active {
+  background: var(--select-bg, color-mix(in srgb, var(--ink) 8%, transparent));
+  color: var(--ink);
+}

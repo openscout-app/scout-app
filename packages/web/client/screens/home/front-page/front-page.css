@@ -1,0 +1,797 @@
+/* Home's front page (FrontPage.tsx). Rows, not cards; square inside the pane;
+   one accent for what you can act on; proportional type for reading, mono
+   only for ids. The agent column and the action column have fixed widths, so
+   they align from row to row and section to section. */
+
+.s-front {
+  --fp-ink: var(--scout-chrome-ink-strong);
+  --fp-soft: var(--scout-chrome-ink-soft);
+  --fp-faint: var(--scout-chrome-ink-faint);
+  --fp-wash: color-mix(in srgb, var(--hud-ink) 4%, transparent);
+  --fp-agent-col: 236px;
+  --fp-ask-col: 132px;
+
+  /* Sized by its pane, never by what it holds; the sections below lay out
+     from this width, not the window's. */
+  container: fp / inline-size;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  /* No background of its own: Home sits on the page card like every other page. */
+  color: var(--fp-ink);
+  font-family: var(--hud-font-sans);
+}
+
+/* The same gutter as the other pages in the card: one inset, not a second one. */
+/* The page keeps a reading width and centers in wide windows; the sheet's
+   edge is the frame, so this is padding, never a box. */
+.fp-page { box-sizing: border-box; max-width: 1440px; margin: 0 auto; padding: 24px 32px 64px; }
+.fp-quiet { color: var(--fp-faint); }
+.fp-mono { font-family: var(--hud-font-mono); font-size: var(--text-xs); }
+.fp-mark { display: inline-grid; flex: none; color: var(--fp-soft); }
+.fp-plain { color: inherit; text-decoration: none; }
+.fp-plain:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* ── the sections ──────────────────────────────────────────────────── */
+
+.fp-section { margin-top: 24px; }
+.fp-section:first-of-type { margin-top: 0; }
+.fp-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0 10px;
+  border-top: 1px solid var(--scout-line);
+  font-size: var(--text-sm);
+  color: var(--fp-soft);
+}
+.fp-labelIcon { display: inline-flex; align-self: center; margin-right: -2px; color: var(--fp-soft); }
+.fp-headLink { color: inherit; text-decoration: none; }
+.fp-headLink:hover { color: var(--fp-ink); }
+.fp-allLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--fp-soft);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.fp-allLink:hover { color: var(--fp-ink); }
+.fp-allLink[data-strong] { color: var(--accent); }
+
+/* ── the agent column ──────────────────────────────────────────────── */
+
+.fp-agent { display: grid; gap: 4px; min-width: 0; width: 100%; max-width: var(--fp-agent-col); align-content: center; }
+.fp-agentLine { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--text-sm); color: var(--fp-soft); white-space: nowrap; }
+.fp-agentName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.fp-agentAt { margin-left: auto; padding-left: 10px; color: var(--fp-faint); font-variant-numeric: tabular-nums; }
+.fp-agentWhere { overflow: hidden; font-size: var(--text-sm); color: var(--fp-faint); text-overflow: ellipsis; white-space: nowrap; }
+.fp-refs { display: inline-flex; flex-wrap: wrap; gap: 2px 12px; font-size: var(--text-sm); }
+.fp-ref { display: inline-flex; flex: none; align-items: baseline; gap: 6px; color: var(--fp-soft); text-decoration: none; white-space: nowrap; }
+.fp-ref:hover .fp-mono { text-decoration: underline; text-underline-offset: 3px; }
+.fp-ref [data-state="merged"] { color: var(--accent); }
+.fp-refLine { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
+.fp-size { font-size: var(--text-sm); color: var(--fp-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* The runtime or the feed can't be reached: the shared connection notice, centred in the pane. */
+.fp-loadState { display: grid; min-height: 320px; }
+
+/* ── leads ─────────────────────────────────────────────────────────── */
+
+.fp-shot { position: relative; margin: 0; overflow: hidden; border: 1px solid var(--scout-line); background: var(--fp-wash); }
+.fp-shot img, .fp-shot video { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+.fp-shot[data-shape="wide"] { aspect-ratio: 16 / 10; }
+.fp-shot[data-shape="thumb"] { width: 88px; height: 52px; }
+
+/* ── For you ───────────────────────────────────────────────────────── */
+
+.fp-forList { display: grid; }
+/* A handed-back post carries the Feed's actions: the primary move in the
+   action column, the rest in a strip under the row, shown on hover or focus. */
+.fp-forRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--fp-agent-col) var(--fp-ask-col);
+  grid-template-areas: "main agent primary" "strip strip .";
+  align-items: center;
+  gap: 0 16px;
+  min-height: 52px;
+  padding: 8px 0;
+}
+.fp-forList[data-thumbs] .fp-forRow {
+  grid-template-columns: 88px minmax(0, 1fr) var(--fp-agent-col) var(--fp-ask-col);
+  grid-template-areas: "thumb main agent primary" ". strip strip .";
+}
+.fp-forRow > .fp-shot, .fp-forThumb { grid-area: thumb; }
+.fp-forRow > .fp-forMain { grid-area: main; }
+.fp-forRow > .fp-agent { grid-area: agent; }
+.fp-forRow > .fp-ask, .fp-forRow > .pa-primary { grid-area: primary; }
+.fp-forRow > .pa-strip { margin-top: 4px; }
+.fp-forRow > .pa-primary:empty { display: none; }
+/* Rows and cards share one hairline between them. */
+.fp-forList > * + * { border-top: 1px solid var(--scout-line); }
+.fp-forMain { min-width: 0; }
+.fp-forTitle { display: flex; align-items: baseline; gap: 10px; min-width: 0; font-size: var(--text-md); color: var(--fp-ink); text-decoration: none; }
+a.fp-forTitle:hover .fp-forTitleText { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.fp-forTitleText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-forProject { flex: none; font-size: var(--text-sm); color: var(--fp-faint); }
+.fp-forCaption {
+  margin-top: 1px;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  color: var(--fp-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fp-ask { justify-self: end; font-size: var(--text-sm); color: var(--accent); text-decoration: none; white-space: nowrap; }
+.fp-ask:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* A For you item drawn for its kind (ForYouCard.tsx): the kind in a word, the
+   hero (the action in mono, or the question), one line of scope and reason,
+   then the answer. Same columns as a row, so the agent column still aligns;
+   the answer sits under the text, not in the action column. Light, not hue:
+   the one accent marks the move to make. */
+.fp-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--fp-agent-col) var(--fp-ask-col);
+  grid-template-areas: "main agent .";
+  align-items: start;
+  gap: 0 16px;
+  padding: 12px 0 14px;
+}
+.fp-card > .fp-cardMain { grid-area: main; }
+.fp-card > .fp-agent { grid-area: agent; padding-top: 1px; }
+.fp-cardMain { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.fp-cardMain > * { max-width: 100%; }
+.fp-cardKind { display: flex; align-items: baseline; gap: 8px; font-size: var(--text-xs); color: var(--fp-faint); }
+.fp-cardKind > :first-child { color: var(--fp-soft); }
+.fp-cardAbout { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-cardHero {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--text-md);
+  line-height: 1.4;
+  color: var(--fp-ink);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.fp-cardHero[data-mono] {
+  display: block;
+  padding: 4px 8px;
+  border: 1px solid var(--scout-line);
+  background: var(--fp-wash);
+  font-family: var(--hud-font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fp-cardLine { font-size: var(--text-sm); line-height: 1.45; color: var(--fp-soft); overflow-wrap: anywhere; }
+.fp-cardLine[data-stake], .fp-cardLine[data-default] { color: var(--fp-faint); }
+
+.fp-cardActs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.fp-cardBtn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--scout-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fp-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: 24px;
+  cursor: pointer;
+}
+.fp-cardBtn:hover:not(:disabled) { background: var(--fp-wash); border-color: var(--scout-line-strong); }
+.fp-cardBtn[data-primary] { border-color: color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); }
+.fp-cardBtn[data-chosen] { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.fp-cardBtn:disabled { cursor: default; opacity: 0.55; }
+.fp-cardBtn:focus-visible, .fp-cardInput:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.fp-cardRec { font-size: var(--text-xs); color: var(--fp-faint); }
+.fp-cardBtn[data-primary] .fp-cardRec { color: inherit; opacity: 0.8; }
+
+.fp-cardOptions { display: grid; gap: 2px; margin: 4px 0 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.fp-cardOptions li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding-left: 10px; border-left: 1px solid var(--scout-line); color: var(--fp-soft); }
+.fp-cardOptions li[data-recommended] { border-left-color: var(--accent); }
+.fp-cardOptionLabel { color: var(--fp-ink); }
+.fp-cardOptionText { color: var(--fp-faint); }
+
+.fp-cardCompose { display: flex; gap: 6px; width: 100%; max-width: 560px; margin-top: 6px; }
+.fp-cardInput {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--scout-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fp-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+.fp-cardInput::placeholder { color: var(--fp-faint); }
+
+
+/* The Feed actions inside a card: the primary move first, the strip after. */
+.fp-cardPost { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 6px; }
+.fp-cardPost > .pa-primary { justify-self: start; }
+
+.fp-cardStatus { font-size: var(--text-xs); color: var(--fp-soft); }
+.fp-cardStatus[data-state="failed"] { color: var(--fp-ink); }
+.fp-cardStatus[data-state="failed"]::before { content: "Not sent: "; color: var(--fp-faint); }
+.fp-cardFoot { display: flex; align-items: baseline; gap: 12px; margin-top: 2px; }
+.fp-cardFoot .pa-act { font-size: var(--text-xs); }
+.fp-cardThread { font-size: var(--text-xs); color: var(--fp-faint); text-decoration: none; }
+.fp-cardThread:hover { color: var(--fp-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* ── Running ───────────────────────────────────────────────────────── */
+
+/* Running: a project's name, then its sessions as rows under it. A thin line
+   parts one project from the next; rows inside a project sit close. Each row:
+   harness mark, title, state on the right, and the newest line below in one
+   clamped line. */
+.fp-runGroups { display: grid; grid-template-columns: minmax(0, 1fr); }
+.fp-runGroup { display: grid; grid-template-columns: minmax(0, 1fr); padding: 6px 0 4px; }
+.fp-runGroup + .fp-runGroup { border-top: 1px solid var(--scout-line); }
+.fp-runProject {
+  overflow: hidden;
+  padding-bottom: 1px;
+  color: var(--fp-faint);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fp-run {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  grid-template-areas: "mark title signal";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  min-width: 0;
+  padding: 4px 0;
+  color: inherit;
+  text-decoration: none;
+}
+.fp-runMark { grid-area: mark; display: inline-flex; }
+.fp-runTitle {
+  grid-area: title;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--fp-ink);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.fp-run:hover .fp-runTitle { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+/* Where the session stands, as a word on the right edge: working in green, waiting in the accent, else when it was last active. */
+.fp-runState {
+  grid-area: signal;
+  color: var(--fp-faint);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Working or waiting: one figure on the right edge, the half hour's trace, then the "now" block in the state's colour. */
+.fp-runSignal { grid-area: signal; display: inline-flex; align-items: center; }
+.fp-runTrace { display: block; }
+.fp-runTrace rect { fill: var(--fp-soft); }
+.fp-runTrace[data-state="working"] .fp-runNow { fill: var(--hud-status-ok); }
+.fp-runTrace[data-state="waiting"] .fp-runNow { fill: var(--accent); }
+/* Working: a wave climbs through the now block, bottom to top and a little left to right, in step with every work mark on the page. */
+.fp-runTrace[data-state="working"] .fp-runNow {
+  animation: fp-run-now var(--wm-period, 1600ms) linear infinite;
+  animation-delay: calc(var(--wm-phase, 0ms) - var(--wm-period, 1600ms) + var(--fp-now-i, 0) * var(--wm-period, 1600ms) / 6);
+}
+@keyframes fp-run-now {
+  0% { opacity: 1; }
+  45% { opacity: 0.45; }
+  100% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fp-runTrace[data-state="working"] .fp-runNow { animation: none; }
+}
+.fp-runMore {
+  padding: 8px 0 2px;
+  border-top: 1px solid var(--scout-line);
+  color: var(--fp-soft);
+  font-size: var(--text-xs);
+  text-decoration: none;
+}
+.fp-runMore:hover { color: var(--fp-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.fp-pulse { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: fp-pulse 2.4s ease-in-out infinite; }
+
+@keyframes fp-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .fp-pulse { animation: none; } }
+
+.fp-nothing { padding: 4px 0 2px; font-size: var(--text-sm); color: var(--fp-faint); }
+
+/* ── two panes ─────────────────────────────────────────────────────
+   The stream and, beside it, the moment. The app's side nav is the static
+   anchor, so Home draws none of its own. No rule runs across the tops of
+   the panes: the page card is the only frame. */
+
+.fp-panes {
+  display: grid;
+  /* The stream is the post column (sources.css); in a wider page the two
+     panes keep their widths and the gap, and centre together. */
+  grid-template-columns: minmax(0, var(--post-width)) 340px;
+  justify-content: center;
+  grid-template-areas: "stream context";
+  align-items: start;
+  gap: 0 48px;
+}
+.fp-stream { grid-area: stream; display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+/* The right pane stays in view beside the stream and scrolls on its own
+   when it is taller than the window. */
+.fp-context {
+  grid-area: context;
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+  max-height: calc(100dvh - 56px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.fp-context .fp-section { margin-top: 0; }
+/* The first head in each pane starts the pane; a rule above it would draw a box inside the card. */
+.fp-context > .fp-section:first-child > .fp-label,
+.fp-placement > .fp-label:first-child { padding-top: 0; border-top: 0; }
+.fp-context .src-outside + .src-outside { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--scout-line); }
+.fp-note { margin: 8px 0 0; font-size: var(--text-xs); line-height: 1.45; color: var(--fp-faint); }
+
+/* ── three panes ───────────────────────────────────────────────────
+   From a half-screen window on a large display (home-wide.ts) Running takes
+   a column on the left. The two side columns are one width (--fp-side), about half
+   the Feed's, so the Feed sits centred between equals: 280px (what the
+   providers' rows need) to 380px, 23% of the pane. The Feed takes the rest up to
+   its post width; past that the three centre together. Gaps and gutters open
+   from 24px (2% of the pane) to 48px and 32px. The Feed's width is the
+   column's: posts fill it (.fd-column has no measure here), so a narrower
+   middle draws narrower posts, never cut ones. Like the right pane, the left
+   stays in view and scrolls on its own. */
+
+.fp-page:has(> .fp-panes[data-wide]) { max-width: none; padding-inline: clamp(24px, 2cqi, 32px); }
+.fp-panes[data-wide] {
+  --fp-side: clamp(280px, 23cqi, 380px);
+  grid-template-columns: var(--fp-side) minmax(0, var(--post-width)) var(--fp-side);
+  grid-template-areas: "side stream context";
+  column-gap: clamp(24px, 2cqi, 48px);
+}
+.fp-side {
+  grid-area: side;
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+  max-height: calc(100dvh - 56px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.fp-side .fp-section { margin-top: 0; }
+.fp-side > .fp-section:first-child > .fp-label { padding-top: 0; border-top: 0; }
+
+/* ── the canvas slot ───────────────────────────────────────────────
+   A fixed placement in the stream (FeedStream `slots`), after the third
+   post: a row as wide as the posts, its small head, then the minimap at a
+   steady 200 to 240px. A hairline under it, as under a post. */
+
+.fp-canvasSlot { padding: 6px 0 14px; border-bottom: 1px solid var(--scout-line); }
+.fp-canvasSlot > .fp-label { padding-top: 8px; border-top: 0; }
+.fp-canvasFrame { display: grid; align-items: center; min-width: 0; }
+.fp-canvasFrame > .fp-nothing { justify-self: center; }
+
+/* ── landed today ──────────────────────────────────────────────────
+   Rows like Running's, one line each: the harness mark, what the turn did
+   and when. A hairline between rows. */
+
+.fp-landed { display: grid; grid-template-columns: minmax(0, 1fr); }
+.fp-landedRow {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  grid-template-areas: "mark title at";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+  min-width: 0;
+  padding: 6px 0;
+}
+.fp-landedRow + .fp-landedRow { border-top: 1px solid var(--scout-line); }
+.fp-landedMark { grid-area: mark; display: inline-flex; }
+.fp-landedTitle {
+  grid-area: title;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--fp-ink);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.fp-landedTitle:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.fp-landedAt { grid-area: at; color: var(--fp-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Hide takes the time's place on hover or focus. */
+.fp-landedHide { grid-area: at; display: none; }
+.fp-landedRow:is(:hover, :focus-within) .fp-landedHide { display: inline-flex; }
+.fp-landedRow:is(:hover, :focus-within) .fp-landedAt { display: none; }
+.fp-landedMore { padding: 8px 0 2px; border-top: 1px solid var(--scout-line); color: var(--fp-faint); font-size: var(--text-xs); }
+
+/* ── the stream ────────────────────────────────────────────────────── */
+
+.fp-streamItem { min-width: 0; padding: 16px 0; }
+.fp-streamItem + .fp-streamItem { border-top: 1px solid var(--scout-line); }
+/* A turn back to you is one line at rest: a row, not a card. */
+.fp-streamItem[data-kind="turn"] { padding: 12px 0; }
+.fp-streamItem > .fp-label { margin: -16px 0 12px; border-top: 0; }
+/* The placement over the feed: what waits on you, marked by its head and set
+   off from the days below by space and one hairline, not a firmer rule. */
+.fp-placement { display: grid; min-width: 0; margin-bottom: 16px; border-bottom: 1px solid var(--scout-line); }
+
+/* The feed's stream inside Home: the page scrolls, so the stream neither scrolls on its own nor keeps its own gutter or width. */
+.fp-stream > * { min-width: 0; }
+.fp-stream .s-feed[data-embedded] { height: auto; overflow: visible; background: transparent; }
+.fp-stream .s-feed[data-embedded] .fd-column { max-width: none; padding: 0; }
+.fp-streamPost { display: grid; gap: 6px; min-width: 0; }
+.fp-streamPost > .fp-shot { margin: 4px 0; }
+/* A placement row is laid out like a Feed post: its words take the full
+   column, and its primary move sits on the line of moves under them. */
+/* In the stream, a placement card is one column like a Feed post: its words,
+   files and reply take the full width, and the agent line sits under them. */
+.fp-stream .fp-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "agent"; row-gap: 8px; }
+.fp-stream .fp-card > .fp-agent { max-width: none; }
+.fp-stream .fp-cardCompose { max-width: none; }
+.fp-streamPost .fp-forRow { padding: 0; min-height: 0; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "main main" "agent agent" "primary strip"; row-gap: 6px; }
+.fp-streamPost .fp-forRow > :is(.pa-primary, .fp-ask) { justify-self: start; justify-content: flex-start; }
+.fp-streamPost .fp-forRow > :is(.pa-primary:not(:empty), .fp-ask) { margin-right: 12px; }
+.fp-caption { margin: 0; font-size: var(--text-md); line-height: 1.55; color: var(--fp-soft); }
+.fp-textLink { font-size: var(--text-sm); color: var(--fp-soft); text-decoration: none; white-space: nowrap; }
+.fp-textLink:hover { color: var(--fp-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* An ask reads as a notification row: a short title a step above body size, regular weight, at most two lines;
+   the rest at body size, three lines with More in place; its moves on one line under it. No wash, no box. */
+.fp-askPost { display: grid; gap: 6px; min-width: 0; }
+.fp-askQ { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; margin: 0; font-size: var(--text-lg); font-weight: 400; line-height: 1.4; color: var(--fp-ink); text-wrap: pretty; overflow-wrap: anywhere; }
+.fp-askBody { display: grid; justify-items: start; gap: 2px; min-width: 0; }
+.fp-askText { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; margin: 0; font-size: var(--text-md); line-height: 1.55; color: var(--fp-soft); overflow-wrap: anywhere; }
+.fp-askText[data-open] { display: block; }
+.fp-askMore { padding: 0; border: 0; background: none; font: inherit; font-size: var(--text-xs); cursor: pointer; }
+.fp-askMoves { padding-top: 4px; }
+.fp-askChoices { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.fp-askChoice {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--fp-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.fp-askChoice:hover:not(:disabled) { background: var(--fp-wash); }
+.fp-askChoice[aria-pressed="true"] { border-color: var(--fp-ink); background: var(--fp-ink); color: var(--hud-bg); }
+.fp-askChoice:disabled { opacity: 0.45; cursor: default; }
+.fp-askChoice:focus-visible { outline: 1px solid var(--fp-ink); outline-offset: 2px; }
+/* The reply takes the line's remaining width, never less than a phrase's room; Open closes the line. */
+.fp-askChoices .ask-reply { flex: 1 1 220px; }
+.fp-askAside { display: inline-flex; align-items: center; gap: 12px; margin-left: 4px; }
+.fp-askDismiss { padding: 0; border: 0; background: none; font: inherit; font-size: var(--text-sm); cursor: pointer; }
+.fp-askDismiss:disabled { opacity: 0.45; cursor: default; }
+.fp-askContext { margin: 0; font-size: var(--text-md); line-height: 1.5; color: var(--fp-soft); overflow-wrap: anywhere; }
+/* A permission's hero: the thing it asks to run or touch, in mono, as large as a question but never wider than its column. */
+.fp-askAction { margin: 0; max-height: calc(1.45em * 8); overflow: auto; font-family: var(--hud-font-mono); font-size: 15px; line-height: 1.45; color: var(--fp-ink); white-space: pre-wrap; overflow-wrap: anywhere; scrollbar-width: thin; }
+.fp-askAction > code { font: inherit; }
+.fp-choices { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fp-choice {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--fp-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.fp-choice:hover:not(:disabled) { background: var(--fp-wash); }
+.fp-choice[aria-pressed="true"] { border-color: var(--fp-ink); background: var(--fp-ink); color: var(--hud-bg); }
+.fp-choice:disabled { opacity: 0.45; cursor: default; }
+.fp-choice:focus-visible { outline: 1px solid var(--fp-ink); outline-offset: 2px; }
+.fp-choices .fp-textLink { margin-left: 6px; }
+.fp-sent { margin: 0; font-size: var(--text-sm); color: var(--fp-soft); }
+.fp-failed { margin: 0; font-size: var(--text-sm); color: var(--hud-status-error); }
+
+/* ── Back to you ───────────────────────────────────────────────────
+   The page's header row: the placement's head and, at its right, the page's
+   own Refresh. The head is always there, so the spot holds when nothing is
+   back. */
+.fp-pageHead { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.fp-pageHead > .fp-label { flex: 1 1 auto; min-width: 0; padding-top: 0; border-top: 0; }
+.fp-refresh { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.fp-refreshAt { font-size: var(--text-xs); color: var(--fp-faint); opacity: 0; transition: opacity 120ms ease; white-space: nowrap; }
+.fp-refresh:is(:hover, :focus-within) .fp-refreshAt { opacity: 1; }
+.fp-refreshGo {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--fp-faint);
+  cursor: pointer;
+}
+.fp-refreshGo:hover { color: var(--fp-ink); background: var(--fp-wash); }
+.fp-refreshGo:focus-visible { outline: 1px solid var(--fp-ink); outline-offset: 1px; color: var(--fp-ink); }
+.fp-refreshGo[data-busy] { color: var(--fp-soft); cursor: progress; }
+.fp-refreshGo[data-busy] svg { animation: fp-turn-mark 700ms linear infinite; }
+@keyframes fp-turn-mark { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .fp-refreshGo[data-busy] svg { animation: none; } }
+
+/* A finished turn, as one row: a small picture of what it produced at the left, its title, and
+   the harness mark and time at the right, where the moves take their place
+   on hover or focus. No frame; the artifact keeps its own quiet edge. */
+.fp-turn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "main moves" "steer steer" "status status";
+  align-items: start;
+  gap: 4px 16px;
+  min-width: 0;
+}
+.fp-turn[data-art] {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  grid-template-areas: "art main moves" "art steer steer" "art status status";
+}
+.fp-turn[data-art] > .fp-turnArt { grid-area: art; }
+.fp-turnArt {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 56px;
+  height: 35px;
+  overflow: hidden;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  color: var(--fp-soft);
+  text-decoration: none;
+}
+.fp-turnArt > img,
+.fp-turnArt > video { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+a.fp-turnArt:hover { border-color: var(--scout-line-strong); color: var(--fp-ink); }
+/* A page or a change has no picture: it sits in the same column as a quiet
+   label at the row's top line, without a tile, so a picture keeps the weight. */
+.fp-turnArt[data-kind="page"] { display: flex; justify-self: start; width: auto; max-width: 100%; height: auto; border: 0; border-radius: 0; font-size: var(--text-xs); }
+a.fp-turnArt[data-kind="page"]:hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.fp-turnDoc { display: flex; align-items: center; gap: 6px; max-width: 100%; }
+.fp-turnDocName { max-width: 100%; overflow: hidden; font-family: var(--hud-font-mono); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.fp-turnMain { grid-area: main; display: grid; gap: 4px; min-width: 0; }
+.fp-turnTitle { margin: 0; overflow: hidden; font-size: 15px; font-weight: 400; line-height: 1.35; color: var(--fp-ink); text-overflow: ellipsis; white-space: nowrap; }
+/* One line at rest; an open row reads its whole title. */
+.fp-turn[data-open] .fp-turnTitle { white-space: normal; overflow-wrap: anywhere; text-wrap: pretty; }
+.fp-turnCaption { display: -webkit-box; margin: 0; overflow: hidden; font-size: var(--text-sm); line-height: 1.45; color: var(--fp-soft); -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+/* Why a row waits on you, before its title (home-why.ts). What blocks an agent reads in the accent. */
+.fp-why { margin-right: 8px; font-size: var(--text-xs); font-weight: 500; letter-spacing: 0; color: var(--fp-soft); white-space: nowrap; }
+.fp-why[data-kind="question"], .fp-why[data-kind="permission"] { color: var(--signal); }
+/* Ready: a task you asked to hear about is done. Its own colour, never the accent a question or permission reads in. */
+.fp-why[data-kind="ready"] { color: var(--info); }
+.fp-readyPost .fp-askQ { color: var(--fp-ink); }
+.fp-readyTask { margin: 0; overflow: hidden; font-size: var(--text-sm); line-height: 1.45; color: var(--fp-faint); text-overflow: ellipsis; white-space: nowrap; }
+.fp-readyPost .fp-choice.is-ready { border-color: color-mix(in srgb, var(--info) 55%, transparent); color: var(--info); }
+.fp-readyPost .fp-choice.is-ready:hover:not(:disabled) { background: color-mix(in srgb, var(--info) 10%, transparent); }
+.fp-whyPr { display: inline-flex; align-items: center; gap: 4px; vertical-align: 1px; font-weight: 400; font-variant-numeric: tabular-nums; text-decoration: none; }
+.fp-whyPr:hover { color: var(--fp-ink); }
+.fp-whyPr:hover > span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.fp-whyPr > svg { flex: none; }
+.fp-turnTitle .fp-why { vertical-align: 1px; }
+/* The summary (feed/turn-summaries.ts): the gist, then the ask a size smaller, a line each at rest. */
+.fp-turnGist,
+.fp-then { margin: 0; overflow: hidden; line-height: 1.45; color: var(--fp-soft); text-overflow: ellipsis; white-space: nowrap; }
+.fp-turnGist { font-size: var(--text-sm); }
+.fp-then { font-size: var(--text-xs); }
+.fp-turn[data-open] :is(.fp-turnGist, .fp-then) { white-space: normal; overflow-wrap: anywhere; }
+/* The mark and the time share the moves' cell and give it to them on hover or focus. */
+.fp-turnWho { grid-area: moves; justify-self: end; display: inline-flex; align-items: center; gap: 6px; padding-top: 2px; color: var(--fp-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The moves: quiet until the row is hovered or focused, or a steer is open. */
+/* At rest they take no room, so the title has the row; the title link is still the first tab stop and focusing it brings them in. */
+.fp-turnMoves { grid-area: moves; justify-self: end; display: none; align-items: center; gap: 12px; padding-top: 2px; white-space: nowrap; }
+.fp-turn:is(:hover, :focus-within, [data-open]) .fp-turnMoves { display: flex; }
+.fp-turn:is(:hover, :focus-within, [data-open]) .fp-turnWho { display: none; }
+.fp-turnSteer { grid-area: steer; margin-top: 6px; }
+.fp-turnStatus { grid-area: status; margin: 2px 0 0; }
+/* How a send went: the line, then Dismiss beside it when it failed. The choices' own line sits under its buttons. */
+.fp-turnStatus,
+.fp-choiceStatus { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+.fp-statusDismiss { padding: 0; border: 0; background: none; color: var(--fp-soft); cursor: pointer; font: inherit; font-size: var(--text-xs); }
+.fp-statusDismiss:hover { color: var(--fp-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.fp-statusDismiss:focus-visible { outline: 1px solid var(--fp-ink); outline-offset: 2px; }
+.fp-turnMore { justify-self: start; margin: 4px 0 12px; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; font-size: var(--text-sm); }
+/* With no hover (touch), the moves stay shown. */
+@media (hover: none) {
+  .fp-turn { grid-template-areas: "main who" "moves moves" "steer steer" "status status"; }
+  .fp-turn[data-art] { grid-template-areas: "art main who" "art moves moves" "art steer steer" "art status status"; }
+  .fp-turnWho { grid-area: who; display: inline-flex !important; }
+  .fp-turnMoves { justify-self: start; display: flex; }
+}
+
+/* ── narrower pages ─────────────────────────────────────────────────
+   The right pane narrows first, then moves under the stream. */
+
+@container fp (max-width: 1080px) {
+  .fp-panes { grid-template-columns: minmax(0, 1fr) 300px; gap: 0 24px; }
+}
+
+@container fp (max-width: 760px) {
+  .fp-page { padding: 16px 16px 48px; }
+  .fp-panes { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stream" "context"; }
+  .fp-context { position: static; max-height: none; overflow: visible; padding-top: 16px; border-top: 1px solid var(--scout-line-strong); }
+}
+
+@container fp (max-width: 720px) {
+  .fp-turn[data-art] { grid-template-columns: 56px minmax(0, 1fr) auto; grid-template-areas: "art main who" "moves moves moves" "steer steer steer" "status status status"; }
+  .fp-turn { grid-template-areas: "main who" "moves moves" "steer steer" "status status"; grid-template-columns: minmax(0, 1fr) auto; }
+  .fp-turnWho { grid-area: who; display: inline-flex !important; }
+  .fp-turnMoves { justify-self: start; display: flex; flex-wrap: wrap; }
+  .fp-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "agent"; row-gap: 8px; }
+}
+
+/* A card lays out from the column it sits in, not the page: in a narrow Feed
+   column (three panes near their floor) its agent goes under its words, as on
+   a narrow page. */
+.fp-stream { container: fp-stream / inline-size; }
+@container fp-stream (max-width: 720px) {
+  .fp-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "agent"; row-gap: 8px; }
+  .fp-cardFile { grid-template-columns: minmax(0, 140px) minmax(0, 1fr) 68px; }
+}
+
+/* Between agents: who, how long ago, then two lines of what they said. Rows, not cards. */
+.fp-between { display: grid; grid-template-columns: minmax(0, 1fr); }
+.fp-betweenRow {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 8px 0;
+  border: none;
+  border-top: 1px solid var(--scout-line);
+  background: none;
+  color: var(--fp-soft);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.fp-betweenRow { min-width: 0; }
+.fp-betweenRow:first-child { border-top: 0; padding-top: 0; }
+.fp-betweenRow:disabled { cursor: default; }
+.fp-betweenRow:not(:disabled):hover .fp-betweenText { color: var(--fp-ink); }
+/* Same shape as Landed: the mark in its own column, the agent on one line beside it, what it said under the name. */
+.fp-betweenWho { display: contents; color: var(--fp-faint); font-size: var(--text-xs); }
+.fp-betweenWho > :first-child { grid-column: 1; display: inline-flex; }
+.fp-betweenName { grid-column: 2; overflow: hidden; min-width: 0; color: var(--fp-ink); text-overflow: ellipsis; white-space: nowrap; }
+.fp-betweenWho > .fp-quiet { grid-column: 3; font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.fp-betweenText { grid-column: 2 / -1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--fp-soft); line-height: 1.4; }
+.fp-context .src-provider[data-kind="status"] { grid-template-columns: 64px minmax(0, 1fr); }
+.fp-context .src-pct .src-faint { display: none; }
+
+@container fp (max-width: 560px) {
+  .src-provider { grid-template-columns: 80px minmax(40px, 1fr) 60px; }
+  .src-provider .src-reset { display: none; }
+}
+
+/* ── what a turn needs ───────────────────────────────────────────────
+   A decision's options as quiet buttons under its ask; the one the work
+   already shipped with carries a faint "live". Square-ish, 1px, no strip. */
+.fp-choices { display: grid; gap: 4px; margin-top: 2px; }
+.fp-choiceRow { display: flex; flex-wrap: wrap; gap: 6px; }
+.fp-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--fp-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+.fp-choice:hover:not(:disabled) { border-color: var(--fp-soft); }
+.fp-choice[aria-pressed="true"] { border-color: var(--fp-ink); }
+.fp-choice:disabled { cursor: default; opacity: 0.7; }
+.fp-choiceLive { color: var(--fp-faint); font-size: var(--text-xs); }
+.fp-then[data-need="decision"], .fp-then[data-need="question"] { color: var(--fp-ink); }
+/* The byline under the caption: mark, the session's name, then the project when it is not the usual one. */
+.fp-turnBy { display: flex; align-items: center; gap: 6px; min-width: 0; padding-top: 2px; color: var(--fp-faint); font-size: var(--text-xs); white-space: nowrap; }
+.fp-turnName, .fp-turnWhere { overflow: hidden; text-overflow: ellipsis; }
+.fp-turnName { color: var(--fp-soft); }
+.fp-turnWhere::before { content: "·"; margin-right: 6px; }
+.fp-turnWhere[data-first]::before { content: none; }
+
+/* A shipped turn in Landed: its picture at the left, then the landed row's own parts. */
+.fp-shipped { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 6px 0; min-width: 0; }
+.fp-shipped[data-art] { grid-template-columns: 72px minmax(0, 1fr); }
+.fp-shipped + .fp-shipped, .fp-shipped + .fp-landedRow { border-top: 1px solid var(--scout-line); }
+.fp-shippedArt { display: block; width: 72px; height: 45px; overflow: hidden; border: 1px solid var(--scout-line); border-radius: var(--radius-sm); }
+.fp-shippedArt > img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+/* The mark keeps its own column: the title runs beside it on one line, cut with an ellipsis, and everything under
+   the title (the ask, where it landed) starts where the title starts, never under the mark. */
+.fp-shippedMain { display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 8px; row-gap: 2px; align-content: start; min-width: 0; }
+.fp-shippedMain > * { grid-area: auto; grid-column: 2; }
+.fp-shippedHead { display: contents; }
+.fp-shippedHead > :first-child { grid-column: 1; align-self: center; }
+.fp-shipped .fp-landedTitle { grid-area: auto; grid-column: 2; display: block; overflow: hidden; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+/* Under the title, smaller than it: the ask it answered, then where it landed. */
+.fp-landedOut { display: -webkit-box; overflow: hidden; color: var(--fp-faint); font-size: var(--text-xs); line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow-wrap: anywhere; }
+.fp-landedWho { color: var(--fp-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+
+/* ── One voice in the side column ──────────────────────────────────────
+   Running, landed and shipped rows share the Feed's rule: one size, the
+   title in ink, who, where and when in faint. */
+.fp-context :is(.fp-runProject, .fp-runTitle, .fp-runState, .fp-runMore, .fp-landedTitle, .fp-landedAt, .fp-landedMore, .fp-landedOut, .fp-landedWho) { font-size: var(--text-sm); }
+.fp-side :is(.fp-runProject, .fp-runTitle, .fp-runState, .fp-runMore, .fp-landedTitle, .fp-landedAt, .fp-landedMore, .fp-landedOut, .fp-landedWho) { font-size: var(--text-sm); }
+
+/* ── Back to you, in one voice ─────────────────────────────────────────
+   The byline leads: mark, name, where, when, on one line in faint. What
+   happened and what it needs read at one size, two lines each at rest.
+   Why it waits is a quiet word, not a colour; the accent stays on the
+   move to make. */
+.fp-turnBy { order: -1; padding: 0 0 2px; font-size: 14px; line-height: 1.35; }
+.fp-turnName { color: var(--fp-ink); font-weight: 600; }
+.fp-turnBy .fp-turnAt { flex: none; color: var(--fp-faint); font-variant-numeric: tabular-nums; }
+.fp-turnBy .fp-turnAt::before { content: "·"; margin-right: 6px; }
+.fp-turnTitle { display: -webkit-box; font-size: 14px; line-height: 1.5; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: pretty; }
+.fp-turn[data-open] .fp-turnTitle { display: block; }
+.fp-turnCaption { font-size: 14px; line-height: 1.5; }
+.fp-then { display: -webkit-box; font-size: 14px; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.fp-why, .fp-why[data-kind="question"], .fp-why[data-kind="permission"], .fp-why[data-kind="ready"] { color: var(--fp-faint); font-size: inherit; font-weight: 400; }
+
+/* ── For you cards, in the same voice ──────────────────────────────────
+   The card opens with the byline Back to you rows use; why it waits is the
+   quiet word after it, and what it asks reads at the one reading size. */
+.fp-card .fp-turnBy { padding: 0 0 2px; }
+.fp-cardKind { font-size: 14px; }
+.fp-cardKind > :first-child { color: var(--fp-faint); }
+.fp-cardHero { font-size: 14px; line-height: 1.5; }
+.fp-cardLine { font-size: 14px; line-height: 1.5; }
+.fp-card > .fp-agent:empty { display: none; }
+
+/* A question in the stream opens with the same byline; the row under it
+   keeps only its pull request, and reads at the one size. */
+.fp-streamPost[data-bylined] { gap: 2px; }
+.fp-streamPost[data-bylined] .fp-agentLine, .fp-streamPost[data-bylined] .fp-forProject { display: none; }
+.fp-streamPost[data-bylined] .src-head { font-size: 14px; }
+.fp-streamPost[data-bylined] :is(.fp-forTitle, .fp-forCaption) { font-size: 14px; line-height: 1.5; }
+.fp-streamPost[data-bylined] .fp-forRow { row-gap: 4px; }
+
+/* Asks and Ready tasks open with the same byline: who and when, first and
+   on their own line, the name in bold; why it waits follows quietly. */
+.fp-askPost .src-head { flex-wrap: wrap; row-gap: 2px; font-size: 14px; }
+.fp-askPost .src-headWho { order: -1; flex-basis: 100%; margin-left: 0; padding-left: 0; }
+.fp-askPost .src-headName { flex: none; color: var(--fp-ink); font-weight: 600; }
+.fp-askPost .src-headAt { color: var(--fp-faint); }
+.fp-askPost .src-headAt::before { content: "·"; margin-right: 6px; }
+.fp-askPost .src-headKind .fp-why { margin-right: 0; }
+.fp-askQ, .fp-askContext { font-size: 14px; line-height: 1.5; }

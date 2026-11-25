@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { FeedPostHead, FeedPr } from "../../../shared/api/feed.ts";
-import type { WebWorkMoveResponse } from "../../lib/work-move.ts";
+import type { WebWorkMoveResponse } from "../../../shared/api/web.ts";
 import { moveRefusal } from "./pending-moves.ts";
 import { allows, askAboutPost, feedCommand, moveFor, postActions, primaryAction, pushMessage, reactMessage, reactRoute } from "./post-actions.ts";
 

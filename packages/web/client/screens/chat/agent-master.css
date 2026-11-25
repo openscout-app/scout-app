@@ -1,0 +1,351 @@
+/* The Comms page: one stage, with the conversations kept beside it in columns
+   (CommsDeck). On the agent surface the stage is the agent's own conversation
+   or the thread the route names, under one header. Hairlines only; the single
+   accent marks Working. */
+
+/* Columns kept beside the stage take their width from the stage; past the
+   stage's floor the row scrolls sideways rather than squeezing what was
+   opened. */
+.amv {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow-x: auto;
+  background: var(--bg);
+}
+
+.amv-main {
+  flex: 1;
+  min-width: 520px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* A conversation page on the stage fills it, the way it filled the slot. */
+.amv-main > .s-thread-layout,
+.amv-main > .s-conv-empty {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── The agent page's header (AgentPageHeader) ──
+   One quiet line: name, state, the task, what runs it and where, then the
+   views and actions. The task gives way first; the run facts drop out when
+   the pane is narrow. One ink scale (strong, muted, faint), regular weights,
+   the accent only for Working. */
+.amv-head {
+  --amv-pad-x: 16px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--hud-border, var(--border));
+  color: var(--hud-muted, var(--muted));
+  font: 400 12px/1.4 var(--hud-font-sans, var(--font-sans));
+  container-type: inline-size;
+}
+
+.amv-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  /* The band includes the header's hairline, as the side rail's does. */
+  height: calc(var(--scout-rail-band, 32px) - 1px);
+  padding: 0 var(--amv-pad-x);
+}
+
+.amv-head-mark {
+  flex: none;
+  width: 14px;
+  color: var(--hud-ink, var(--ink));
+}
+
+.amv-name {
+  flex: 0 0 auto;
+  max-width: 32%;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 14px/1.2 var(--hud-font-sans, var(--font-sans));
+  color: var(--hud-ink, var(--ink));
+}
+
+.amv-grow {
+  flex: 1;
+  min-width: 8px;
+}
+
+/* State sits by the name: dot, word, time. */
+.amv-state {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  font: 400 12px/1 var(--hud-font-sans, var(--font-sans));
+  color: var(--hud-muted, var(--muted));
+  white-space: nowrap;
+}
+
+.amv-state-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hud-dim, var(--dim));
+}
+
+.amv-state[data-state="working"] .amv-state-dot {
+  background: var(--hud-accent, var(--accent));
+}
+
+.amv-state[data-state="waiting"] {
+  color: var(--hud-ink, var(--ink));
+}
+
+.amv-state[data-state="waiting"] .amv-state-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hud-ink, var(--ink));
+}
+
+.amv-state-when {
+  font: 400 11px/1 var(--hud-font-mono, var(--font-mono));
+  font-variant-numeric: tabular-nums;
+  color: var(--hud-dim, var(--dim));
+}
+
+/* Views: a segmented control, hairlines only. */
+.amv-views {
+  flex: none;
+  display: inline-flex;
+  height: 22px;
+  border: 1px solid var(--hud-border, var(--border));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.amv-views button {
+  padding: 0 9px;
+  border: 0;
+  background: none;
+  color: var(--hud-muted, var(--muted));
+  font: 400 12px/1 var(--hud-font-sans, var(--font-sans));
+  cursor: pointer;
+}
+
+.amv-views button + button {
+  border-left: 1px solid var(--hud-border, var(--border));
+}
+
+.amv-views button:hover {
+  color: var(--hud-ink, var(--ink));
+}
+
+.amv-views button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--hud-ink, var(--ink)) 8%, transparent);
+  color: var(--hud-ink, var(--ink));
+}
+
+.amv-rule {
+  flex: none;
+  width: 1px;
+  height: 14px;
+  margin: 0 2px;
+  background: var(--hud-border, var(--border));
+}
+
+.amv-btn {
+  flex: none;
+  height: 22px;
+  padding: 0 9px;
+  border: 1px solid var(--hud-border, var(--border));
+  border-radius: 4px;
+  background: none;
+  color: var(--hud-muted, var(--muted));
+  font: 400 12px/1 var(--hud-font-sans, var(--font-sans));
+  cursor: pointer;
+}
+
+.amv-btn:hover,
+.amv-icon:hover {
+  color: var(--hud-ink, var(--ink));
+  background: color-mix(in srgb, var(--hud-ink, var(--ink)) 5%, transparent);
+}
+
+.amv-menu {
+  position: relative;
+  flex: none;
+}
+
+.amv-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--hud-muted, var(--muted));
+  cursor: pointer;
+  list-style: none;
+}
+
+.amv-icon::-webkit-details-marker {
+  display: none;
+}
+
+.amv-menu[open] .amv-icon {
+  color: var(--hud-ink, var(--ink));
+  background: color-mix(in srgb, var(--hud-ink, var(--ink)) 8%, transparent);
+}
+
+.amv-menu-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  max-width: 520px;
+  padding: 4px;
+  border: 1px solid var(--hud-border, var(--border));
+  border-radius: 4px;
+  background: var(--hud-surface, var(--surface));
+  box-shadow: var(--hud-shadow-panel, none);
+}
+
+.amv-menu-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  text-align: left;
+  color: var(--hud-ink, var(--ink));
+  font: 400 12px/1.4 var(--hud-font-sans, var(--font-sans));
+  cursor: copy;
+}
+
+.amv-menu-row:hover {
+  background: color-mix(in srgb, var(--hud-ink, var(--ink)) 6%, transparent);
+}
+
+.amv-menu-label {
+  font: 400 10px/1.4 var(--hud-font-mono, var(--font-mono));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hud-dim, var(--dim));
+}
+
+.amv-menu-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--hud-font-mono, var(--font-mono));
+  font-size: 11px;
+}
+
+/* The task, then what runs it and where, right after it. */
+.amv-text {
+  flex: 0 100 auto;
+  min-width: 80px;
+  margin-left: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 12px/1.4 var(--hud-font-sans, var(--font-sans));
+  color: var(--hud-muted, var(--muted));
+}
+
+.amv-text--quiet {
+  color: var(--hud-dim, var(--dim));
+}
+
+.amv-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 34%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font: 400 11px/1 var(--hud-font-mono, var(--font-mono));
+  color: var(--hud-dim, var(--dim));
+}
+
+.amv-meta > * {
+  flex: none;
+}
+
+.amv-meta > * + *::before {
+  content: "·";
+  display: inline-block;
+  margin: 0 7px;
+  color: var(--hud-dim, var(--dim));
+  text-decoration: none;
+}
+
+.amv-meta > .amv-path {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+  cursor: copy;
+}
+
+.amv-meta > .amv-path:hover {
+  color: var(--hud-ink, var(--ink));
+}
+
+@container (max-width: 860px) {
+  .amv-meta {
+    display: none;
+  }
+}
+
+@container (max-width: 560px) {
+  .amv-text {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .amv-head {
+    --amv-pad-x: 12px;
+  }
+  .amv-state-when {
+    display: none;
+  }
+}
+
+.amv-feed {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.amv-feed > * {
+  flex: 1;
+  min-height: 0;
+}
+
+.amv-empty {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--dim);
+  font: 400 12.5px/1.4 var(--font-sans);
+}

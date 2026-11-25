@@ -1,0 +1,82 @@
+/* ── An ask's words and its reply ─────────────────────────────────
+   Shared by Home's Back to you and the Inbox item. A link is a short
+   chip in the line of text: mono, 1px, no fill. The reply is one pill
+   line: the field's radius is the buttons' radius plus its inset, so the
+   mic and send circles sit concentric inside it. */
+
+.ask-chip {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 1px;
+  padding: 0 4px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--scout-chrome-ink-strong);
+  font: inherit;
+  font-family: var(--hud-font-mono);
+  font-size: 0.86em;
+  line-height: 1.45;
+  vertical-align: 0.06em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ask-chip:hover { border-color: var(--scout-line-strong); }
+.ask-chip:focus-visible { outline: 1px solid var(--scout-chrome-ink-strong); outline-offset: 1px; }
+.ask-chip[data-kind="pr"] { color: var(--signal); }
+
+.ask-reply {
+  --ask-reply-btn: 24px;
+  --ask-reply-inset: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--ask-reply-inset) var(--ask-reply-inset) var(--ask-reply-inset) 12px;
+  border: 1px solid var(--scout-line);
+  border-radius: calc(var(--ask-reply-btn) / 2 + var(--ask-reply-inset));
+  background: none;
+  transition: border-color 0.12s ease;
+}
+.ask-reply:focus-within, .ask-reply[data-listening] { border-color: var(--scout-line-strong); }
+.ask-reply__field {
+  flex: 1 1 0;
+  min-width: 0;
+  height: var(--ask-reply-btn);
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--scout-chrome-ink-strong);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+.ask-reply__field::placeholder { color: var(--scout-chrome-ink-faint); }
+.ask-reply[data-listening] .ask-reply__field::placeholder { color: var(--scout-chrome-ink-soft); }
+.ask-reply .ask-reply__mic,
+.ask-reply__send {
+  width: var(--ask-reply-btn);
+  height: var(--ask-reply-btn);
+  align-self: center;
+  border-radius: 50%;
+}
+.ask-reply .ask-reply__mic { border-color: transparent; }
+.ask-reply .ask-reply__mic svg { width: 13px; height: 13px; }
+.ask-reply__send {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--scout-line);
+  background: none;
+  color: var(--scout-chrome-ink-faint);
+  cursor: default;
+}
+.ask-reply__send svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ask-reply__send:not(:disabled) { border-color: var(--scout-chrome-ink-strong); background: var(--scout-chrome-ink-strong); color: var(--hud-bg); cursor: pointer; }
+.ask-reply__send:focus-visible { outline: 1px solid var(--scout-chrome-ink-strong); outline-offset: 2px; }
+.ask-reply__note { flex-basis: 100%; margin: 4px 0 2px; color: var(--scout-chrome-ink-soft); font-size: var(--text-xs); }

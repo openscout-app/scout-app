@@ -17,20 +17,13 @@ import type {
 import { dayKey } from "./days.ts";
 import { changeOf, chooseLead, leadsFor } from "./leads.ts";
 import { MAX_LEAD_PULLS, slotId, taskBranch, taskPulls, taskRepo, turnPulls, type LinkContext } from "./links.ts";
-
+import { prImagePath } from "./pr-image.ts";
 import { directQuestion, selectionScore, type Candidate, type Outcome } from "./score.ts";
 import { agentOf, clip, feedLine, firstSentence, isReviewPass, operatorLine, postBody, taskTitle, toPr } from "./text.ts";
-import { plainTextExcerpt } from "./plain-excerpt.ts";
+import { plainTextExcerpt } from "../../shared/plain-excerpt.ts";
 
 /** An operator-attention queue item, joined to a post by its work or conversation. */
-export type FeedAttention = {
-  id: string;
-  workId: string | null;
-  conversationId: string | null;
-  label: string;
-  /** The request in its own words, when it says more than the label. */
-  detail?: string | null;
-};
+export type FeedAttention = { id: string; workId: string | null; conversationId: string | null; label: string };
 
 export type PostContext = LinkContext & {
   originHost: string;
@@ -76,7 +69,7 @@ function threadName(tasks: readonly WebFeedTask[], ctx: PostContext): string | n
 function forYouOf(tasks: readonly WebFeedTask[], pulls: readonly WebFeedPull[], ctx: PostContext): FeedForYou | null {
   for (const task of tasks) {
     const hit = ctx.attentionByKey.get(`work:${task.id}`);
-    if (hit) return hit.detail ? { reason: "attention", label: hit.label, detail: hit.detail } : { reason: "attention", label: hit.label };
+    if (hit) return { reason: "attention", label: hit.label };
   }
   const draft = pulls.find((p) => p.state === "draft");
   if (draft) return { reason: "draft", label: `Draft ${draft.repo.split("/")[1] ?? draft.repo}#${draft.number} awaits review` };
@@ -117,7 +110,7 @@ export function pullPicture(pulls: readonly WebFeedPull[]): FeedPicture | null {
   const all = pulls.flatMap((p) => (p.images ?? []).map((image, index) => ({ pull: p, image, index })));
   const says = (x: (typeof all)[number], word: RegExp) => word.test(x.image.alt) || word.test(x.image.url.split("/").pop() ?? "");
   const pick = all.find((x) => says(x, DESKTOP)) ?? all.find((x) => !says(x, BEFORE)) ?? all[0];
-  return pick ? { src: `/api/feed/pr-image?pull=${encodeURIComponent(pick.pull.key)}&i=${pick.index}`, alt: pick.image.alt } : null;
+  return pick ? { src: prImagePath(pick.pull.key, pick.index), alt: pick.image.alt } : null;
 }
 
 /** What an own post says after its title, clipped; null when the title already says it all. */

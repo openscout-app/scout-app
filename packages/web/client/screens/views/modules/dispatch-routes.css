@@ -1,0 +1,39 @@
+/* Routes module: the Dispatch screen's route graph (broker/DispatchFocus.tsx)
+ * as a panel. Scoped to the module root, so the full screen draws as before.
+ * The graph sizes against the panel: the screen's 720px window rule comes
+ * back as a container rule. */
+
+.vw-droutes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100%;
+  padding: 10px 12px 12px;
+  container: dispatch-routes / inline-size;
+}
+
+.vw-droutes > .vw-quiet {
+  padding: 2px 0;
+}
+
+@container dispatch-routes (max-width: 720px) {
+  .vw-droutes .dsp-graph-canvas {
+    grid-template-columns: minmax(96px, 1fr) 36px minmax(104px, 1fr);
+    padding: 0 8px;
+  }
+
+  .vw-droutes .dsp-node-count {
+    display: none;
+  }
+}
+
+@container dispatch-routes (max-width: 360px) {
+  .vw-droutes .dsp-graph-head {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .vw-droutes .dsp-node-card {
+    flex-wrap: wrap;
+  }
+}

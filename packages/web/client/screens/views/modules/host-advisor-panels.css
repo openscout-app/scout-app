@@ -1,0 +1,51 @@
+/* Host Advisor as panels (host-readouts, host-reading, this-host). The page's
+ * own styles (screens/ops/host-advisor.css) draw the parts; these fit them to
+ * a panel: no card inside the panel's frame, and container widths, not the
+ * window's, decide the columns. */
+
+.vw-host { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.vw-host-readouts .s-host-readouts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.vw-host-readouts .s-host-readout { padding: 8px 10px; }
+.vw-host-readouts .s-host-readout-figure { font-size: var(--text-3xl); }
+@container (max-width: 760px) {
+  .vw-host-readouts .s-host-readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (max-width: 440px) {
+  .vw-host-readouts .s-host-readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vw-host-readouts .s-host-header-status-line { flex-wrap: wrap; }
+}
+
+/* a reading is the panel's whole body: drop its card */
+.vw-host-reading { padding: 0; gap: 0; }
+.vw-host-reading .s-host-reading { border: 0; border-radius: 0; background: none; overflow: visible; }
+.vw-host-reading .s-host-reading + .s-host-reading { border-top: 1px solid var(--border); }
+.vw-host-reading .s-host-reading-head { flex-wrap: wrap; row-gap: 4px; padding: 8px 12px; }
+.vw-host-reading .s-host-reading-num { width: auto; }
+.vw-host-reading .s-host-reading-figures { flex: 1 1 240px; }
+.vw-host-reading .s-host-share-bar { margin: 10px 12px 6px; }
+.vw-host-reading .s-host-rack-row { padding: 4px 12px; }
+.vw-host-reading .s-host-block { padding: 10px 12px; }
+
+@container (max-width: 640px) {
+  .vw-host-reading .s-host-reading-figures { flex-basis: 100%; order: 3; }
+  .vw-host-reading .s-host-reading-verdict { white-space: normal; }
+  .vw-host-reading .s-host-rack--roots .s-host-rack-row { grid-template-columns: minmax(0, 1fr) minmax(40px, 0.8fr) 44px 48px; }
+  .vw-host-reading .s-host-rack--roots .s-host-rack-row > :nth-child(5),
+  .vw-host-reading .s-host-rack--roots .s-host-rack-row > :nth-child(6) { display: none; }
+  .vw-host-reading .s-host-rack--unattended .s-host-rack-row { grid-template-columns: 14px minmax(0, 1fr) 64px minmax(0, 104px); }
+  .vw-host-reading .s-host-rack--unattended .s-host-rack-row > :nth-child(3),
+  .vw-host-reading .s-host-rack--unattended .s-host-rack-row > :nth-child(4) { display: none; }
+  .vw-host-reading .s-host-rack--subsystems .s-host-rack-row { grid-template-columns: 14px minmax(0, 96px) minmax(0, 1fr) auto; }
+  .vw-host-reading .s-host-rack--budgets .s-host-rack-row { grid-template-columns: 88px minmax(0, 1fr) 40px; }
+  .vw-host-reading .s-host-rack--budgets .s-host-rack-row > :last-child { display: none; }
+  .vw-host-reading .s-host-gauge { letter-spacing: 0.04em; font-size: var(--text-sm); overflow: hidden; }
+}
+@container (max-width: 380px) {
+  .vw-host-reading .s-host-share-bar { display: none; }
+  .vw-host-reading .s-host-rack--subsystems .s-host-rack-row { grid-template-columns: 14px minmax(0, 1fr) auto; }
+  .vw-host-reading .s-host-rack--subsystems .s-host-rack-row > :nth-child(3) { display: none; }
+  .vw-host-reading .s-host-table-row .chip { display: none; }
+}
+
+.vw-this-host { min-width: 0; }

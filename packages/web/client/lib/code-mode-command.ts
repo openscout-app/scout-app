@@ -27,10 +27,9 @@ function wrappedCommand(raw: string): string | null {
       break;
     }
     try {
-      const rawKey = match[1]!; // Required capture in the field grammar above.
-      const key = rawKey.startsWith('"') ? JSON.parse(rawKey) : rawKey;
+      const key = match[1].startsWith('"') ? JSON.parse(match[1]) : match[1];
       if (values.has(key)) return null;
-      values.set(key, JSON.parse(match[2]!));
+      values.set(key, JSON.parse(match[2]));
     } catch { return null; }
     cursor = field.lastIndex;
   }
@@ -47,7 +46,7 @@ export function codeModeCommand(raw: string): string | null {
   const statements: string[] = [];
   let start = 0, depth = 0, quote = "", escaped = false;
   for (let i = 0; i < raw.length; i++) {
-    const char = raw.charAt(i);
+    const char = raw[i];
     if (escaped) { escaped = false; continue; }
     if (quote) {
       if (char === "\\") escaped = true;

@@ -4,7 +4,7 @@
 
 .src-faint { color: var(--scout-chrome-ink-faint); }
 .src-small { font-size: var(--text-xs); }
-.src-mark:not(.hm-compact) { min-width: 0; font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.src-mark { display: inline-grid; flex: none; vertical-align: -2px; }
 .src-link { color: var(--scout-chrome-ink-soft); text-decoration: none; white-space: nowrap; }
 .src-link:hover { color: var(--scout-chrome-ink-strong); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .src-bad { color: var(--hud-status-error); }
@@ -21,7 +21,7 @@
 }
 
 /* ── a post's head ─────────────────────────────────────────────────
-   The kind and where it sits on the left, the harness name with the agent
+   The kind and where it sits on the left, the harness mark with the agent
    and the time on the right. The context gives way first, then the agent's
    name. On a phone, the agent and time can take a second line. */
 
@@ -41,8 +41,7 @@
 .src-headWho { display: inline-flex; flex: 0 1 auto; align-items: center; gap: 6px; min-width: 0; margin-left: auto; padding-left: 12px; }
 .src-headYou { flex: none; color: var(--scout-chrome-ink-strong); }
 .src-headName { min-width: 0; overflow: hidden; color: var(--scout-chrome-ink-strong); text-overflow: ellipsis; }
-.src-headWho > .src-faint { flex: none; }
-.src-headWho > .src-mark { max-inline-size: 20ch; }
+.src-headWho > .src-faint, .src-headWho > .src-mark { flex: none; }
 .src-headAt { flex: none; padding-left: 4px; color: var(--scout-chrome-ink-faint); font-variant-numeric: tabular-nums; }
 
 /* A phone has room for the agent and time on a second line, not for clipping them. */
@@ -103,7 +102,7 @@
 /* ── a quota warning ───────────────────────────────────────────────── */
 
 .src-quota { display: grid; gap: 6px; min-width: 0; }
-.src-title { margin: 0; font-size: var(--text-md); font-weight: 400; line-height: 1.35; color: var(--scout-chrome-ink-strong); }
+.src-title { display: flex; align-items: baseline; gap: 8px; margin: 0; font-size: var(--text-md); font-weight: 400; line-height: 1.35; color: var(--scout-chrome-ink-strong); }
 .src-meta { margin: 0; font-size: var(--text-sm); color: var(--scout-chrome-ink-faint); }
 .src-curve { margin: 4px 0 0; }
 .src-curve svg { display: block; width: 100%; height: 72px; border-bottom: 1px solid var(--scout-line); }
@@ -126,7 +125,7 @@
 }
 .src-provider + .src-provider { border-top: 1px solid var(--scout-line); }
 .src-provider[data-kind="status"] { grid-template-columns: 88px minmax(0, 1fr); }
-.src-providerName { min-width: 0; color: var(--scout-chrome-ink-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.src-providerName { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: var(--scout-chrome-ink-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .src-providerStatus { color: var(--scout-chrome-ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .src-bar { position: relative; height: 4px; overflow: hidden; background: color-mix(in srgb, var(--hud-ink) 8%, transparent); }
 .src-bar i { position: absolute; inset: 0 auto 0 0; background: var(--scout-chrome-ink-soft); }
@@ -152,4 +151,4 @@
 }
 .src-cell[data-hot] { color: var(--hud-bg); }
 .src-cell[data-empty] { background: var(--wash); }
-.src-weekWho { display: inline-flex; flex-wrap: wrap; gap: 4px; padding-left: 4px; }
+.src-weekWho { display: inline-flex; gap: 2px; padding-left: 4px; }

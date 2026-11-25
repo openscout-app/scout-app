@@ -1,0 +1,50 @@
+/* A harness prompt as its terminal drew it: the Terminal screen's dark plate and teal cursor, in every theme. */
+.scout-terminal-screen {
+  --ts-bg: #0d0d0d;
+  --ts-ink: rgb(255 255 255 / 0.84);
+  --ts-head: rgb(255 255 255 / 0.96);
+  --ts-dim: rgb(255 255 255 / 0.42);
+  --ts-cursor: rgb(94 234 212);
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--ts-bg);
+  color: var(--ts-ink);
+  /* The Terminal screen's face (DEFAULT_TERMINAL_FONT_FAMILY), set light as it is; Nerd Fonts cover prompt glyphs. */
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "JetBrainsMono Nerd Font", "JetBrainsMonoNL Nerd Font", "MesloLGS Nerd Font Mono", "Hack Nerd Font Mono", monospace;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1.5;
+  /* a terminal draws every cell on its own: no ligatures, no proportional digits */
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
+  font-kerning: none;
+  /* a narrow pane wraps a long line, as the terminal does */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+  color-scheme: dark;
+}
+
+.scout-terminal-screen > span {
+  display: block;
+}
+
+.scout-terminal-screen > .is-head {
+  color: var(--ts-head);
+  font-weight: 600;
+}
+
+.scout-terminal-screen > .is-cursor {
+  color: var(--ts-cursor);
+}
+
+.scout-terminal-screen > .is-hint {
+  color: var(--ts-dim);
+}
+
+.scout-terminal-screen:focus-visible {
+  outline: 1px solid var(--ts-cursor);
+  outline-offset: 1px;
+}

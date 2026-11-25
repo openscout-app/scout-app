@@ -1,0 +1,13 @@
+.s-computer-use {
+  color: var(--ink);
+  font: inherit;
+  padding: var(--space-sm);
+}
+.s-computer-use summary { cursor: pointer; }
+.s-computer-use ol, .s-computer-use ul {
+  padding-inline-start: var(--space-xl);
+}
+.s-computer-use li { margin-block: var(--space-2xs); }
+.s-computer-use time { font-variant-numeric: tabular-nums; }
+
+.s-session-slot .s-computer-use[open] { max-height: 40vh; overflow-y: auto; }

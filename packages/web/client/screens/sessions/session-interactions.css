@@ -1,0 +1,27 @@
+.s-session-experiments { position: relative; flex: none; }
+.s-session-experiments > summary { display: grid; place-items: center; width: 26px; height: 26px; cursor: pointer; list-style: none; color: var(--scout-chrome-ink-faint); border-radius: var(--radius-tight); }
+.s-session-experiments > summary::-webkit-details-marker { display: none; }
+.s-session-experiments > summary:hover, .s-session-experiments[open] > summary { background: var(--scout-chrome-hover); color: var(--scout-chrome-ink-strong); }
+.s-session-experiments > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.s-session-experiments fieldset { position: absolute; top: 32px; right: 0; z-index: 8; box-sizing: border-box; width: min(310px, 80vw); margin: 0; padding: 14px; display: grid; gap: 12px; border: 1px solid var(--scout-chrome-border-soft); border-radius: var(--radius-soft); background: var(--scout-chrome-bg, var(--bg)); color: var(--scout-chrome-ink-strong); }
+.s-session-experiments legend { padding: 0 4px; font-size: 12px; background: var(--scout-chrome-bg, var(--bg)); }
+.s-session-experiments label { display: flex; align-items: start; gap: 8px; cursor: pointer; font-size: 12px; }
+.s-session-experiments input { flex: none; margin-top: 4px; accent-color: var(--accent); }
+.s-session-experiments small { display: block; margin-top: 4px; color: var(--scout-chrome-ink-faint); font-size: 11px; line-height: 1.4; }
+.s-session-experiments button, .s-session-visual button, .s-session-quote { color: var(--scout-chrome-ink-strong); background: var(--scout-chrome-hover); border: 1px solid var(--scout-chrome-border-soft); border-radius: var(--radius-tight); padding: 4px 8px; font: inherit; font-size: 11px; cursor: pointer; }
+.s-session-experiments button:hover, .s-session-visual button:hover, .s-session-quote:hover { background: var(--scout-chrome-active, var(--scout-chrome-hover)); }
+.s-session-experiments button:focus-visible, .s-session-visual button:focus-visible, .s-session-quote:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.s-session-prompt-nav { display: flex; gap: 2px; flex: none; }
+.s-session-answer { position: relative; }
+.s-session-quote { display: block; margin-top: 8px; }
+.s-session-recall-hint { margin-right: auto; font-size: 11px; color: var(--scout-chrome-ink-faint); }
+.s-session-visual { margin: 12px 0; overflow: hidden; border: 1px solid var(--scout-chrome-border-soft); border-radius: var(--radius-soft); }
+.s-session-visual > header { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 10px; background: var(--scout-chrome-hover); }
+.s-session-visual strong { font-size: 12px; font-weight: 500; }
+.s-session-visual header > span { margin-right: auto; font-size: 11px; color: var(--scout-chrome-ink-faint); }
+.s-session-visual button { display: inline-flex; align-items: center; justify-content: center; }
+.s-session-visual iframe { display: block; width: 100%; height: 340px; border: 0; color-scheme: inherit; background: var(--scout-chrome-bg, var(--bg)); }
+.s-session-visual.is-expanded iframe { height: min(72vh, 800px); }
+.s-session-visual .s-message-markup-code { margin: 0; max-height: 340px; overflow: auto; }
+
+.s-session-quote-error { margin: 0; padding: 8px 20px; font-size: 12px; color: var(--scout-chrome-ink-strong); }

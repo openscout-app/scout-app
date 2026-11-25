@@ -1,14 +1,12 @@
 /**
  * The operator's latest move on a Feed post, made from the Feed or Home: a
  * reply, a reaction, a decision, a follow-up, Done or Drop, a question to
- * Scoutbot, or an answer to a session's permission request (allow once,
- * allow always, deny), which the server records when the runtime takes it.
- * The move itself went to the runtime (or to Scoutbot); this is the web
- * server's receipt of it, kept so the post says what was last done on it
+ * Scoutbot. The move itself went to the runtime (or to Scoutbot); this is the
+ * web server's receipt of it, kept so the post says what was last done on it
  * after a reload, a restart or a rebuilt projection, whether or not the work
  * changed since.
  */
-export const FEED_MOVE_KINDS = ["reply", "continue", "react", "ship", "push", "decide", "answer", "done", "drop", "ask", "allow", "always", "deny"] as const;
+export const FEED_MOVE_KINDS = ["reply", "continue", "react", "ship", "push", "decide", "answer", "done", "drop", "ask"] as const;
 export type FeedMoveKind = (typeof FEED_MOVE_KINDS)[number];
 
 /** `id` is the post's id as the Feed serves it; `label` is the move's own words, short; `at` is when the server took it. */
@@ -42,8 +40,5 @@ export function moveWords(move: Pick<FeedMove, "kind" | "label">): string {
     case "done": return "You marked it done";
     case "drop": return "You dropped it";
     case "ask": return `You asked Scoutbot${quote(label)}`;
-    case "allow": return `You allowed it once${quote(label)}`;
-    case "always": return `You always allowed${quote(label)}`;
-    case "deny": return `You denied${quote(label)}`;
   }
 }

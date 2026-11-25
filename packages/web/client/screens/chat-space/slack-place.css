@@ -1,0 +1,670 @@
+/* Rooms: the Slack place, drawn in Slack's own grammar.
+
+   A Slack workspace in Rooms should read as Slack at a glance: rounded-square
+   faces at 36px, bold names with a 12-hour clock, a floating hover bar with
+   Slack's quick reactions, a reply bar with the repliers' faces, a centered
+   day pill, sections for Channels and Direct messages, and Slack's composer
+   (marks on top, tools below, the green send). Scout keeps what makes it
+   Scout: its window, its fonts, its ink and ground, and the provenance marks
+   (the workspace tile, the via mark, the composer's destination line).
+
+   Every rule is scoped to the Slack place. The prefixes outrank the Rooms
+   shell-rail rules in chat-space.css by one class, and this sheet loads right
+   after it (ChatSpaceTheme.tsx), so the Scout place never sees any of it.
+
+   Corners. This place keeps Slack's own geometry: 6px controls, an 8px
+   composer, pill day markers and rounded-square faces at 22% of their size.
+   These are place tokens, like the round 50% that avatars keep under the
+   Sharp look, so Corners and Sharp square Scout's panels but not Slack's
+   controls. The Scout place still follows Corners everywhere. */
+
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"],
+:root .chat-rail-host[data-chat-source="slack"] {
+  --slack-link: #1d9bd1;
+  --slack-mention-fill: color-mix(in srgb, var(--slack-link) 16%, transparent);
+  --slack-send: #007a5a;
+  --slack-send-hover: #148567;
+  --slack-send-ink: #ffffff;
+  --slack-row-hover: color-mix(in srgb, var(--ink) 4%, transparent);
+  --slack-quiet-fill: color-mix(in srgb, var(--ink) 7%, transparent);
+  --slack-corner: 6px;
+  --slack-corner-lg: 8px;
+  --slack-pill: 999px;
+  --slack-chip: 3px;
+  --slack-face: 22%;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"][data-scout-theme="light"],
+:root .chat-rail-host[data-chat-source="slack"][data-scout-theme="light"] {
+  --slack-link: #1264a3;
+  --slack-mention-fill: color-mix(in srgb, #1d9bd1 12%, transparent);
+  --slack-row-hover: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+
+/* ── faces ──────────────────────────────────────────────────────────────── */
+
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-provider-avatar,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-coin,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn .chat-coin,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-sprite,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-harness-cell,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn > button:first-child,
+:root .chat-rail-host[data-chat-source="slack"] .chat-coin,
+:root .chat-rail-host[data-chat-source="slack"] .chat-provider-avatar {
+  border-radius: var(--slack-face);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn > button:first-child:focus-visible {
+  outline: 2px solid var(--slack-link);
+  outline-offset: 1px;
+}
+
+/* ── channel header ─────────────────────────────────────────────────────── */
+
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-chan-head {
+  min-height: 48px;
+  padding: 0 var(--space-2xl) 0 var(--space-3xl);
+  border-bottom: 0;
+  background: var(--bg);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-chan-name {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-chan-name .chat-hash {
+  margin-right: var(--space-3xs);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-chan-open {
+  border-color: var(--scout-line-strong);
+  border-radius: var(--slack-corner);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.chat-chan-tabs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2xl);
+  padding: 0 var(--space-3xl);
+  border-bottom: 1px solid var(--scout-line);
+  background: var(--bg);
+}
+.chat-chan-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  height: 34px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--ink);
+  /* The underline is a strip: square ends, even on a button with a radius. */
+  border-radius: 0;
+}
+
+/* ── day pill ───────────────────────────────────────────────────────────── */
+
+/* Slack's day divider: a hairline across the feed with the day in a pill on
+   it. The pill pins under the header while its messages scroll; once pinned,
+   the hairline steps back so only the pill floats over the messages. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-day {
+  position: sticky;
+  top: calc(-1 * var(--space-3xl));
+  z-index: 5;
+  justify-content: center;
+  margin: var(--space-sm) 0 0;
+  padding: var(--space-xs) var(--space-3xl);
+  background: transparent;
+  container-type: scroll-state;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-day::after { content: none; }
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-day-rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--scout-line-strong);
+  transition: opacity 150ms ease;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-day > .label-sm {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--space-2xl);
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--slack-pill);
+  background: var(--bg);
+  box-shadow: 0 1px 3px color-mix(in srgb, black 8%, transparent);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+@container scroll-state(stuck: top) {
+  :root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-day-rule { opacity: 0; }
+}
+
+/* ── message rows ───────────────────────────────────────────────────────── */
+
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] {
+  --chat-av: 36px;
+  --chat-text: 15px;
+  --chat-leading: 22px;
+  --chat-who: 15px;
+  --chat-when: 12px;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn { column-gap: var(--space-sm); }
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-turn {
+  padding: var(--space-sm) var(--space-3xl);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-turn[data-continues="true"] {
+  padding-block: var(--space-3xs);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-turn:has(+ .chat-turn[data-continues="true"]) {
+  padding-bottom: var(--space-3xs);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-turn:hover,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-turn:focus-within,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-turn[data-reacting] {
+  background: var(--slack-row-hover);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-turn[data-thread-open="true"] {
+  background: var(--slack-mention-fill);
+}
+
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-meta {
+  align-items: baseline;
+  gap: var(--space-xs);
+  min-height: 22px;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-meta .chat-who {
+  font-size: var(--chat-who);
+  font-weight: 800;
+  line-height: 22px;
+  letter-spacing: -0.005em;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-meta .chat-when,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-gutter .chat-when {
+  color: var(--dim);
+  font-family: var(--font-sans);
+  font-size: var(--chat-when);
+  font-variant-numeric: normal;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-gutter {
+  justify-content: flex-start;
+  padding-top: var(--space-3xs);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-body {
+  margin-top: 0;
+  color: var(--ink);
+}
+
+/* Slack's app badge, in sentence case. */
+.chat-who-app {
+  align-self: center;
+  padding: 0 var(--space-2xs);
+  border-radius: var(--slack-chip);
+  background: var(--slack-quiet-fill);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+}
+
+/* Slack has no "Mentions you" box: the chip in the text carries it. The words
+   stay for screen readers. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-message-mention {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+/* Mentions and links in Slack's blue. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-mention {
+  padding: 0 var(--space-3xs);
+  border-radius: var(--slack-chip);
+  background: var(--slack-mention-fill);
+  color: var(--slack-link);
+  font-weight: 400;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-body a,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-url {
+  color: var(--slack-link);
+  text-decoration: none;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-body a:hover,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-url:hover { text-decoration: underline; }
+
+/* Slack's join and topic lines: one quiet sentence on the body column. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-feed-inner > .chat-status-line {
+  margin: 0;
+  padding: var(--space-2xs) var(--space-3xl) var(--space-2xs) calc(var(--space-3xl) + var(--chat-av) + var(--space-sm));
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── hover bar ──────────────────────────────────────────────────────────── */
+
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-tools {
+  top: calc(-1 * var(--space-2xl));
+  padding: var(--space-3xs);
+  border-color: var(--scout-line-strong);
+  border-radius: var(--slack-corner-lg);
+  background: var(--bg);
+  box-shadow: 0 4px 12px color-mix(in srgb, black 12%, transparent);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-tool {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--slack-corner);
+  color: var(--muted);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-tool:hover:not(:disabled) {
+  background: var(--slack-quiet-fill);
+  color: var(--ink);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn-tool:focus-visible {
+  outline: 2px solid var(--slack-link);
+  outline-offset: -2px;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-reaction-quick {
+  font-size: 16px;
+  line-height: 1;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-reaction-quick[aria-pressed="true"] {
+  background: var(--slack-mention-fill);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn .chat-turn-tools .chat-reaction-picker {
+  padding-right: var(--space-3xs);
+  margin-right: var(--space-3xs);
+  border-right-color: var(--scout-line);
+}
+
+/* ── reactions ──────────────────────────────────────────────────────────── */
+
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-reaction-row {
+  margin-top: var(--space-2xs);
+  gap: var(--space-2xs);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-reaction {
+  min-height: 24px;
+  gap: var(--space-2xs);
+  padding: 0 var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--slack-pill);
+  background: var(--slack-quiet-fill);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-reaction:hover {
+  border-color: var(--scout-line-strong);
+  background: var(--bg);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-reaction[data-me="true"] {
+  border-color: var(--slack-link);
+  background: var(--slack-mention-fill);
+  color: var(--slack-link);
+}
+
+/* ── thread bar ─────────────────────────────────────────────────────────── */
+
+/* Slack's reply bar: the repliers' faces, "N replies" in link blue, then the
+   last reply's age. Under the pointer it gains a plate, the age gives way to
+   "View thread", and a chevron appears at the far end. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+  width: min(100%, 600px);
+  min-height: 34px;
+  height: auto;
+  margin: var(--space-2xs) 0 0 calc(-1 * var(--space-xs));
+  padding: var(--space-2xs) var(--space-sm) var(--space-2xs) var(--space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--slack-corner-lg);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub-faces {
+  display: inline-flex;
+  gap: var(--space-2xs);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub-faces > * {
+  border-radius: var(--slack-face);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub-count {
+  color: var(--slack-link);
+  font-weight: 700;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub-last {
+  color: var(--dim);
+  font-size: 13px;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub-view {
+  display: none;
+  margin: 0;
+  color: var(--dim);
+  font-size: 13px;
+  opacity: 1;
+  transform: none;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub-chevron {
+  display: flex;
+  margin-left: auto;
+  color: var(--dim);
+  opacity: 0;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:hover,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:focus-visible,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-turn[data-thread-open="true"] .chat-thread-stub {
+  outline: none;
+  border-color: var(--scout-line-strong);
+  background: var(--bg);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:focus-visible {
+  box-shadow: 0 0 0 1px var(--slack-link);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:hover .chat-thread-stub-last,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:focus-visible .chat-thread-stub-last { display: none; }
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:hover .chat-thread-stub-view,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:focus-visible .chat-thread-stub-view { display: inline; }
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:hover .chat-thread-stub-chevron,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-thread-stub:focus-visible .chat-thread-stub-chevron { opacity: 1; }
+
+/* ── composer ───────────────────────────────────────────────────────────── */
+
+/* Slack's message box: one rounded field with the marks on a tinted band at
+   the top, the text, then a row of tools and the send at the bottom. No rule
+   splits the field from its tools. The marks wait at half strength until the
+   box has focus, as Slack's do. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-wrap {
+  padding: 0 var(--space-3xl) var(--space-3xl);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer {
+  border: 1px solid var(--scout-line-strong);
+  border-radius: var(--slack-corner-lg);
+  background: var(--bg);
+  box-shadow: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer:hover {
+  border-color: var(--scout-line-strong);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer:focus-within {
+  border-color: var(--dim);
+  box-shadow: 0 1px 4px color-mix(in srgb, black 10%, transparent);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-marks {
+  gap: var(--space-3xs);
+  padding: var(--space-2xs) var(--space-xs);
+  border-bottom: 0;
+  border-radius: var(--slack-corner-lg) var(--slack-corner-lg) 0 0;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  /* On a phone the band still scrolls sideways, as Slack's does, but without
+     a scrollbar cutting through the box. Every mark stays in the tab order. */
+  scrollbar-width: none;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-marks .chat-composer-tool {
+  opacity: 0.55;
+  transition: opacity 120ms ease;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer:focus-within .chat-composer-marks .chat-composer-tool {
+  opacity: 1;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-divider {
+  height: 20px;
+  margin: 0 var(--space-2xs);
+  background: var(--scout-line-strong);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-input {
+  min-height: 40px;
+  padding: var(--space-sm) var(--space-lg);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 22px;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-foot {
+  min-height: 40px;
+  gap: var(--space-3xs);
+  padding: 0 var(--space-xs) var(--space-xs);
+  border-top: 0;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-tool {
+  min-height: 28px;
+  border-radius: var(--slack-corner);
+  color: var(--muted);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-tool:hover:not(:disabled) {
+  background: var(--slack-quiet-fill);
+  color: var(--ink);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-tool[data-active="true"] {
+  background: var(--slack-quiet-fill);
+  color: var(--ink);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-tool:focus-visible,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-send:focus-visible {
+  outline: 2px solid var(--slack-link);
+  outline-offset: 1px;
+}
+
+/* Send: Slack's green once there is something to send, a quiet plane before. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-send,
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-send:not([data-mode="ask"]) {
+  width: 32px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--slack-corner);
+  background: var(--slack-send);
+  color: var(--slack-send-ink);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-send:hover:not(:disabled) {
+  background: var(--slack-send-hover);
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-send:not([data-mode="ask"]):disabled {
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  opacity: 0.6;
+}
+
+/* ── sidebar ────────────────────────────────────────────────────────────── */
+
+/* The workspace is a rounded-square tile, as Slack draws it. Scout's own tile
+   keeps its cut corners, so the two places never share a shape. */
+.rooms-place-tile[data-kind="slack"] {
+  clip-path: none;
+  border-radius: var(--slack-face, 22%);
+}
+:root .chat-rail-host[data-chat-source="slack"] .rooms-place-name {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 18px;
+}
+
+:root .chat-rail-host[data-chat-source="slack"] .ctx-panel-search-input {
+  border-radius: var(--slack-corner);
+}
+
+.chat-slack-section { margin-top: var(--space-sm); }
+.chat-slack-section-head {
+  width: 100%;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 0 var(--space-sm);
+  border-radius: var(--slack-corner);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+:where(.chat-rail-host) .chat-slack-section-head { flex-direction: row; }
+.chat-slack-section-head:hover { background: var(--slack-row-hover); color: var(--ink); }
+.chat-slack-section-head:focus-visible { outline: 2px solid var(--slack-link); outline-offset: -2px; }
+.chat-slack-section-caret {
+  display: flex;
+  transition: transform 150ms ease;
+}
+.chat-slack-section[data-folded="true"] .chat-slack-section-caret { transform: rotate(-90deg); }
+
+/* Rows: 28px, no rules between them, no times; the open room on a strong
+   plate, unread rooms in bold ink. */
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row {
+  border-bottom: 0;
+  margin: 0 var(--space-sm);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-head {
+  min-height: 28px;
+  height: 28px;
+  gap: var(--space-sm);
+  padding: 0 var(--space-sm);
+  border-radius: var(--slack-corner);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-head:hover { background: var(--slack-row-hover); }
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-hash {
+  width: 20px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--muted);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-name,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-name-text {
+  font-size: 14px;
+  color: var(--muted);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--unread .rr-row-name,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--unread .rr-row-name-text {
+  color: var(--ink);
+  font-weight: 700;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-meta { display: none; }
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--active .rr-row-head,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--selected .rr-row-head {
+  background: color-mix(in srgb, var(--ink) 88%, var(--bg));
+  box-shadow: none;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--active .rr-row-name,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--active .rr-row-name-text,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--active .rr-row-hash {
+  color: var(--bg);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-head:focus-visible {
+  outline: 2px solid var(--slack-link);
+  outline-offset: -2px;
+}
+
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row {
+  position: relative;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-more {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--slack-row-hover);
+  color: var(--muted);
+  opacity: 0;
+  cursor: pointer;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row:hover .rr-row-more,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-more:focus-visible,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-more[aria-expanded="true"] {
+  opacity: 1;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--active .rr-row-more {
+  background: color-mix(in srgb, var(--bg) 14%, transparent);
+  color: var(--bg);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-state {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row--active .rr-row-state { color: var(--bg); }
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row[data-muted="true"]:not(.rr-row--active) .rr-row-body { opacity: 0.62; }
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row[data-hidden="true"]:not(.rr-row--active) .rr-row-body { opacity: 0.72; }
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-menu {
+  position: absolute;
+  top: 27px;
+  right: 4px;
+  z-index: 30;
+  min-width: 196px;
+  padding: var(--space-xs);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-menu button {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-menu button:hover,
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-menu button:focus-visible {
+  background: var(--slack-row-hover);
+  outline: none;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-section .rr-row-menu p {
+  margin: var(--space-xs) var(--space-sm) 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+:root .chat-rail-host[data-chat-source="slack"] .chat-slack-hidden { margin-top: var(--space-md); }
+
+/* Slack says Shift + Return under the box, on the left, and only while you
+   write. The right edge stays clear for the Scoutbot figure. */
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-return-hint {
+  padding-right: var(--space-5xl);
+  text-align: left;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+:root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer:focus-within ~ .chat-composer-return-hint {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer,
+  :root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-marks .chat-composer-tool,
+  :root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-day-rule,
+  :root .chat-space.chat-space--in-shell[data-chat-source="slack"] .chat-composer-return-hint,
+  .chat-slack-section-caret { transition: none; }
+}

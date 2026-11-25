@@ -1,0 +1,70 @@
+/* One agent turn in a session thread or on the Sessions board: a turn bar
+   over the lane trace. The rows are the lane rows from session-observe.css;
+   this file only places them in the flow of a conversation. */
+
+.s-turn-work { margin: 0; font-size: 12px; color: var(--muted); }
+
+/* The bar: status, time, counts and phases on one line. Only failures and a
+   stop take a color; everything else stays quiet. */
+.s-turn-bar-line { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-width: 0; }
+.s-turn-bar-status { color: var(--ink); font-weight: 500; }
+.s-turn-bar-line[data-state="stopped"] .s-turn-bar-status,
+.s-turn-bar-failures { color: var(--red); }
+.s-turn-bar-last { min-width: 0; max-width: 48ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-turn-bar-phases { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; color: var(--dim); }
+.s-turn-bar-phases [data-active] { color: var(--ink); }
+
+/* A finished turn: one quiet line above its answer. Opened, its beats sit to
+   one side of the answer, under a hairline rule. */
+.s-turn-work > summary { width: fit-content; max-width: 100%; padding-block: 3px; list-style: none; cursor: pointer; }
+.s-turn-work > summary::-webkit-details-marker { display: none; }
+.s-turn-work > summary:hover .s-tb-done, .s-turn-work > summary:hover .s-tb-done-lead, .s-turn-work > summary:hover .s-tb-fold-chev { color: var(--tb-ink); }
+.s-turn-work > summary:focus-visible { outline: 1px solid var(--tb-ink-2); outline-offset: 2px; border-radius: 4px; }
+.s-turn-work[open] > summary .s-tb-done-chev { transform: rotate(90deg); }
+.s-turn-work-body { position: relative; margin: 6px 0 14px; padding: 2px 0 2px 14px; border-left: 0.5px solid var(--tb-edge-2); }
+.s-turn-work-tools { display: flex; justify-content: flex-end; margin-bottom: 2px; }
+.s-turn-work-beats { padding: 10px 0 2px; }
+
+/* A running turn: the bar sticks to the top of the thread while the trace
+   grows below it. */
+.s-turn-work--live .s-turn-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+/* The session feed pads its top; stick past that padding so nothing scrolls
+   through the gap above the bar. */
+.s-session-view .s-turn-work--live .s-turn-bar { top: -24px; }
+.s-turn-bar-dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: s-turn-pulse 1.6s ease-in-out infinite; }
+@keyframes s-turn-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .s-turn-bar-dot { animation: none; } }
+.s-turn-bar-actions { flex: none; display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.s-turn-bar-open { padding: 0; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
+.s-turn-bar-open:hover { color: var(--ink); text-decoration: underline; }
+.s-turn-work-empty, .s-turn-work-note { margin: 8px 0; color: var(--dim); }
+
+/* One disclosure keeps its place when a live turn settles into its answer. */
+.s-turn-activity-header { display: flex; align-items: center; gap: 12px; min-height: 28px; }
+.s-session-view .s-turn-activity-toggle { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.s-session-view .s-turn-activity-toggle:hover { color: var(--ink); background: none; }
+.s-session-view .s-turn-activity-toggle:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
+.s-turn-activity-chevron { color: var(--dim); }
+.s-turn-activity-chevron[data-open] { transform: rotate(90deg); }
+.s-turn-activity-toggle[aria-expanded="true"] .s-tb-done-chev { transform: rotate(90deg); }
+.s-turn-activity .s-turn-bar-dot[data-narrated] { visibility: hidden; animation: none; }
+.s-turn-activity .s-turn-work-beats { min-height: 28px; }
+.s-turn-activity[data-state="worked"] .s-turn-work-body { margin-bottom: 8px; }
+
+/* The lane trace in the flow of the thread, not in a lane's own scroller. */
+.s-session-trace { --lane-time-col: 62px; --lane-spine-x: 64px; display: block; height: auto; min-height: 0; }
+
+@media (max-width: 560px) {
+  .s-session-trace { --lane-time-col: 48px; --lane-spine-x: 50px; }
+  .s-turn-bar-phases { display: none; }
+}

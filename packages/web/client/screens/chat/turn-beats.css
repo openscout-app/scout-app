@@ -1,0 +1,296 @@
+/* A turn's beats, rows and what it made, in a session thread. Thin type,
+   hairline edges, mono for anything named or counted. The colours mean one
+   thing each: the ink glow is working, coral is a failure, green is what
+   passed or was added. Every value derives from the theme's HUD tokens, so
+   the same rules hold in light and dark. */
+
+.s-turn-work,
+.s-tb {
+  --tb-ink: var(--hud-ink);
+  --tb-ink-2: color-mix(in srgb, var(--hud-ink) 76%, var(--hud-bg));
+  --tb-ink-3: var(--hud-muted);
+  --tb-ink-4: color-mix(in srgb, var(--hud-muted) 66%, var(--hud-bg));
+  --tb-edge: var(--hud-line, var(--hud-border));
+  --tb-edge-2: var(--hud-line-strong, var(--hud-border));
+  --tb-sunk: color-mix(in srgb, var(--hud-ink) 3.5%, var(--hud-bg));
+  --tb-raise: color-mix(in srgb, var(--hud-ink) 5%, var(--hud-bg));
+  --tb-raise-2: color-mix(in srgb, var(--hud-ink) 8%, var(--hud-bg));
+  --tb-hi: color-mix(in srgb, var(--hud-ink) 7%, transparent);
+  --tb-pass: var(--hud-status-ok);
+  --tb-add: color-mix(in srgb, var(--hud-status-ok) 82%, var(--hud-ink));
+  --tb-fail: var(--hud-status-error);
+  --tb-del: color-mix(in srgb, var(--hud-status-error) 74%, var(--hud-ink));
+  --tb-glow: color-mix(in srgb, var(--hud-ink) 45%, transparent);
+  --tb-mono: var(--hud-font-mono);
+  --tb-sans: var(--hud-font-sans);
+  --tb-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --tb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.s-tb { color: var(--tb-ink-3); font-family: var(--tb-sans); }
+.s-tb-beats, .s-tb-steps { margin: 0; padding: 0; list-style: none; }
+.s-tb-label { font: 400 10px/1 var(--tb-mono); letter-spacing: var(--voice-track, 0.02em); text-transform: var(--voice-case, uppercase); color: var(--tb-ink-3); }
+.s-tb-fail-text { color: var(--tb-fail); }
+
+@keyframes s-tb-enter { from { opacity: 0; transform: translateY(3px); } }
+@keyframes s-tb-blink { 50% { opacity: 0; } }
+@keyframes s-tb-sheen { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+.s-tb-caret {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  margin-left: 3px;
+  border-radius: 1px;
+  vertical-align: -2px;
+  background: var(--tb-ink);
+  box-shadow: 0 0 6px var(--tb-glow);
+  animation: s-tb-blink 1.1s steps(1) infinite;
+}
+
+.s-tb-diffstat { display: inline-flex; flex: none; gap: 5px; font: 400 10.5px/1 var(--tb-mono); font-variant-numeric: tabular-nums; }
+.s-tb-add { color: var(--tb-add); }
+.s-tb-del { color: var(--tb-del); }
+
+/* ── beats: the agent's line, then its calls ── */
+
+.s-tb-beat { animation: s-tb-enter 340ms var(--tb-ease-out); }
+.s-tb-beat + .s-tb-beat { margin-top: 12px; }
+.s-tb-say { color: var(--tb-ink-2); font-size: 13.5px; line-height: 1.6; text-wrap: pretty; transition: color 220ms var(--tb-ease); }
+.s-tb-say .s-message-markup > :first-child { margin-top: 0; }
+.s-tb-say .s-message-markup > :last-child { margin-bottom: 0; }
+.s-tb-say > .s-tb-caret { margin-top: 2px; }
+.s-tb-beat[data-current] .s-tb-say, .s-tb-say[data-now] { color: var(--tb-ink); }
+.s-tb-say + .s-tb-steps { margin-top: 6px; }
+.s-tb-say + .s-tb-fold { margin-top: 3px; }
+.s-tb-fold + .s-tb-steps { margin-top: 2px; }
+.s-tb-writing { display: flex; align-items: center; height: 22px; }
+.s-tb-writing .s-tb-caret { margin-left: 0; }
+
+/* ── one call ── */
+
+.s-tb-step { position: relative; min-width: 0; animation: s-tb-enter 340ms var(--tb-ease-out); }
+.s-tb-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 26px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tb-ink-3);
+  font: 400 12.5px/1.4 var(--tb-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.s-tb-row:disabled { cursor: default; }
+.s-tb-row:focus-visible { outline: 1px solid var(--tb-ink-2); outline-offset: 2px; border-radius: 4px; }
+.s-tb-row:not(:disabled):hover .s-tb-verb, .s-tb-row:not(:disabled):hover .s-tb-target { color: var(--tb-ink); }
+.s-tb-verb { flex: none; white-space: nowrap; transition: color 120ms var(--tb-ease); }
+.s-tb-target { flex: 0 1 auto; min-width: 0; overflow: hidden; font: 400 11.5px/1.4 var(--tb-mono); color: var(--tb-ink-2); white-space: nowrap; text-overflow: ellipsis; transition: color 120ms var(--tb-ease); }
+.s-tb-step[data-family="note"] .s-tb-target { font: 400 12.5px/1.4 var(--tb-sans); color: var(--tb-ink-3); }
+.s-tb-took { flex: none; font: 400 10.5px/1 var(--tb-mono); font-variant-numeric: tabular-nums; color: var(--tb-ink-4); }
+.s-tb-chev { flex: none; color: var(--tb-ink-4); opacity: 0; transition: opacity 120ms var(--tb-ease), transform 150ms var(--tb-ease); }
+.s-tb-row:not(:disabled):hover .s-tb-chev, .s-tb-row:focus-visible .s-tb-chev, .s-tb-chev[data-open] { opacity: 1; }
+.s-tb-chev[data-open] { transform: rotate(90deg); }
+.s-tb-step[data-state="live"] .s-tb-target, .s-tb-step[data-state="live"] .s-tb-took { color: var(--tb-ink); }
+.s-tb-step[data-state="fail"] .s-tb-verb { color: var(--tb-fail); }
+.s-tb-step[data-state="fail"][data-recovered] .s-tb-verb { color: color-mix(in srgb, var(--tb-fail) 55%, var(--tb-ink-3)); }
+
+/* The call that is running: a light passes along its verb. */
+.s-tb-verb[data-live] {
+  background: linear-gradient(90deg, var(--tb-ink-3) 0 38%, var(--tb-ink) 50%, var(--tb-ink-3) 62% 100%) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: s-tb-sheen 2.2s linear infinite;
+}
+
+/* One shape per kind of call. */
+.s-tb-glyph { display: block; flex: none; color: var(--tb-ink-4); transition: color 150ms var(--tb-ease); }
+.s-tb-glyph[data-state="live"] { color: var(--tb-ink); filter: drop-shadow(0 0 4px var(--tb-glow)); }
+.s-tb-glyph[data-state="fail"] { color: var(--tb-fail); }
+.s-tb-row:not(:disabled):hover .s-tb-glyph[data-state="ok"] { color: var(--tb-ink-2); }
+
+/* A live call shows only its newest output line. */
+.s-tb-tail { overflow: hidden; padding: 0 0 6px 22px; font: 400 11px/1.5 var(--tb-mono); color: var(--tb-ink-3); white-space: nowrap; text-overflow: ellipsis; }
+
+/* A past beat folds to the shapes of its calls and a count; the line is its toggle. */
+.s-tb-fold {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  padding: 3px 0;
+  border: 0;
+  background: none;
+  color: var(--tb-ink-3);
+  font: 400 12px/1.4 var(--tb-sans);
+  text-align: left;
+  cursor: pointer;
+  transition: color 120ms var(--tb-ease);
+}
+.s-tb-fold:hover { color: var(--tb-ink); }
+.s-tb-fold:focus-visible { outline: 1px solid var(--tb-ink-2); outline-offset: 2px; border-radius: 4px; }
+.s-tb-cluster { display: inline-flex; flex: none; gap: 4px; }
+.s-tb-fold:hover .s-tb-cluster .s-tb-glyph[data-state="ok"] { color: var(--tb-ink-3); }
+.s-tb-fold-chev { flex: none; color: var(--tb-ink-4); transition: transform 150ms var(--tb-ease), color 120ms var(--tb-ease); }
+.s-tb-fold-chev[data-open] { transform: rotate(90deg); }
+.s-tb-fold:hover .s-tb-fold-chev { color: var(--tb-ink); }
+.s-tb-more { padding: 3px 0 3px 22px; border: 0; background: none; color: var(--tb-ink-4); font: 400 11.5px/1.4 var(--tb-sans); cursor: pointer; }
+.s-tb-more:hover { color: var(--tb-ink); }
+
+/* Concise while running: the newest line and the call it is on. */
+.s-tb-now { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+
+/* ── what a call shows, opened ── */
+
+.s-tb-diff, .s-tb-out {
+  margin: 2px 0 10px 22px;
+  padding: 8px 0;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--tb-sunk);
+  box-shadow: 0 0 0 0.5px var(--tb-edge) inset;
+  font: 400 11.5px/1.65 var(--tb-mono);
+  color: var(--tb-ink-2);
+  animation: s-tb-enter 220ms var(--tb-ease-out);
+}
+.s-tb-dl { display: block; min-width: max-content; padding-right: 14px; white-space: pre; }
+.s-tb-dl i { display: inline-block; width: 26px; color: var(--tb-ink-4); font-style: normal; text-align: center; user-select: none; }
+.s-tb-dl[data-sign="add"] { background: color-mix(in srgb, var(--tb-pass) 9%, transparent); color: color-mix(in srgb, var(--tb-add) 45%, var(--tb-ink)); }
+.s-tb-dl[data-sign="add"] i { color: var(--tb-add); }
+.s-tb-dl[data-sign="del"] { background: color-mix(in srgb, var(--tb-fail) 7%, transparent); color: var(--tb-del); }
+.s-tb-dl[data-sign="del"] i { color: var(--tb-del); }
+.s-tb-dl[data-sign="hunk"] { color: var(--tb-ink-4); }
+.s-tb-out { padding: 8px 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.s-tb-out > span { display: block; }
+.s-tb-out [data-tone="fail"] { color: var(--tb-fail); }
+.s-tb-out-cmd { margin-bottom: 4px; color: var(--tb-ink-4); }
+.s-tb-step[data-state="fail"] .s-tb-out { box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--tb-fail) 40%, transparent) inset; }
+.s-tb-out[data-hits] { display: grid; gap: 2px; }
+.s-tb-hit { overflow: hidden; color: var(--tb-ink-2); white-space: pre; text-overflow: ellipsis; }
+.s-tb-hit-loc { margin-right: 12px; color: var(--tb-ink-4); }
+.s-tb-think { margin: 2px 0 10px 22px; padding: 0 0 0 12px; border-left: 0.5px solid var(--tb-edge-2); font: 300 13px/1.6 var(--tb-sans); color: var(--tb-ink-3); white-space: pre-line; animation: s-tb-enter 220ms var(--tb-ease-out); }
+
+/* ── the finished turn's line ── */
+
+.s-tb-done { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; color: var(--tb-ink-3); font: 400 12px/1.4 var(--tb-sans); }
+.s-tb-done-lead { color: var(--tb-ink-2); }
+.s-tb-done[data-state="stopped"] .s-tb-done-lead { color: var(--tb-fail); }
+.s-tb-done-files { display: inline-flex; align-items: baseline; gap: 6px; }
+.s-tb-done-last { min-width: 0; max-width: 48ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── what the turn made ── */
+
+.s-tb-tray { margin-top: 16px; animation: s-tb-enter 340ms var(--tb-ease-out); }
+.s-tb-tray-head { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font: 400 10px/1 var(--tb-mono); color: var(--tb-ink-4); }
+.s-tb-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(188px, 1fr)); gap: 8px; }
+.s-tb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px 12px 9px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(to bottom, var(--tb-raise), var(--tb-sunk));
+  box-shadow: 0 0.5px 0 var(--tb-hi) inset, 0 0 0 0.5px var(--tb-edge);
+  color: var(--tb-ink-3);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 150ms var(--tb-ease), transform 150ms var(--tb-ease);
+}
+.s-tb-card:hover { box-shadow: 0 0.5px 0 var(--tb-hi) inset, 0 0 0 0.5px var(--tb-edge-2), 0 12px 24px -16px rgb(0 0 0 / 0.55); transform: translateY(-1px); }
+.s-tb-card:focus-visible, .s-tb-chip:focus-visible { outline: 1px solid var(--tb-ink-2); outline-offset: 2px; }
+.s-tb-card[aria-pressed="true"] { box-shadow: 0 0.5px 0 var(--tb-hi) inset, 0 0 0 1px color-mix(in srgb, var(--tb-ink) 30%, transparent); }
+.s-tb-card-head { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--tb-ink-4); }
+.s-tb-card-name { flex: 1; min-width: 0; overflow: hidden; font: 400 11.5px/1.2 var(--tb-mono); color: var(--tb-ink); white-space: nowrap; text-overflow: ellipsis; }
+.s-tb-card-stat, .s-tb-chip-stat, .s-tb-open-stat { flex: none; font: 400 10.5px/1 var(--tb-mono); font-variant-numeric: tabular-nums; color: var(--tb-ink-3); }
+[data-tone="pass"] > .s-tb-card-head .s-tb-card-stat, .s-tb-chip[data-tone="pass"] .s-tb-chip-stat, .s-tb-open-stat[data-tone="pass"] { color: var(--tb-add); }
+[data-tone="fail"] > .s-tb-card-head .s-tb-card-stat, .s-tb-chip[data-tone="fail"] .s-tb-chip-stat, .s-tb-open-stat[data-tone="fail"] { color: var(--tb-fail); }
+.s-tb-card-body { display: block; height: 58px; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent); mask-image: linear-gradient(to bottom, #000 72%, transparent); }
+.s-tb-card-foot { overflow: hidden; font: 400 10.5px/1.3 var(--tb-mono); color: var(--tb-ink-4); white-space: nowrap; text-overflow: ellipsis; }
+
+.s-tb-mini-diff { display: block; overflow: hidden; border-radius: 4px; font: 400 10px/1.6 var(--tb-mono); color: var(--tb-ink-3); }
+.s-tb-mini-diff .s-tb-dl { min-width: 0; overflow: hidden; padding-right: 6px; text-overflow: ellipsis; }
+.s-tb-mini-diff .s-tb-dl i { width: 14px; }
+.s-tb-mini-out { display: grid; gap: 2px; padding-top: 2px; font: 400 10px/1.55 var(--tb-mono); color: var(--tb-ink-4); }
+.s-tb-mini-out > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.s-tb-mini-out > span:last-child { color: var(--tb-ink-2); }
+
+/* Tests: one cell per test, a row per run, so a failure and the rerun that passed sit together. */
+.s-tb-runs { display: grid; gap: 8px; padding-top: 4px; }
+.s-tb-run { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.s-tb-run-label { flex: none; width: 34px; font: 400 10px/1 var(--tb-mono); color: var(--tb-ink-4); }
+.s-tb-cells { display: flex; flex-wrap: wrap; gap: 3px; }
+.s-tb-cells i { width: 8px; height: 8px; border-radius: 2px; background: color-mix(in srgb, var(--tb-pass) 72%, var(--tb-sunk)); box-shadow: 0 0.5px 0 var(--tb-hi) inset; }
+.s-tb-cells i[data-s="fail"] { background: var(--tb-fail); box-shadow: 0 0 6px color-mix(in srgb, var(--tb-fail) 55%, transparent); }
+.s-tb-meter { display: flex; flex: 1; gap: 2px; min-width: 60px; height: 6px; }
+.s-tb-meter i { display: block; min-width: 3px; border-radius: 2px; background: color-mix(in srgb, var(--tb-pass) 72%, var(--tb-sunk)); }
+.s-tb-meter i[data-s="fail"] { background: var(--tb-fail); box-shadow: 0 0 6px color-mix(in srgb, var(--tb-fail) 55%, transparent); }
+
+.s-tb-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+/* "N more": a quiet text button after the chips, or at the end of the tray's head. */
+.s-tb-tray-more { height: 26px; padding: 0 4px; border: 0; background: none; color: var(--tb-ink-3); font: 400 11.5px/1 var(--tb-sans); cursor: pointer; }
+.s-tb-tray-head .s-tb-tray-more { height: auto; margin-left: auto; padding: 0; font-size: 11px; }
+.s-tb-tray-more:hover { color: var(--tb-ink); }
+.s-tb-tray-more:focus-visible { outline: 1px solid var(--tb-ink-2); outline-offset: 2px; border-radius: 4px; }
+.s-tb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  height: 26px;
+  padding: 0 10px 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--tb-raise);
+  box-shadow: 0 0.5px 0 var(--tb-hi) inset, 0 0 0 0.5px var(--tb-edge);
+  color: var(--tb-ink-2);
+  font: 400 11px/1 var(--tb-mono);
+  cursor: pointer;
+  transition: box-shadow 150ms var(--tb-ease), color 150ms var(--tb-ease);
+}
+.s-tb-chip svg { flex: none; color: var(--tb-ink-4); }
+.s-tb-chip:hover { color: var(--tb-ink); box-shadow: 0 0.5px 0 var(--tb-hi) inset, 0 0 0 0.5px var(--tb-edge-2); }
+.s-tb-chip[aria-pressed="true"] { background: var(--tb-raise-2); color: var(--tb-ink); box-shadow: 0 0.5px 0 var(--tb-hi) inset, 0 0 0 1px color-mix(in srgb, var(--tb-ink) 26%, transparent); }
+.s-tb-chip-name { min-width: 0; max-width: 26ch; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* An artifact opened in place, under the tray. */
+.s-tb-open { margin-top: 10px; padding: 12px 14px 14px; border-radius: 10px; background: var(--tb-sunk); box-shadow: 0 0 0 0.5px var(--tb-edge-2) inset; animation: s-tb-enter 220ms var(--tb-ease-out); }
+.s-tb-open-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.s-tb-open-title { min-width: 0; overflow: hidden; font: 400 12px/1.3 var(--tb-mono); color: var(--tb-ink); white-space: nowrap; text-overflow: ellipsis; }
+.s-tb-open-close { display: grid; flex: none; place-items: center; width: 24px; height: 24px; margin-left: auto; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--tb-ink-3); cursor: pointer; }
+.s-tb-open-close:hover { background: var(--tb-raise-2); color: var(--tb-ink); }
+.s-tb-open-path { margin: 4px 0 12px; overflow: hidden; font: 400 10.5px/1.4 var(--tb-mono); color: var(--tb-ink-4); white-space: nowrap; text-overflow: ellipsis; }
+.s-tb-open-body .s-tb-diff, .s-tb-open-body .s-tb-out { margin: 0; background: color-mix(in srgb, var(--hud-ink) 2%, var(--hud-bg)); }
+.s-tb-hunk + .s-tb-hunk { margin-top: 14px; }
+.s-tb-hunk-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font: 400 10.5px/1 var(--tb-mono); color: var(--tb-ink-3); }
+.s-tb-hunk-head > :last-child { margin-left: auto; }
+.s-tb-fine { margin: 12px 0 0; font: 300 12px/1.5 var(--tb-sans); color: var(--tb-ink-4); }
+.s-tb-edit-times { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: 400 11px/1.5 var(--tb-mono); color: var(--tb-ink-2); }
+.s-tb-edit-times + .s-tb-fine { margin-top: 10px; }
+.s-tb-test-run { padding: 12px 0; border-top: 0.5px solid var(--tb-edge); }
+.s-tb-test-run:first-child { padding-top: 0; border-top: 0; }
+.s-tb-test-run:last-child { padding-bottom: 0; }
+.s-tb-test-run .s-tb-cells i { width: 11px; height: 11px; border-radius: 3px; }
+.s-tb-test-run > .s-tb-out { margin-top: 10px; }
+.s-tb-test-run[data-s="fail"] .s-tb-run-verdict { color: var(--tb-fail); }
+.s-tb-failing { margin: 10px 0 0; padding: 2px 0 2px 12px; border-left: 1px solid var(--tb-fail); list-style: none; font: 400 12.5px/1.5 var(--tb-sans); color: var(--tb-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .s-tb *, .s-tb { animation: none !important; }
+  .s-tb-verb[data-live] { background: none; color: var(--tb-ink); }
+}
+
+@media (max-width: 560px) {
+  .s-tb-cards { grid-template-columns: minmax(0, 1fr); }
+  .s-tb-done-last { max-width: 100%; }
+}

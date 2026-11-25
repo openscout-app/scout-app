@@ -1,0 +1,732 @@
+/* Views: compositions of modules on the HUD grid. Chrome is the grid's own
+ * vocabulary (mono caps, 1px lines, one accent); module bodies are dense rows. */
+
+.vw {
+  min-width: 0;
+  /* the frame's edges (styles/appearance.css, Frame spacing; Density sets them). The bottom matches the
+   * top: a filled grid ends this far above the pane's edge (HudGrid reads --frame-edge-y). */
+  padding: var(--frame-edge-y, 12px) var(--frame-edge-x, 16px);
+  display: flex;
+  flex-direction: column;
+  /* the view's bar to its panels: a touch more than the panels' own gap */
+  gap: calc(var(--frame-gap, 8px) + 2px);
+}
+
+.vw-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+}
+
+.vw-views { display: flex; gap: 2px; }
+.vw-view {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--dim);
+  cursor: pointer;
+}
+.vw-view:hover { color: var(--ink); }
+.vw-view[aria-current="page"] { color: var(--ink); border-color: var(--border); }
+.vw-views-missing { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+
+.vw-intent { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: none; letter-spacing: 0.02em; }
+/* a host with no title row and no module to hold it: the Layout control keeps a short row of its own, at the right */
+.vw-bar--layout { justify-content: flex-end; }
+/* a module head's spot for the Layout button (ViewLayoutSlot); empty, it takes no room */
+.vw-layout-slot { display: contents; }
+
+.vw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.vw-chip:hover { color: var(--ink); }
+/* offered but not available now: its title says why */
+.vw-chip[aria-disabled="true"] { opacity: 0.5; cursor: default; }
+.vw-chip[aria-disabled="true"]:hover { color: var(--muted); }
+.vw-chip[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.vw-body { position: relative; min-width: 0; }
+
+.vw.is-editing .hud-grid-panel { border-style: dashed; }
+.vw.is-editing .hud-grid-panel.is-focus { border-style: solid; }
+/* ticks draw the frame in the background; editing shows the dashed border instead */
+:root[data-scout-finish="ticks"] .vw.is-editing .hud-grid-panel { border-color: var(--border); background-image: none; }
+:root[data-scout-finish="ticks"] .vw.is-editing .hud-grid-panel.is-focus { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+/* the head's tools: one row on the head's centre line, one gap between every tool */
+.vw-panel-actions,
+.vw-head-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.vw-head-slot:empty { display: none; }
+.vw-panel-actions > *, .vw-head-slot > * { flex: none; }
+/* a count beside its title (ModuleHead), in the title's line; a narrow head truncates the title, never the count */
+.vw-side-head .hud-grid-title { display: flex; align-items: baseline; }
+.vw-side-head .vw-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.vw-side-head .vw-count-slot { flex: none; }
+.vw-count-slot:not(:empty) { margin-left: 8px; }
+.vw-count-slot .hud-grid-count { font-weight: 400; }
+
+/* library: floats over the grid, never squeezes it */
+.vw-library {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 20;
+  width: min(340px, 100%);
+  max-height: min(70vh, 640px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+.vw-library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+}
+.vw-library-head b { font-weight: inherit; color: var(--accent); }
+.vw-library ul { list-style: none; margin: 0; padding: 6px; overflow-y: auto; }
+.vw-libitem {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.vw-libitem:hover { border-color: var(--border); }
+.vw-libitem > .vw-dim { grid-column: 1; font-size: 0.92em; }
+.vw-libtitle { grid-column: 1; }
+.vw-libgo {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+  opacity: 0;
+}
+.vw-libitem:hover .vw-libgo { opacity: 1; color: var(--accent); }
+
+/* module bodies */
+.vw-panel .hud-grid-body { container-type: inline-size; }
+.vw-quiet { padding: 12px; color: var(--dim); font-size: 0.92em; }
+.vw-dim { color: var(--dim); }
+.vw-muted { color: var(--muted); }
+.vw-strong { color: var(--ink); }
+.vw-num { text-align: right; font-variant-numeric: tabular-nums; }
+.vw-ell { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vw-kind {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--accent);
+}
+
+.vw-rows { list-style: none; margin: 0; padding: 2px 0; overflow-y: auto; height: 100%; }
+.vw-row {
+  width: 100%;
+  display: grid;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: var(--muted);
+}
+button.vw-row { cursor: pointer; }
+button.vw-row:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+button.vw-row:disabled { cursor: default; }
+.vw-row--ask { grid-template-columns: minmax(0, 140px) minmax(0, 1fr) minmax(0, 90px) 40px; }
+.vw-row--req { grid-template-columns: minmax(0, 90px) minmax(0, 1fr) minmax(0, 120px) 40px; }
+.vw-row--host { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; }
+.vw-row--chat { grid-template-columns: minmax(0, 1fr) 40px; row-gap: 2px; }
+.vw-row--chat > :nth-child(3) { grid-column: 1 / -1; font-size: 0.92em; }
+
+@container (max-width: 420px) {
+  .vw-row--ask { grid-template-columns: minmax(0, 1fr) 40px; }
+  .vw-row--ask > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .vw-row--ask > :nth-child(3) { display: none; }
+  .vw-row--req { grid-template-columns: minmax(0, 1fr) 40px; }
+  .vw-row--req > :nth-child(1), .vw-row--req > :nth-child(3) { display: none; }
+}
+/* narrower still: the title alone */
+@container (max-width: 179px) {
+  .vw-row--ask, .vw-row--req, .vw-row--chat { grid-template-columns: minmax(0, 1fr); }
+  .vw-row--ask > :nth-child(4), .vw-row--req > :nth-child(4), .vw-row--chat > :nth-child(2) { display: none; }
+  .vw-row--chat > :nth-child(3) { grid-column: 1; }
+}
+
+.vw-gauge {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(48px, 1fr) 40px minmax(0, 110px);
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+@container (max-width: 380px) {
+  .vw-gauge { grid-template-columns: minmax(0, 1fr) 60px 40px; }
+  .vw-gauge > :nth-child(4) { display: none; }
+}
+.vw-meter { position: relative; height: 3px; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.vw-meter > b { position: absolute; inset: 0 auto 0 0; background: var(--ink); opacity: 0.7; }
+
+/* scopes: set ones show as chips; the rest live behind one Scope button */
+.vw-scopes { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+.vw-scope-btn,
+.vw-scope-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  min-width: 0;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+  cursor: pointer;
+}
+.vw-scope-btn { max-width: 220px; border-color: color-mix(in srgb, var(--border) 70%, transparent); }
+.vw-scope-btn:hover, .vw-scope-btn[aria-expanded="true"] { border-color: var(--border); color: var(--ink); }
+/* on the scope it shipped with, the control shows when its panel is hovered or focused */
+.vw-scope-btn[data-quiet] { opacity: 0; transition: opacity 0.12s; }
+[data-panel]:hover .vw-scope-btn[data-quiet], [data-panel]:focus-within .vw-scope-btn[data-quiet], .vw-scope-btn[data-quiet]:focus-visible { opacity: 1; }
+@media (hover: none) { .vw-scope-btn[data-quiet] { opacity: 1; } }
+/* a set scope, after the label: what this panel is narrowed to */
+.vw-scope-val {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.vw-scope-val::before { content: "· "; color: var(--dim); }
+@container (max-width: 300px) { .vw-scope-val { display: none; } }
+.vw-scope-chip {
+  max-width: 140px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.vw-scope-chip:hover { border-color: var(--accent); }
+@container (max-width: 300px) { .vw-scope-chip { display: none; } }
+.vw-scope-pop {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  cursor: default;
+}
+.vw-scope {
+  height: 26px;
+  width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+}
+.vw-scope.is-set { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.vw-scope option { color: var(--ink); background: var(--bg); }
+
+.vw-libscope {
+  grid-column: 1;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+}
+
+/* grouped rows (Agents) */
+.vw-group ul { list-style: none; margin: 0; padding: 0; }
+.vw-group-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+  color: var(--dim);
+}
+.vw-group--offline .vw-row { opacity: 0.6; }
+.vw-row--agent { grid-template-columns: 20px minmax(0, 1fr) minmax(0, 0.8fr) 64px; align-items: center; }
+.vw-row--project { grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) 72px 24px; }
+.vw-row--work { grid-template-columns: minmax(0, 1fr) minmax(0, 90px) minmax(0, 110px) 40px; }
+.vw-row--activity { grid-template-columns: minmax(0, 92px) minmax(0, 110px) minmax(0, 1fr) 40px; }
+.vw-row--pr { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 140px) 40px; text-decoration: none; }
+.vw-row--pr:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.vw-row--pr.is-draft { opacity: 0.6; }
+@container (max-width: 420px) {
+  .vw-row--agent { grid-template-columns: 20px minmax(0, 1fr) 56px; }
+  .vw-row--agent > :nth-child(3) { display: none; }
+  .vw-row--work, .vw-row--activity, .vw-row--pr { grid-template-columns: minmax(0, 1fr) 40px; }
+  .vw-row--work > :nth-child(2), .vw-row--work > :nth-child(3),
+  .vw-row--activity > :nth-child(1), .vw-row--activity > :nth-child(2),
+  .vw-row--pr > :nth-child(1), .vw-row--pr > :nth-child(3) { display: none; }
+}
+
+/* search */
+.vw-search { padding: 8px 12px; }
+.vw-search input {
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+}
+.vw-search input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* terminal */
+.vw-term { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.vw-term-strip {
+  display: grid;
+  grid-template-columns: auto minmax(0, max-content) 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: 0.04em;
+}
+.vw-term-status { color: var(--dim); text-transform: var(--voice-case, uppercase); letter-spacing: var(--voice-track, var(--tracking-xl)); }
+.vw-term-body { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.vw-term-body > * { position: absolute; inset: 0; }
+/* What runs and where: quiet selects that read as labels until hovered. */
+.vw-term-pick {
+  field-sizing: content;
+  height: 20px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.vw-term-pick:hover, .vw-term-pick:focus-visible { border-color: var(--border); }
+.vw-term-pick--where { color: var(--dim); text-overflow: ellipsis; }
+.vw-term-ended { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-family: var(--font-mono); font-size: var(--text-2xs); }
+
+@media (max-width: 640px) {
+  .vw { padding: 10px 12px 20px; }
+  .vw-intent { display: none; }
+}
+
+/* A composed Ops route: the panels scroll under the Ops strip (OpsFrame). */
+.vw-ops-body { overflow: auto; }
+
+/* ── Sharp look ── */
+
+/* bar: the pressed view and chip are ink on the selection plate, not emerald */
+:root[data-scout-look="sharp"] .vw-view[aria-current="page"] {
+  border-color: var(--edge, var(--border));
+  background: var(--select-bg, transparent);
+}
+:root[data-scout-look="sharp"] .vw-chip[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--edge-strong, var(--border));
+  background: var(--select-bg, transparent);
+}
+
+/* editing: the focused panel's frame is a strong line */
+:root[data-scout-look="sharp"][data-scout-finish="ticks"] .vw.is-editing .hud-grid-panel.is-focus {
+  border-color: var(--edge-strong, var(--border));
+}
+
+/* library and scope popover: flat, a strong edge instead of a drop shadow */
+:root[data-scout-look="sharp"] .vw-library,
+:root[data-scout-look="sharp"] .vw-scope-pop {
+  border-color: var(--edge-strong, var(--border));
+  background: var(--plane-raised, var(--bg));
+  box-shadow: none;
+}
+:root[data-scout-look="sharp"] .vw-library-head b { color: var(--ink); }
+:root[data-scout-look="sharp"] .vw-libitem:hover {
+  border-color: transparent;
+  background: var(--row-hover, color-mix(in srgb, var(--ink) 3%, transparent));
+}
+:root[data-scout-look="sharp"] .vw-libitem:hover .vw-libgo { color: var(--ink); }
+
+/* a kind is a muted word */
+:root[data-scout-look="sharp"] .vw-kind {
+  font-weight: var(--w-label);
+  letter-spacing: var(--tr-label);
+  color: var(--state-word, var(--muted));
+}
+
+/* rows: hover is a 3% ink plate */
+:root[data-scout-look="sharp"] button.vw-row:hover:not(:disabled),
+:root[data-scout-look="sharp"] .vw-row--pr:hover {
+  background: var(--row-hover, color-mix(in srgb, var(--ink) 3%, transparent));
+}
+
+/* scopes: a set scope is a muted mono chip on a line, never emerald */
+:root[data-scout-look="sharp"] .vw-scope-chip {
+  font-size: var(--fs-meta);
+  color: var(--muted);
+  border-color: var(--edge, var(--border));
+}
+:root[data-scout-look="sharp"] .vw-scope-chip:hover {
+  color: var(--ink);
+  border-color: var(--edge-strong, var(--border));
+}
+:root[data-scout-look="sharp"] .vw-scope-btn:hover,
+:root[data-scout-look="sharp"] .vw-scope-btn[aria-expanded="true"] {
+  border-color: var(--edge, var(--border));
+}
+:root[data-scout-look="sharp"] .vw-scope.is-set {
+  color: var(--ink);
+  border-color: var(--edge-strong, var(--border));
+}
+
+/* focus: an ink line */
+:root[data-scout-look="sharp"] .vw-search input:focus { border-color: var(--ink); }
+:root[data-scout-look="sharp"] .vw-term-pick:focus-visible { border-color: var(--ink); }
+
+/* ── Docked sides (DockedSides.tsx) ──
+ * Panels beside the grid, in pixels. A side folds to a strip that names its
+ * panels; folding gives the grid the room. Moves on Hudson's spring
+ * (--hud-ease-spring); the fallback is the same curve. */
+.vw-body--docked {
+  --vw-spring: var(--hud-ease-spring, linear(0, 0.0315, 0.1089, 0.2115, 0.3245, 0.4376, 0.544, 0.64, 0.7235, 0.7939, 0.8518, 0.8981, 0.9341, 0.9614, 0.9814, 0.9955, 1.0049, 1.0107, 1.0138, 1.0151, 1.015, 1.014, 1.0126, 1.0109, 1.0092, 1.0076, 1.006, 1.0047, 1.0035, 1.0026, 1.0018, 1.0012, 1));
+  --vw-spring-ms: var(--hud-duration-spring, 460ms);
+  display: flex;
+  align-items: stretch;
+  /* no gap: each side owns the gutter toward the main area, so its edge (the handle) sits in it */
+  gap: 0;
+}
+.vw-body--docked > .hud-grid-host { flex: 1; min-width: 0; }
+
+.vw-side {
+  position: relative;
+  flex: none;
+  min-height: 240px;
+  overflow: hidden;
+  transition: width var(--vw-spring-ms) var(--vw-spring);
+}
+.vw-side.is-dragging { transition: none; }
+
+/* the stack keeps its width while the side opens or folds, so its panels slide in whole instead of reflowing */
+.vw-side-stack {
+  position: absolute;
+  inset-block: 0;
+  width: var(--vw-side-w);
+  display: flex;
+  flex-direction: column;
+  gap: var(--frame-gap, 8px);
+  transition: opacity 180ms ease, visibility 0s;
+}
+.vw-side[data-side="left"] .vw-side-stack { left: 0; }
+.vw-side[data-side="right"] .vw-side-stack { right: 0; }
+.vw-side[data-open="false"] .vw-side-stack { opacity: 0; visibility: hidden; transition: opacity 120ms ease, visibility 0s linear 120ms; }
+
+.vw-side-panel { flex: 1 1 0; min-height: 72px; }
+.vw-side-panel.is-fit { flex: 0 1 auto; }
+.vw-side-head { cursor: default; }
+.vw-side-stack.is-arrangeable .vw-side-head { cursor: grab; }
+.vw-side-stack.is-arrangeable .vw-side-head:active { cursor: grabbing; }
+.vw-side-panel.is-lifted { z-index: 3; }
+.vw-side-panel.is-drop { box-shadow: inset 0 0 0 1px var(--accent); }
+.vw-side-split {
+  flex: none;
+  height: 8px;
+  margin: -4px 0;
+  position: relative;
+  z-index: 2;
+  cursor: row-resize;
+  touch-action: none;
+}
+.vw-side-split::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 3px;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--ink) 28%, transparent);
+}
+.vw-side-split:hover::after,
+.vw-side-split:focus-visible::after { background: var(--accent); }
+/* A dragged split owns the heights. The rack's open rule must not pull it
+   back to a fixed share while the seam is under the hand. */
+.vw-side-stack.is-sized > .vw-side-panel,
+.vw-side-stack.is-sized > .vw-side-panel.is-fit:has(.mesh-rail--min),
+.vw-side-stack.is-sized > .vw-side-panel.is-fit:has(.mesh-rail--open) {
+  flex: var(--vw-split, 1) 1 0px !important;
+  min-height: 72px !important;
+  height: auto;
+}
+.vw-side-head .hud-grid-expand { opacity: 1; }
+
+/* A side is as narrow as the operator drags it (DockedSides.tsx folds it only
+ * below SIDE_RAIL_COLLAPSE_BELOW). Its stack is the container its heads and
+ * rows read: the title keeps the head, and a narrow head drops its tools
+ * rather than clip them. Each module's rows answer their own panel body. */
+.vw-side-stack { container: vw-side / inline-size; }
+@container vw-side (max-width: 219px) {
+  .vw-side-head .hud-grid-right { display: none; }
+  .vw-side-head .hud-grid-title { flex: 1 1 auto; min-width: 0; }
+}
+
+.vw-side-strip {
+  position: absolute;
+  inset-block: 0;
+  width: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border: 1px solid var(--border);
+  /* square like the panels; a sheet corner rounds it (hud-grid.css) */
+  border-radius: var(--pane-r-tl, 0) var(--pane-r-tr, 0) var(--pane-r-br, 0) var(--pane-r-bl, 0);
+  background: color-mix(in srgb, var(--surface) 70%, var(--bg));
+  transition: opacity 180ms ease 120ms;
+}
+.vw-side[data-side="left"] .vw-side-strip { left: 0; }
+.vw-side[data-side="right"] .vw-side-strip { right: 0; }
+.vw-side[data-open="true"] .vw-side-strip { opacity: 0; visibility: hidden; transition: none; }
+
+.vw-side-fold,
+.vw-side-strip-item {
+  font: inherit;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+.vw-side-fold { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border-radius: var(--radius-sm); }
+.vw-side-strip-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--voice-track, var(--tracking-xl));
+  text-transform: var(--voice-case, uppercase);
+}
+.vw-side-fold:hover,
+.vw-side-strip-item:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.vw-side-fold:focus-visible,
+.vw-side-strip-item:focus-visible { outline: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: -1px; }
+.vw-side-strip-title { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+/* A panel that fills its strip spot (ModuleStrip) shows its marks there in place of its name. */
+.vw-side-strip-panel { width: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; }
+.vw-side-strip-body { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; min-height: 0; overflow: hidden; }
+.vw-side-strip-body:empty { display: none; }
+.vw-side-strip-panel:has(> .vw-side-strip-body:not(:empty)) > .vw-side-strip-item { display: none; }
+.vw-side-strip-count { color: var(--muted); letter-spacing: 0; }
+
+/* The inner edge is the handle between a side and the main area. It fills the side's gutter, so it
+ * never sits over a panel's scrollbar, and its grip shows at rest, so the edge reads as something to
+ * take hold of before the pointer finds it. Drag to size, past the fold point to fold; double-click
+ * or Enter toggles; arrows size it from the keyboard. */
+.vw-side-edge {
+  position: absolute;
+  inset-block: 0;
+  /* the side's gutter (DockedSides reads --frame-gap) */
+  width: var(--frame-gap, 8px);
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.vw-side[data-side="left"] .vw-side-edge { right: 0; }
+.vw-side[data-side="right"] .vw-side-edge { left: 0; }
+/* the line the edge draws while held: the whole boundary, so what moves is plain */
+.vw-side-edge::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: calc(50% - 0.5px);
+  width: 1px;
+  background: transparent;
+  transition: background 120ms;
+}
+/* the grip: a short bar at the middle of the edge */
+.vw-side-edge::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 14px);
+  height: 28px;
+  left: calc(50% - 1.5px);
+  width: 3px;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+  transition: background 120ms, top 160ms ease, height 160ms ease;
+}
+.vw-side-edge:hover::after {
+  top: calc(50% - 24px);
+  height: 48px;
+  background: color-mix(in srgb, var(--ink) 42%, transparent);
+}
+.vw-side-edge:hover::before { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+.vw-side.is-dragging .vw-side-edge::after,
+.vw-side-edge:focus-visible::after {
+  top: calc(50% - 24px);
+  height: 48px;
+  background: var(--accent);
+}
+.vw-side.is-dragging .vw-side-edge::before,
+.vw-side-edge:focus-visible::before { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* narrow: a side stays a strip in the row and opens over the grid */
+.vw-side.is-overlay { overflow: visible; z-index: 15; }
+.vw-side.is-overlay .vw-side-stack {
+  width: min(var(--vw-side-w), calc(100vw - 72px));
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.45);
+  transform: none;
+  transition: opacity 160ms ease, transform var(--vw-spring-ms) var(--vw-spring);
+}
+.vw-side.is-overlay[data-open="false"] .vw-side-stack { transform: translateX(-12px); }
+.vw-side.is-overlay[data-side="right"][data-open="false"] .vw-side-stack { transform: translateX(12px); }
+.vw-side.is-overlay[data-open="true"] .vw-side-strip { opacity: 1; visibility: visible; }
+
+/* phone: the strips become a row of tabs over the grid, and a side opens as a sheet under them */
+@media (max-width: 759px) {
+  .vw-body--docked { flex-wrap: wrap; gap: 8px; }
+  .vw-body--docked > .hud-grid-host { flex-basis: 100%; }
+  /* static, so an open sheet spans the whole body (.vw-body is its containing block) */
+  .vw-side { position: static; order: -1; flex: 1 1 0; width: auto !important; min-height: 0; height: 34px; transition: none; }
+  .vw-side-strip { position: static; width: auto; height: 100%; flex-direction: row; padding: 0 4px; }
+  .vw-side[data-side="right"] .vw-side-strip { flex-direction: row-reverse; }
+  .vw-side-fold { display: none; }
+  .vw-side-strip-item { flex-direction: row; justify-content: center; padding: 0 8px; height: 100%; }
+  .vw-side-strip-title { writing-mode: horizontal-tb; transform: none; }
+  .vw-side.is-overlay .vw-side-stack {
+    top: 42px;
+    bottom: auto;
+    height: min(70vh, 560px);
+    left: 0;
+    right: 0;
+    width: auto;
+  }
+  .vw-side-edge { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vw-side, .vw-side-stack, .vw-side-strip { transition: none !important; }
+}
+
+/* ── Joined panels (styles/appearance.css, Frame spacing) ─────────────────
+ * A docked side has no gutter, so the main area reaches one pixel over it and
+ * the two edges are one hairline. The handle keeps its reach: it straddles the
+ * line, and its grip rests on it. */
+:root[data-scout-panels="joined"] .vw-body--docked > .vw-side[data-side="left"][data-open="true"] + .hud-grid-host { margin-left: -1px; }
+:root[data-scout-panels="joined"] .vw-body--docked > .hud-grid-host:has(+ .vw-side[data-side="right"][data-open="true"]) { margin-right: -1px; }
+/* A joined panel reaches one pixel right of its cell (hud-grid.css, Joined).
+ * With flush edges that pixel has no room and the page would scroll sideways,
+ * so the view keeps one pixel for the last column's line. */
+:root[data-scout-panels="joined"] .vw { padding-right: max(var(--frame-edge-x, 0px), 1px); }
+/* A narrow view stacks its panels and keeps its own padding on both sides. */
+@media (max-width: 640px) {
+  :root[data-scout-panels="joined"] .vw { padding-right: 12px; }
+}
+
+/* Neither handle sits over a scrollbar. The right pane's lies inside its own
+ * left edge. The left pane's lies over the content pane's left edge: an open
+ * left side lets it out by clipping six pixels wide of its box, which still
+ * clips the stack while the side opens. The grip and the held line are on the
+ * shared hairline, not in the middle of the handle. */
+:root[data-scout-panels="joined"] .vw-side-edge { width: 6px; z-index: 6; }
+:root[data-scout-panels="joined"] .vw-side:not(.is-overlay)[data-side="left"][data-open="true"] { overflow: visible; clip-path: inset(0 -6px 0 0); }
+/* The shared hairline is the content pane's first pixel (margin-left: -1px), and grid panels stand at
+ * z-index 1, focused ones at 2 (hud-grid.css, Joined). Above them, the left side's boundary line and
+ * handle show over that pixel, as the right side's do; lifted, menu and full panels still go over it. */
+:root[data-scout-panels="joined"] .vw-side:not(.is-overlay)[data-side="left"][data-open="true"] { z-index: 3; }
+:root[data-scout-panels="joined"] .vw-side[data-side="left"] .vw-side-edge { right: -5px; }
+:root[data-scout-panels="joined"] .vw-side[data-side="right"] .vw-side-edge { left: 0; }
+/* a pane's boundary is a firmer line than the hairlines inside a pane */
+:root[data-scout-panels="joined"] .vw-side[data-side] .vw-side-edge::before { left: 0; background: var(--scout-line-strong); }
+:root[data-scout-panels="joined"] .vw-side[data-side] .vw-side-edge::after { left: -1px; }

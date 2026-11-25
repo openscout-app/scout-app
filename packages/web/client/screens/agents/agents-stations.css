@@ -1,0 +1,220 @@
+/* Agents · Stations — work in progress above the feed. A station is a card
+   where work is being made, with everyone working on it: kind and title,
+   the players, then a surface that fits the work (talk, code, writing,
+   visual). The project owns the hue (--ast-h, from projectHue); a station
+   with no project stays neutral. Inherits the feed's tokens from .s-ahf. */
+
+.ast {
+  --ast-ink: var(--s-ink);
+  --ast-tint: var(--s-muted);
+  --ast-mat: var(--ahf-wash);
+  --ast-line: var(--ahf-hairline);
+}
+
+.ast-liveDot {
+  width: 6px;
+  height: 6px;
+  margin-right: 3px;
+  border-radius: 50%;
+  background: var(--s-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--s-accent) 18%, transparent);
+  animation: ast-blink 1.6s ease-in-out infinite;
+}
+
+.ast-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 12px;
+  align-items: start;
+}
+.ast-grid[data-single] { grid-template-columns: minmax(0, 1fr); max-width: 72ch; }
+@container (max-width: 640px) {
+  .ast-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.ast-station {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 14px 10px;
+  border-radius: var(--radius-xl);
+  background: var(--hud-bg);
+  box-shadow: 0 0 0 1px var(--ast-line), 0 6px 18px -14px rgba(0, 0, 0, 0.35);
+  animation: ast-rise 0.35s ease-out backwards;
+}
+.ast-station[data-hued] {
+  --ast-tint: oklch(0.55 0.13 var(--ast-h));
+  --ast-mat: color-mix(in oklch, oklch(0.6 0.12 var(--ast-h)) 9%, var(--hud-bg));
+  --ast-line: color-mix(in oklch, oklch(0.6 0.12 var(--ast-h)) 30%, var(--ahf-hairline));
+}
+[data-scout-theme-mode="dark"] .ast-station[data-hued] {
+  --ast-tint: oklch(0.78 0.11 var(--ast-h));
+  --ast-mat: color-mix(in oklch, oklch(0.5 0.1 var(--ast-h)) 16%, var(--hud-bg));
+}
+
+/* ── head ── */
+
+.ast-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ast-head:disabled { cursor: default; }
+.ast-head:hover:not(:disabled) .ast-title { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ast-line); }
+.ast-head:focus-visible { outline: 2px solid color-mix(in srgb, var(--s-accent) 70%, white); outline-offset: 3px; border-radius: 4px; }
+
+.ast-kind {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--ast-mat);
+  box-shadow: inset 0 0 0 1px var(--ast-line);
+  color: var(--ast-tint);
+  font-family: var(--s-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: var(--voice-track, 0.08em);
+  text-transform: var(--voice-case, uppercase);
+}
+.ast-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--s-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ast-project {
+  flex: none;
+  margin-left: auto;
+  color: var(--ast-tint);
+  font-family: var(--s-font-mono);
+  font-size: var(--text-xs);
+}
+
+/* ── players ── */
+
+.ast-players { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.ast-player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--s-muted);
+  font-size: var(--text-xs);
+}
+.ast-coin { display: inline-flex; flex: none; border-radius: 50%; }
+.ast-player[data-live] .ast-coin { animation: ast-ring 1.8s ease-in-out infinite; }
+/* Held on a question: still, and the hold reads first. */
+.ast-player[data-waiting] .ast-doing, .ast-typing[data-waiting] { color: var(--s-ink); }
+.ast-who { flex: none; color: var(--s-ink); font-weight: 600; }
+.ast-player > svg, .ast-player > span:has(> svg) { flex: none; opacity: 0.7; }
+.ast-doing { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── surface ── */
+
+.ast-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 72px;
+  padding: 10px;
+  border-radius: var(--radius-lg);
+  background: var(--ast-mat);
+  box-shadow: inset 0 0 0 1px var(--ast-line);
+}
+
+.ast-foot {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  color: var(--s-dim);
+  font-family: var(--s-font-mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+.ast-age { margin-left: auto; }
+
+/* talk */
+.ast-talk { display: flex; flex-direction: column; gap: 6px; }
+.ast-msg { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 7px; align-items: start; animation: ast-rise 0.3s ease-out backwards; }
+.ast-msg p {
+  display: -webkit-box;
+  margin: 0;
+  padding: 5px 9px;
+  overflow: hidden;
+  border-radius: 3px 9px 9px 9px;
+  background: var(--hud-bg);
+  box-shadow: 0 0 0 1px var(--ast-line);
+  color: var(--s-ink);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.ast-msg b { margin-right: 3px; font-size: var(--text-xs); }
+.ast-msg[data-compact] p { padding: 0; background: none; box-shadow: none; color: var(--s-muted); font-size: var(--text-xs); -webkit-line-clamp: 2; }
+.ast-brief { margin: 0; color: var(--s-muted); font-size: var(--text-sm); line-height: 1.45; }
+.ast-typing { display: flex; align-items: center; gap: 5px; margin: 0; color: var(--s-dim); font-size: var(--text-xs); }
+.ast-dots { display: inline-flex; gap: 3px; }
+.ast-dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--ast-tint); animation: ast-blink 1s ease-in-out infinite; }
+.ast-dots i:nth-child(2) { animation-delay: 0.15s; }
+.ast-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+/* code and writing: the files under change */
+.ast-files { margin: 0; padding: 0; list-style: none; font-family: var(--s-font-mono); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.ast-files li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px 44px 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  box-shadow: inset 0 -1px 0 var(--ast-line);
+}
+.ast-files li:last-child { box-shadow: none; }
+.ast-path { overflow: hidden; color: var(--s-ink); text-overflow: ellipsis; white-space: nowrap; }
+.ast-fileWho { display: inline-flex; }
+.ast-add { color: var(--ast-tint); font-weight: 600; text-align: right; }
+.ast-del { color: var(--s-dim); text-align: right; }
+
+/* writing: the page as it reads now */
+.ast-page { padding: 10px 12px; border-radius: 6px; background: var(--hud-bg); box-shadow: 0 0 0 1px var(--ast-line); }
+.ast-docName { margin: 0 0 4px; color: var(--s-dim); font-family: var(--s-font-mono); font-size: 10.5px; }
+.ast-prose { margin: 0; color: var(--s-ink); font-family: var(--hud-font-serif, ui-serif, Georgia, serif); font-size: 15px; line-height: 1.5; }
+.ast-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--ast-tint); animation: ast-blink 1s steps(2) infinite; }
+
+/* visual: a contact sheet */
+.ast-sheet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ast-frame { margin: 0; min-width: 0; }
+.ast-frame img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: top left; border-radius: 5px; background: var(--hud-bg); box-shadow: 0 0 0 1px var(--ast-line); }
+.ast-frame figcaption { margin-top: 3px; overflow: hidden; color: var(--s-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+
+@keyframes ast-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes ast-blink { 50% { opacity: 0.3; } }
+@keyframes ast-ring {
+  0%, 100% { box-shadow: 0 0 0 1.5px var(--hud-bg), 0 0 0 2.5px var(--ast-tint), 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 1.5px var(--hud-bg), 0 0 0 2.5px var(--ast-tint), 0 0 10px 2px var(--ast-tint); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ast-station, .ast-msg { animation: none; }
+  .ast-liveDot, .ast-dots i, .ast-caret, .ast-player[data-live] .ast-coin { animation: none; }
+}
+
+/* A phone-width card spends its row on the file name: the player row
+   already says who is working. */
+@container (max-width: 420px) {
+  .ast-files li { grid-template-columns: minmax(0, 1fr) 40px 32px; gap: 4px; }
+  .ast-fileWho { display: none; }
+}

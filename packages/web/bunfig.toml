@@ -1,0 +1,3 @@
+[test]
+# Inert in canonical runs; adapts logical npm paths only in preserved web runs.
+preload = ["./test-support/runtime-loader.ts"]

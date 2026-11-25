@@ -1,6 +1,6 @@
 /** Turn identity and PR metadata. Only turn identity joins records. */
 import type { WebFeedPull, WebFeedTask } from "../../shared/api/feed.ts";
-import { pullKey, pullRefs, worktreeName } from "./feed-refs.ts";
+import { pullKey, pullRefs, worktreeName } from "../../shared/feed-refs.ts";
 
 /** Limit the PR metadata promoted out of a roll-up. Never used for grouping. */
 export const MAX_LEAD_PULLS = 3;
@@ -23,7 +23,7 @@ export function linkContext(pulls: readonly WebFeedPull[], repos: Record<string,
   return { pulls: byKey, pullsByBranch: byBranch, repos };
 }
 
-/** Checkouts a root may be a worktree of: any, unless both name a repository and they differ (`project` is not a worktree of `scout`). */
+/** Checkouts a root may be a worktree of: any, unless both name a repository and they differ (`demo-app` is not a worktree of `demo-core`). */
 export function sameRepoMains(root: string | null, repos: Readonly<Record<string, string>>): string[] {
   const mine = root ? repos[root] : undefined;
   return Object.keys(repos).filter((main) => !mine || repos[main] === mine);
@@ -53,7 +53,7 @@ export function taskPulls(task: WebFeedTask, ctx: LinkContext): string[] {
 /**
  * The pull requests a turn made, most certain first: the ones on its branch,
  * else the ones its reply names, else the ones its ask names. The ask often
- * names earlier work only as context ("after the earlier review"), so it is the last resort.
+ * names earlier work only as context ("after #1977"), so it is the last resort.
  */
 export function turnPulls(task: WebFeedTask, ctx: LinkContext): string[] {
   const repo = taskRepo(task, ctx.repos);

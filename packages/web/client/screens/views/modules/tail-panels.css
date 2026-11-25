@@ -1,0 +1,137 @@
+/* Tail panels: Ops › Tail's parts (screens/ops/ops-tail.css for the stream,
+ * scout/slots/ctx-panel.css for the inspector card and the rail's queue)
+ * inside view panels. Every rule is scoped to a module root, so Ops, the
+ * macOS embed, Basic and the rails draw exactly as before.
+ *
+ * Sizes read the panel, never the window: ops-tail.css's @media rules
+ * (980px for the status line, 720px for embedded rows) return here as
+ * @container rules on the panel body, and the page's full-width row gets
+ * narrower steps of its own. */
+
+/* ── Tail · Alerts ─────────────────────────────────────────────────── */
+
+.vw-tail {
+  height: 100%;
+  min-height: 0;
+}
+
+/* The stream sits on its newest row, so the oldest one on screen is often
+ * clipped by the status line; fading the top edge keeps that partial row
+ * from reading as a row cut in half. */
+.vw-tail .s-tail--embedded .s-tail-body {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+}
+
+@container (max-width: 980px) {
+  .vw-tail .s-tail-status-cluster--issues {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .vw-tail .s-tail-status-cluster--harnesses {
+    margin-left: 0;
+  }
+
+  .vw-tail .s-tail--full .s-tail-status-spacer {
+    display: none;
+  }
+
+  .vw-tail .s-tail-status-inline {
+    max-width: 100%;
+  }
+}
+
+/* The page's row (time, harness, origin, project/session/pid, kind, text)
+ * gives the text its width back as the panel narrows: origin goes first,
+ * then the project/session cell, as the embedded row does. */
+@container (max-width: 760px) {
+  .vw-tail .s-tail--full .s-tail-row {
+    grid-template-columns:
+      92px
+      60px
+      minmax(96px, 160px)
+      48px
+      minmax(0, 1fr);
+    gap: var(--space-sm);
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+
+  .vw-tail .s-tail--full .s-tail-token--origin {
+    display: none;
+  }
+}
+
+@container (max-width: 560px) {
+  .vw-tail .s-tail--full .s-tail-row {
+    grid-template-columns: 76px 48px 38px minmax(0, 1fr);
+    gap: var(--space-xs);
+    font-size: var(--text-xs);
+  }
+
+  .vw-tail .s-tail--full .s-tail-cell-context {
+    display: none;
+  }
+
+  .vw-tail .s-tail--full .s-tail-keys {
+    gap: var(--space-sm);
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+}
+
+@container (max-width: 720px) {
+  .vw-tail .s-tail--embedded .s-tail-row {
+    grid-template-columns: 64px 48px 38px minmax(0, 1fr);
+  }
+
+  .vw-tail .s-tail--embedded .s-tail-cell-context {
+    display: none;
+  }
+
+  .vw-tail .s-tail--embedded .s-tail-status-filter {
+    max-width: 150px;
+  }
+}
+
+/* ── Event ─────────────────────────────────────────────────────────── */
+
+.vw-tail-event {
+  min-height: 100%;
+}
+
+.vw-tail-event .ctx-panel {
+  height: auto;
+  min-height: 100%;
+}
+
+/* the inspector caps the message at a third of the window; a panel has its own height */
+.vw-tail-event .ctx-panel-tail-copy-scope--message {
+  max-height: none;
+}
+
+/* ── Following ─────────────────────────────────────────────────────── */
+
+.vw-tail-follow {
+  padding: var(--space-md);
+}
+
+.vw-tail-follow-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* ── Requests · Active ─────────────────────────────────────────────── */
+
+.vw-ops-queue {
+  height: auto;
+  min-height: 100%;
+}
+
+.vw-ops-queue .ctx-panel-section:first-child {
+  padding-top: var(--space-sm);
+}

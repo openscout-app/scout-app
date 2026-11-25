@@ -1,0 +1,202 @@
+/* The Projects page's look-by panels (project-look.tsx): the Project tree, and the Branches summary. Rows, not
+   cards; the selection strip is square; the accent is the only colour besides the diff's own. */
+
+.vw-pl-nav,
+.vw-pl-summary {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* the two heads: the page's first choice */
+.vw-pl-branch {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-top: 1px solid var(--scout-line);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--muted);
+}
+.vw-pl-branch:first-of-type { border-top: 0; }
+.vw-pl-branch b { font-size: var(--text-sm); font-weight: 500; }
+.vw-pl-branch em { margin-left: auto; font-style: normal; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); }
+.vw-pl-branch[data-open] { color: var(--ink); }
+.vw-pl-branch:hover { background: var(--sys-row-hover, color-mix(in srgb, var(--ink) 4%, transparent)); }
+.vw-pl-branch[data-selected] { background: var(--sys-row-selected); }
+.vw-pl-branch[data-selected]::before,
+.vw-pl-node[data-selected]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+}
+
+.vw-pl-chev { flex: none; color: var(--dim); transition: transform 0.12s; }
+.vw-pl-chev[data-open] { transform: rotate(90deg); }
+.vw-pl-chev[data-back] { transform: rotate(180deg); }
+
+/* the picked project, and the way back to picking one */
+.vw-pl-crumb {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--scout-line);
+}
+.vw-pl-crumb b { min-width: 0; font-size: var(--text-sm); font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vw-pl-back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--dim);
+}
+.vw-pl-back:hover { color: var(--ink); }
+/* the project's name leads back to its Overview */
+.vw-pl-overview { display: flex; min-width: 0; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; }
+.vw-pl-overview:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.vw-pl-crumb + .vw-pl-branch { border-top: 0; }
+
+.vw-pl-prTag { flex: none; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); }
+.vw-pl-more { flex: none; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); }
+
+/* Thread: the session's thread fills the panel */
+.vw-pl-thread { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.vw-pl-thread > .pi-sessionDetail { flex: 1 1 auto; min-height: 0; }
+
+/* the open head's list scrolls on its own, so both heads stay in view */
+.vw-pl-nav > .vw-pl-items { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.vw-pl-items { display: flex; flex-direction: column; padding-bottom: 6px; }
+
+.vw-pl-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 4px 24px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--dim);
+}
+.vw-pl-group b { font-weight: 400; }
+
+.vw-pl-node {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 4px 10px 4px 24px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--muted);
+}
+.vw-pl-node:hover { background: var(--sys-row-hover, color-mix(in srgb, var(--ink) 4%, transparent)); color: var(--ink); }
+.vw-pl-node[data-selected] { background: var(--sys-row-selected); color: var(--ink); }
+.vw-pl-node .harness-coin { flex: none; }
+.vw-pl-label { flex: 1; min-width: 0; font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vw-pl-mono { font-family: var(--font-mono); font-size: var(--text-xs); }
+.vw-pl-age { flex: none; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); }
+.vw-pl-pr { flex: none; min-width: 40px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); }
+.vw-pl-liveCoin { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); border-radius: var(--radius-pill); }
+.vw-pl-quiet { padding: 8px 10px 8px 24px; font-size: var(--text-xs); color: var(--dim); }
+
+.vw-pl-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--accent);
+}
+.vw-pl-link:hover { text-decoration: underline; }
+
+.vw-pl-churn { display: inline-flex; gap: 6px; font-family: var(--font-mono); font-size: var(--text-xs); }
+.vw-pl-churn b { font-weight: 500; }
+
+/* Branches: the summary */
+.vw-pl-sectionHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px;
+  border-top: 1px solid var(--scout-line);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.vw-pl-summary > .vw-pl-sectionHead:first-child,
+.vw-pj-preview > .vw-pl-sectionHead { border-top: 0; }
+.vw-pl-sectionHead b { font-weight: 400; color: var(--dim); }
+.vw-pj-preview > .vw-pl-sectionHead { border-top: 1px solid var(--scout-line); margin-top: 8px; }
+.vw-pl-summary .vw-pl-quiet,
+.vw-pj-preview .vw-pl-quiet { padding-left: 10px; }
+.vw-pj-preview .vw-pl-node { padding-left: 10px; }
+
+.vw-pl-tr {
+  flex: none;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 48px 76px 112px 36px;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 4px 10px;
+  border: 0;
+  border-top: 1px solid var(--scout-line);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--muted);
+}
+.vw-pl-sectionHead + .vw-pl-tr { border-top: 0; }
+.vw-pl-tr:hover { background: var(--sys-row-hover, color-mix(in srgb, var(--ink) 4%, transparent)); }
+.vw-pl-trTitle { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.vw-pl-trTitle b { font-size: var(--text-sm); font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vw-pl-trTitle em { font-style: normal; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vw-pl-trState { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); }
+.vw-pl-trBy { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
+.vw-pl-trChurn { display: inline-flex; justify-content: flex-end; min-width: 0; }
+.vw-pl-trChurn i { font-style: normal; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--dim); white-space: nowrap; }
+
+.vw-pl-diff { height: 100%; min-height: 0; overflow: auto; }
+.vw-pj-preview .vw-pj-previewHead .vw-pl-churn { margin-top: 2px; }
+
+/* a changed file's lines, beside its status letter */
+.vw-pl-fileChurn { flex: none; display: inline-flex; gap: 6px; margin-left: auto; font-family: var(--font-mono); font-size: var(--text-xs); }
+.vw-pl-fileChurn b { font-weight: 400; color: var(--ink); }
+.vw-pl-fileChurn i { font-style: normal; color: var(--dim); }
+.vw-pl-fileChurn + .vw-code-letter { margin-left: 0; }
+
+/* the branch diff viewer fills its panel */
+.vw-pl-diff { display: flex; flex-direction: column; }
+.vw-pl-rd { flex: 1 1 auto; min-height: 0; }
+/* the panel's head names the file and the list beside it picks one: the viewer keeps only the diff */
+.vw-pl-rd .rd-header,
+.vw-pl-rd .rd-rail,
+.vw-pl-rd .rd-rail-resizer,
+.vw-pl-rd .rd-comment { display: none; }

@@ -1,0 +1,126 @@
+/* Ops › World as panels: the HUD (world-stage) and its two side columns
+   (world-readouts, world-details). The HUD's own CSS (world-week/styles.ts)
+   draws all three, unchanged; this only fits them to panel bodies. */
+
+.vw-panel--world-stage > .hud-grid-body,
+.vw-panel--world-readouts > .hud-grid-body,
+.vw-panel--world-details > .hud-grid-body {
+  overflow: hidden;
+}
+
+/* the resize edges reach a few px past the panel; with overflow: hidden a
+   focused control (CENTER, a chip) could still scroll the whole panel by
+   them. clip draws the same and never scrolls. */
+.vw-panel--world-stage,
+.vw-panel--world-readouts,
+.vw-panel--world-details {
+  overflow: clip;
+}
+
+/* the HUD fills the panel body (.wm.wm--app is absolute, inset 0) */
+.vw-world-stage {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* While a column draws in the frame (its panel is gone, or the World is in
+   full view) the HUD's own breakpoints read this panel, as they read the Ops
+   body on the page. With both columns out they would lay out columns that
+   are not there, so the container is off. */
+.vw-world-stage.is-docked {
+  container: wweek / inline-size;
+}
+
+.vw-world-column,
+.vw-world-column-host {
+  height: 100%;
+  min-height: 0;
+}
+
+/* the column is the engine's .wm wrap, moved in by world-dock.ts */
+.vw-world-column-host:empty {
+  display: none;
+}
+
+/* a column that is out leaves this stand-in at its place in the frame */
+.wm .frame > aside.col.vw-world-gap {
+  display: none !important;
+}
+
+/* One column out: the frame keeps the other where the page has it, at the
+   widths the HUD's own breakpoints give it. */
+.wm.wm--app .frame.vw-world-out-left {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+.wm.wm--app .frame.vw-world-out-right {
+  grid-template-columns: 320px minmax(0, 1fr);
+}
+@container wweek (max-width: 1400px) {
+  .wm.wm--app .frame.vw-world-out-left {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .wm.wm--app .frame.vw-world-out-right {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+}
+/* split: the right column sits beside the world, the left one tiles under it */
+@container wweek (max-width: 1180px) {
+  .wm.wm--app .frame.vw-world-out-right {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container wweek (max-width: 760px) {
+  .wm.wm--app .frame.vw-world-out-left,
+  .wm.wm--app .frame.vw-world-out-right {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Two themes (world-week/theme.ts › STYLES). Panels, the default, keeps the
+   HUD's own boxes: each section is a card in its column and the timeline and
+   its strips sit under the View, as everywhere else in the app. Hairline
+   (data-style="hairline" on each .wm host) treats the panel as the card: the
+   sections inside it read as rows under one hairline rule each. The inspector
+   and stash keep their sheet either way: they open over the column. */
+.vw-world-column-host .wm.wm--slot[data-style="hairline"] > aside.col {
+  gap: 0;
+  padding: 0;
+}
+/* 12px sides: the rows start where the panel title does */
+.vw-world-column-host .wm[data-style="hairline"] > aside.col > .panel:not(.insp):not(.stash) {
+  border: 0;
+  background: none;
+  padding: 12px 12px 14px;
+}
+/* a sticky section head keeps an opaque ground, the column's own, not a sheet */
+.vw-world-column-host .wm[data-style="hairline"] .csec {
+  background: var(--bg);
+}
+.vw-world-column-host .wm[data-style="hairline"] > aside.col > .panel:not(.insp):not(.stash) + .panel:not(.insp):not(.stash) {
+  border-top: 0.5px solid var(--wm-panel-line);
+}
+
+/* The same for the stage under Hairline: the Overview panel is the card. The
+   timeline and its two strips run across the View's foot with no rule of
+   their own (world-week/styles.ts), and the status line sits under one
+   hairline rule, edge to edge. */
+.vw-world-stage .wm[data-style="hairline"] .frame.slotted {
+  padding: 0;
+  gap: 0;
+}
+.vw-world-stage .wm[data-style="hairline"] .frame.slotted .center,
+.vw-world-stage .wm[data-style="hairline"] .frame.slotted .tstack {
+  gap: 0;
+}
+.vw-world-stage .wm[data-style="hairline"] .frame.slotted .panel:not(.insp):not(.stash) {
+  border: 0;
+  background: none;
+}
+.vw-world-stage .wm[data-style="hairline"] .frame.slotted > .status {
+  border-top: 0.5px solid var(--wm-panel-line);
+}
+.vw-world-stage .wm[data-style="hairline"] .frame.slotted .ts:not(.cur):hover {
+  background: var(--wm-hover);
+}

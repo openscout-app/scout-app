@@ -1,0 +1,82 @@
+/* In flight and Stale (in-flight.tsx, stale.tsx): Ops › In flight's two
+ * panels, from the study (design/studio/views/ops-in-flight). HUD voice:
+ * mono lines on 1px hairlines, square. No status colour: PR state and drift
+ * are words in ink; a live worktree reads in full ink, a quiet one dimmer;
+ * far behind is underlined, not tinted. The panel's width, not the window's,
+ * drops the secondary columns. */
+
+.vw-if { display: flex; flex-direction: column; min-width: 0; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--muted); }
+.vw-if-dim { color: var(--dim); font-size: var(--text-2xs); white-space: nowrap; }
+.vw-if-line { padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--dim); font-size: var(--text-2xs); }
+.vw-if-rows { list-style: none; margin: 0; padding: 0; }
+
+/* one line per worktree: where · PR · churn · drift · who */
+.vw-if-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 92px 132px 56px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vw-if-row:hover, .vw-if-stale:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.vw-if-row:focus-visible { outline: 1px solid var(--ink); outline-offset: -1px; }
+.vw-if-row.is-live { color: var(--ink); }
+.vw-if-where { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.vw-if-pr { white-space: nowrap; }
+.vw-if-pr em { margin-left: 3px; font-style: normal; color: var(--dim); }
+.vw-if-churn { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; min-width: 0; }
+.vw-if-bar { display: inline-block; flex: none; height: 4px; background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.vw-if-bar i { display: block; height: 100%; background: var(--muted); }
+.vw-if-num { color: var(--dim); font-size: var(--text-2xs); }
+.vw-if-drift { color: var(--muted); font-size: var(--text-2xs); white-space: nowrap; }
+.vw-if-drift.is-far { color: var(--ink); text-decoration: underline; text-decoration-color: var(--dim); text-underline-offset: 3px; }
+.vw-if-who { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: right; color: var(--dim); font-size: var(--text-2xs); }
+.vw-if-row.is-live .vw-if-who { color: var(--muted); }
+
+.vw-if-more {
+  align-self: flex-start;
+  margin: 0;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  font-size: var(--text-2xs);
+  cursor: pointer;
+}
+.vw-if-more:hover { color: var(--ink); }
+
+/* Stale: age · name over where · what it holds · one action */
+.vw-if-stale {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 34px;
+  padding: 3px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.vw-if-age { color: var(--ink); white-space: nowrap; }
+.vw-if-name { display: grid; min-width: 0; color: var(--ink); }
+.vw-if-name em { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-style: normal; font-size: var(--text-2xs); color: var(--dim); }
+.vw-if-foot { padding: 8px 12px; color: var(--dim); font-family: var(--font-sans); font-size: var(--text-2xs); }
+
+@container (max-width: 560px) {
+  .vw-if-row { grid-template-columns: minmax(0, 1.4fr) 92px minmax(0, 1fr); }
+  .vw-if-row > :nth-child(3), .vw-if-row > :nth-child(4) { display: none; }
+}
+@container (max-width: 360px) {
+  .vw-if-row { grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr); }
+  .vw-if-row > :nth-child(2) { display: none; }
+  .vw-if-stale { grid-template-columns: 48px minmax(0, 1fr) auto; }
+  .vw-if-holds { display: none; }
+}

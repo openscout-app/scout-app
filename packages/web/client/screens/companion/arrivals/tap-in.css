@@ -1,0 +1,367 @@
+/* ---------- Tap in ----------
+ * Studio: /studies/companion-board-rewrites, Tap in; light, /studies/companion-board-light.
+ * The board holds still; a panel opens beside it (or above it, in stack mode).
+ * Times only from TAP_IN_VARS (board-motion frames): --tap-open, --tap-swap,
+ * --tap-fold, --tap-roll, --tap-ease, --tap-ease-in. The accent only for an
+ * ask and its Allow; 1px lines. The panel and the tether are position: fixed
+ * in viewport pixels; they sit in the board's layer and read its look's
+ * tokens (--arv-*, arrivals.css), with the scx ones they need set here. */
+
+.tap-panel, .tap-tether {
+  --scx-ink: var(--ink, #e6e8ea);
+  --scx-accent: var(--accent, oklch(0.72 0.15 160));
+  --scx-mono: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  --scx-sans: var(--font-sans, -apple-system, "SF Pro Text", system-ui, sans-serif);
+}
+
+/* the selected row while no panel is open (↑/↓ before Return): a faint light wash, no ring */
+.arv-row.is-cursor { background: var(--arv-wash); }
+
+/* the tapped row: a hairline ring, drawn on its own layer so the row keeps its layout */
+.arv-row.is-tapped::after {
+  content: ""; position: absolute; inset: 1px 0; border-radius: var(--arv-r-in); pointer-events: none;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--arv-ink) 22%, transparent);
+}
+/* an asking row: the ring takes in its request strip, so the row and its decision read as one */
+.arv-row.is-tapped:has(+ .arv-ask)::after {
+  inset: 0 0 -1px; box-shadow: none; border-radius: var(--arv-r-in) var(--arv-r-in) 0 0;
+  border: 1px solid color-mix(in srgb, var(--arv-ink) 22%, transparent); border-bottom: 0;
+}
+.arv-row.is-tapped + .arv-ask { position: relative; }
+.arv-row.is-tapped + .arv-ask::after {
+  content: ""; position: absolute; inset: 0; border-radius: 0 0 var(--arv-r-in) var(--arv-r-in); pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--arv-ink) 22%, transparent); border-top: 0;
+}
+
+/* an open board's row opens Tap in: it reads as tappable (a pullable row keeps its grab) */
+.arv-board.is-open .arv-row:not(.is-pullable) { cursor: pointer; }
+
+/* Stack: the host grows the window by the panel's room after the page asks. Pinned
+ * to the window's bottom, a bottom corner's board holds still while the room
+ * comes and goes above it; before the window has grown, the room is off the top. */
+.scx.arv.is-stack:not(.is-top) { position: fixed; bottom: 0; left: 0; }
+
+/* the tether: a notch on the panel's edge that points at the tapped row, as a
+ * popover's arrow does; it follows the row when a pass moves it. The panel's
+ * own edge draws its rim and the panel's face (as it is at that end) its
+ * inside; its base covers the panel's edge, so the two draw as one shape. The
+ * box is 8 x 14 (TAP_IN_NOTCH); the tip is eased. */
+.tap-tether {
+  --tap-notch-face: color-mix(in srgb, var(--arv-face-top) 85%, var(--arv-face-end));
+  position: fixed; z-index: 3; display: block; pointer-events: none;
+  background: linear-gradient(var(--arv-edge) 0 0), var(--tap-notch-face);
+  transition: top var(--tap-swap) var(--tap-ease), opacity var(--tap-fold) var(--tap-ease-in);
+  animation: tap-fade var(--tap-open) var(--tap-ease) backwards;
+}
+.tap-tether::before { content: ""; position: absolute; inset: 0; background: var(--tap-notch-face); }
+.tap-tether.is-low { --tap-notch-face: color-mix(in srgb, var(--arv-face-top) 15%, var(--arv-face-end)); }
+.tap-tether.is-left { clip-path: path("M8 0 L7 0 L1.06 5.94 Q0 7 1.06 8.06 L7 14 L8 14 Z"); }
+.tap-tether.is-left::before { clip-path: path("M8 1.41 L7 1.41 L2.47 5.94 Q1.41 7 2.47 8.06 L7 12.59 L8 12.59 Z"); }
+.tap-tether.is-right { clip-path: path("M0 0 L1 0 L6.94 5.94 Q8 7 6.94 8.06 L1 14 L0 14 Z"); }
+.tap-tether.is-right::before { clip-path: path("M0 1.41 L1 1.41 L5.53 5.94 Q6.59 7 5.53 8.06 L1 12.59 L0 12.59 Z"); }
+.tap-tether.is-closing { opacity: 0; }
+@keyframes tap-fade { from { opacity: 0; } }
+
+/* the panel: the board's own material, in its look */
+.tap-panel {
+  position: fixed; z-index: 2; box-sizing: border-box; overflow: hidden; pointer-events: auto;
+  border-radius: var(--arv-r-out); border: 1px solid var(--arv-edge);
+  background: var(--arv-face); box-shadow: var(--arv-shadow);
+  color: var(--arv-ink); font: 12px/1.4 var(--scx-sans); text-align: left;
+}
+/* On a notch (notchPlacement) the panel is the notch grown: it takes the strip's lower face, and the
+ * edge it shares with the board is square and unlined, so the two draw as one shape; the far edge is
+ * the notch's own round. The board squares its side of the join while the panel is out (arrivals.css). */
+.tap-panel.is-notch { --arv-r-out: 12px; --arv-r-in: 4px; --arv-r-mark: 2px; --arv-r-field: 16px; background: #0d0e10; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55); }
+.tap-panel.is-notch.from-top { border-top: 0; border-start-start-radius: 0; border-start-end-radius: 0; }
+.tap-panel.is-notch.from-bottom { border-bottom: 0; border-end-start-radius: 0; border-end-end-radius: 0; }
+.tap-panel.is-notch.from-left { border-left: 0; border-start-start-radius: 0; border-end-start-radius: 0; }
+.tap-panel.is-notch.from-right { border-right: 0; border-start-end-radius: 0; border-end-end-radius: 0; }
+
+/* open: it grows out of the edge that faces the board; close: it folds back into it.
+ * The open leaves no clip behind (backwards only); it ends opened out past the
+ * shadow, as the board's own unfold does, so the shadow never pops in. */
+.tap-panel.from-right { animation: tap-open-r var(--tap-open) var(--tap-ease) backwards; }
+.tap-panel.from-left { animation: tap-open-l var(--tap-open) var(--tap-ease) backwards; }
+.tap-panel.from-bottom { animation: tap-open-b var(--tap-open) var(--tap-ease) backwards; }
+.tap-panel.from-top { animation: tap-open-t var(--tap-open) var(--tap-ease) backwards; }
+.tap-panel.from-right.is-closing { animation: tap-fold-r var(--tap-fold) var(--tap-ease-in) forwards; }
+.tap-panel.from-left.is-closing { animation: tap-fold-l var(--tap-fold) var(--tap-ease-in) forwards; }
+.tap-panel.from-bottom.is-closing { animation: tap-fold-b var(--tap-fold) var(--tap-ease-in) forwards; }
+.tap-panel.from-top.is-closing { animation: tap-fold-t var(--tap-fold) var(--tap-ease-in) forwards; }
+.tap-panel.is-closing { pointer-events: none; }
+/* the panel before the stack has room for it: not drawn; its open plays once placed */
+.tap-panel.is-unplaced { visibility: hidden; animation: none; }
+@keyframes tap-open-r { from { clip-path: inset(0 0 0 100% round var(--arv-r-out)); } to { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } }
+@keyframes tap-open-l { from { clip-path: inset(0 100% 0 0 round var(--arv-r-out)); } to { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } }
+@keyframes tap-open-b { from { clip-path: inset(100% 0 0 0 round var(--arv-r-out)); } to { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } }
+@keyframes tap-open-t { from { clip-path: inset(0 0 100% 0 round var(--arv-r-out)); } to { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } }
+@keyframes tap-fold-r { from { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } to { clip-path: inset(0 0 0 100% round var(--arv-r-out)); } }
+@keyframes tap-fold-l { from { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } to { clip-path: inset(0 100% 0 0 round var(--arv-r-out)); } }
+@keyframes tap-fold-b { from { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } to { clip-path: inset(100% 0 0 0 round var(--arv-r-out)); } }
+@keyframes tap-fold-t { from { clip-path: inset(-32px -32px -48px -32px round var(--arv-r-out)); } to { clip-path: inset(0 0 100% 0 round var(--arv-r-out)); } }
+
+/* swap: the content crossfades, the panel holds still */
+.tap-layer { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; }
+/* fitted (beside the board): the current content sets the height, between the
+ * board's and the box's, never below the tallest it has stood this open
+ * (TapInPanel), so a swap to a shorter row holds still; the one leaving still
+ * lies over it */
+.tap-panel.is-fit { display: flex; flex-direction: column; }
+.tap-panel.is-fit > .tap-layer:not(.is-leaving) { position: relative; inset: auto; flex: 1 1 auto; }
+.tap-layer.is-entering { animation: tap-fade var(--tap-swap) var(--tap-ease) backwards; }
+.tap-layer.is-leaving { animation: tap-out var(--tap-swap) var(--tap-ease) forwards; pointer-events: none; }
+@keyframes tap-out { to { opacity: 0; } }
+
+.tap-x { position: absolute; top: 8px; right: 8px; z-index: 3; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: var(--arv-r-in); background: none; color: var(--arv-ink-3); cursor: pointer; }
+.tap-panel:is(.is-engage, .is-details) > .tap-x { top: 6px; }
+.tap-x:hover, .tap-x:focus-visible { background: var(--arv-wash); color: var(--arv-ink); outline: none; }
+
+/* head: who (as on its row) and its remark; the title; where it is */
+.tap-head { flex: none; padding: 6px 12px 0; }
+.tap-who { display: flex; align-items: center; gap: 5px; min-height: 20px; padding-right: 26px; font-size: 11.5px; }
+.tap-speaker { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; color: var(--arv-ink-2); }
+.tap-who .arv-tag { margin-left: 1px; }
+/* how long it has been in its state: a running timer while it works */
+.tap-clock { flex: none; margin-left: auto; display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap; }
+.tap-clock__word { font: 500 10px var(--scx-mono); letter-spacing: var(--voice-track, .08em); text-transform: var(--voice-case, uppercase); color: var(--arv-ink-2); }
+.tap-clock__time { font: 10px var(--scx-mono); font-variant-numeric: tabular-nums; color: var(--arv-ink); }
+.tap-clock[data-tone="accent"] .tap-clock__word { color: var(--scx-accent); }
+.tap-clock[data-tone="dim"] .tap-clock__word, .tap-clock[data-tone="dim"] .tap-clock__time { color: var(--arv-ink-3); }
+/* the title wraps once, then ends in an ellipsis */
+.tap-head h3 {
+  margin: 7px 0 2px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font: 500 13.5px/1.35 var(--scx-sans); color: var(--arv-ink); overflow-wrap: anywhere;
+}
+.tap-place { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; margin: 0; font: 10.5px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-place__where { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tap-place__where:empty { display: none; }
+.tap-lives { flex: none; display: inline-flex; align-items: baseline; gap: 8px; white-space: nowrap; color: var(--arv-ink-2); }
+/* Live in a terminal: where it lives is the way to it, so it reads as a link. */
+.tap-link.tap-lives.is-live { padding: 0; font: inherit; color: var(--arv-ink-2); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--arv-ink) 20%, transparent); text-underline-offset: 2px; }
+.tap-link.tap-lives.is-live:hover { color: var(--arv-ink); text-decoration-color: currentColor; }
+.tap-place .tap-attach { padding: 0; font: inherit; color: var(--arv-ink-3); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--arv-ink) 20%, transparent); text-underline-offset: 2px; }
+.tap-place .tap-attach:hover { color: var(--arv-ink); text-decoration-color: currentColor; }
+
+/* quiet actions: words that underline on hover */
+.tap-act, .tap-link {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 11.5px var(--scx-sans); color: var(--arv-ink-2); text-decoration: none; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.tap-act:hover, .tap-link:hover, .tap-act:focus-visible, .tap-link:focus-visible { color: var(--arv-ink); text-decoration: underline; outline: none; }
+.tap-act.is-inline { display: inline; }
+/* Notify when done: on, it reads in the Ready colour with a filled dot before it. */
+.tap-notify { display: inline-flex; align-items: center; gap: 5px; }
+.tap-notify::before { content: ""; width: 6px; height: 6px; border-radius: 50%; box-shadow: inset 0 0 0 1px currentColor; }
+.tap-notify.is-on { color: var(--arv-ready, oklch(0.8 0.1 232)); }
+.tap-notify.is-on::before { background: currentColor; }
+.tap-notify.is-error { color: var(--arv-ink-2); }
+.tap-notify:disabled { opacity: 0.6; cursor: default; }
+.tap-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; font-size: 11px; color: var(--arv-ink-2); }
+.tap-err { flex: none; margin: 8px 12px 0; padding: 5px 8px; border-radius: var(--arv-r-in); background: var(--arv-wash); font: 10.5px var(--scx-mono); color: var(--arv-ink-2); }
+
+/* body: what it said, whole; the rest only when it helps act on it */
+.tap-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 12px 10px; }
+.tap-body::-webkit-scrollbar { width: 9px; }
+.tap-body::-webkit-scrollbar-track { background: transparent; }
+.tap-body::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 9px; background: color-mix(in srgb, var(--arv-ink) 10%, transparent) padding-box; }
+.tap-body::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--arv-ink) 20%, transparent); }
+/* your prompt, when the title isn't it: two lines, quiet */
+.tap-you {
+  margin: 10px 0 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  font-size: 11px; line-height: 1.4; color: var(--arv-ink-3); overflow-wrap: anywhere;
+}
+.tap-you span { margin-right: 6px; font: 10px var(--scx-mono); }
+.tap-said { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: color-mix(in srgb, var(--arv-ink) 88%, transparent); overflow-wrap: anywhere; }
+.is-business .tap-said { color: var(--arv-ink); }
+.tap-quiet { margin: 10px 0 0; font-size: 11.5px; color: var(--arv-ink-3); }
+/* a label over words that are not the agent's own (a blocker Scout observed) */
+.tap-quiet + .tap-said { margin-top: 3px; }
+
+/* its newest steps while it works: newest on top, a new step rolls in */
+.tap-steps { margin: 10px 0 0; padding: 0; list-style: none; overflow: hidden; font: 10.5px/1.6 var(--scx-mono); color: var(--arv-ink-3); }
+.tap-steps li { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tap-steps b { display: inline-block; min-width: 42px; margin-right: 6px; font-weight: 400; }
+.tap-steps em { font-style: normal; }
+.tap-steps li[data-status="working"] { color: var(--arv-ink); }
+.tap-steps li[data-status="working"] > span::after { content: "…"; }
+.tap-steps.is-rolling { animation: tap-roll var(--tap-roll) var(--tap-ease) backwards; }
+.tap-steps.is-rolling > li:first-child { animation: tap-fade var(--tap-roll) var(--tap-ease) backwards; }
+@keyframes tap-roll { from { transform: translateY(-1.6em); } }
+
+/* the files it changed: chips that reveal in Finder */
+/* when it last said or did something */
+.tap-latest { margin: 10px 0 3px; font: 10.5px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-latest time { font-variant-numeric: tabular-nums; }
+.tap-latest + .tap-said, .tap-latest + .tap-quiet { margin-top: 0; }
+/* the files it changed: reference, folded under the details */
+.tap-files-fold { margin: 10px 0 0; }
+.tap-files-fold > summary { cursor: pointer; list-style: none; font: 11.5px var(--scx-sans); color: var(--arv-ink-2); }
+.tap-files-fold > summary::-webkit-details-marker { display: none; }
+.tap-files-fold > summary::before { content: "›"; display: inline-block; width: 10px; transition: transform .15s; }
+.tap-files-fold[open] > summary::before { transform: rotate(90deg); }
+.tap-files-fold > summary:hover { color: var(--arv-ink); }
+.tap-files { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 10px 0 0; }
+.tap-file { display: inline-flex; align-items: center; height: 19px; padding: 0 7px; border-radius: var(--arv-r-in); border: 1px solid var(--arv-line); background: none; cursor: pointer; font: 10px var(--scx-mono); color: var(--arv-ink-2); }
+.tap-file:hover, .tap-file:focus-visible { color: var(--arv-ink); background: var(--arv-wash); outline: none; }
+.tap-file.is-named { cursor: default; }
+.tap-file.is-named:hover { color: var(--arv-ink-2); background: none; }
+.tap-files > i { font: normal 10px var(--scx-mono); color: var(--arv-ink-3); }
+
+/* the request block (ScoutbotRequest, on the board's material): the one place the accent speaks */
+.tap-ask { margin: 10px 0 0; padding: 0; border: 0; border-radius: 0; }
+.tap-ask header { display: flex; justify-content: space-between; gap: 8px; font: 10px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-ask__kind { font: 400 11.5px var(--scx-sans); color: var(--scx-accent); }
+.tap-ask h3 { margin: 3px 0 6px; font: 400 12px/1.4 var(--scx-sans); color: var(--arv-ink); }
+.tap-ask p { margin: 0 0 6px; font-size: 11.5px; line-height: 1.45; color: var(--arv-ink-2); }
+.tap-ask__cmd { margin: 0 0 8px; padding: 6px 8px; overflow-x: auto; border-radius: var(--arv-r-in); background: var(--arv-field); font: 10.5px/1.45 var(--scx-mono); color: var(--arv-ink); white-space: pre-wrap; word-break: break-all; }
+.tap-ask p.tap-ask__folder { display: flex; gap: 8px; font: 10.5px var(--scx-mono); }
+.tap-ask__folder span { color: var(--arv-ink-3); }
+/* A native permission's own parts: the file or page it names, the question it
+   wants to ask with its answers as hairline rows, any other tool's input. */
+.tap-ask p.tap-ask__target { font: 10.5px/1.45 var(--scx-mono); color: var(--arv-ink); overflow-wrap: anywhere; }
+.tap-ask__question { margin: 0 0 8px; }
+.tap-ask__qhead { display: block; margin-bottom: 2px; font: 10px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-ask__question p { color: var(--arv-ink); }
+.tap-ask__question ul { margin: 0; padding: 0; list-style: none; }
+.tap-ask__question li { display: grid; gap: 1px; padding: 4px 0; border-top: 1px solid var(--arv-line, color-mix(in oklch, currentColor 12%, transparent)); font-size: 11.5px; line-height: 1.4; color: var(--arv-ink); }
+.tap-ask__question li:last-child { border-bottom: 1px solid var(--arv-line, color-mix(in oklch, currentColor 12%, transparent)); }
+.tap-ask__question li small { font-size: 10.5px; color: var(--arv-ink-3); }
+.tap-ask__fields { margin: 0 0 8px; display: grid; gap: 2px; font: 10.5px/1.45 var(--scx-mono); }
+.tap-ask__fields div { display: grid; grid-template-columns: minmax(0, max-content) 1fr; gap: 8px; }
+.tap-ask__fields dt { color: var(--arv-ink-3); }
+.tap-ask__fields dd { margin: 0; color: var(--arv-ink); overflow-wrap: anywhere; }
+.tap-ask__acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tap-chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px; border-radius: var(--arv-r-in); border: 1px solid var(--arv-line); background: none; color: var(--arv-ink-2); font: 400 11px var(--scx-sans); cursor: pointer; }
+.tap-chip:hover, .tap-chip:focus-visible { color: var(--arv-ink); background: var(--arv-wash); outline: none; }
+.tap-chip.is-go { border-color: color-mix(in oklch, var(--scx-accent) 35%, transparent); color: var(--scx-accent); }
+.tap-chip.is-go:hover, .tap-chip.is-go:focus-visible { background: color-mix(in oklch, var(--scx-accent) 8%, transparent); }
+.tap-chip:disabled { opacity: 0.4; cursor: default; }
+/* Ready: a task you asked to hear about, done. Its kind and Continue speak in the Ready colour, not the accent. */
+.tap-ask.is-ready .tap-ask__kind { color: var(--arv-ready, oklch(0.8 0.1 232)); }
+.tap-ask.is-ready h3 { color: var(--arv-ink); }
+.tap-chip.is-go.is-ready { border-color: var(--arv-line); color: var(--arv-ready, oklch(0.8 0.1 232)); }
+.tap-chip.is-go.is-ready:hover, .tap-chip.is-go.is-ready:focus-visible { background: color-mix(in oklch, var(--arv-ready, oklch(0.8 0.1 232)) 10%, transparent); }
+.tap-chip kbd { margin-left: 2px; font: 9px var(--scx-mono); color: inherit; opacity: 0.7; }
+.tap-ask__note { font-size: 11px; color: var(--arv-ink-3); }
+.tap-ask__tech { margin-top: 8px; }
+.tap-ask__tech summary { cursor: pointer; font: 10.5px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-ask__tech summary:hover { color: var(--arv-ink); text-decoration: underline; text-underline-offset: 3px; }
+.tap-ask__tech pre { margin: 6px 0 4px; padding: 6px 8px; border-radius: var(--arv-r-in); background: var(--arv-field); font: 10px/1.5 var(--scx-mono); color: var(--arv-ink-2); white-space: pre-wrap; }
+.tap-ask__tech p { font: 9.5px var(--scx-mono); color: var(--arv-ink-3); overflow-wrap: anywhere; }
+.tap-body p.tap-delivery { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0 0; font: 10.5px var(--scx-mono); color: var(--arv-ink-2); }
+.tap-delivery b { font-weight: 600; color: var(--arv-ink); }
+.tap-delivery em { font-style: normal; color: var(--arv-ink-3); }
+.tap-body p.tap-receipt { margin: 10px 0 0; }
+
+/* an agent's markdown, drawn small (TapText): its blocks keep their breaks, its code reads as code */
+.tap-md > :is(p, ul, ol, pre) { margin: 0; }
+.tap-md > * + * { margin-top: 7px; }
+.tap-md p { white-space: pre-line; }
+.tap-md p.is-quote { padding-left: 8px; box-shadow: inset 1px 0 var(--arv-line); color: var(--arv-ink-2); }
+.tap-md :is(ul, ol) { padding-left: 16px; }
+.tap-md ul { list-style: disc; }
+.tap-md ol { list-style: decimal; }
+.tap-md li + li { margin-top: 2px; }
+.tap-md li::marker { color: var(--arv-ink-3); font: 10px var(--scx-mono); }
+.tap-md b { font-weight: 600; color: var(--arv-ink); }
+.tap-md code { padding: 0 3px; border-radius: var(--arv-r-mark); background: var(--arv-wash); font: 0.9em var(--scx-mono); color: var(--arv-ink); overflow-wrap: anywhere; }
+.tap-md pre { padding: 6px 8px; overflow-x: auto; border-radius: var(--arv-r-in); background: var(--arv-wash); font: 10.5px/1.45 var(--scx-mono); white-space: pre-wrap; color: var(--arv-ink-2); }
+.tap-md a { color: var(--arv-ink); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--arv-ink) 25%, transparent); text-underline-offset: 2px; }
+.tap-md a:hover { text-decoration-color: currentColor; }
+
+/* foot: the one way in, then the reply line when there is a live process to type into */
+/* Two rows: the ways in, then the reply line on its own, full width. */
+.tap-foot { flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 6px 10px 8px; border-top: 1px solid var(--arv-line); }
+.tap-ways { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+/* Go to: one quiet lead and its destinations, tmux or the window/pane it lives in. */
+.tap-goto { display: inline-flex; align-items: center; gap: 4px; }
+.tap-goto__lead { margin-right: 2px; font: 400 11px var(--scx-sans); color: var(--arv-ink-3); }
+.tap-way {
+  display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; box-sizing: border-box;
+  border: 1px solid var(--arv-line); border-radius: var(--arv-r-in); background: none; cursor: pointer;
+  font: 400 11px var(--scx-sans); color: var(--arv-ink); white-space: nowrap;
+}
+.tap-way:hover, .tap-way:focus-visible { background: var(--arv-wash); border-color: color-mix(in srgb, var(--arv-ink) 20%, transparent); outline: none; }
+.tap-way kbd { margin: 0; padding: 0 0 0 6px; border: 0; border-left: 1px solid var(--arv-line); border-radius: 0; min-width: 0; background: none; font: 9.5px var(--scx-mono); line-height: 12px; color: var(--arv-ink-3); }
+.tap-ways .tap-confirm, .tap-ways > .tap-act { margin-left: 4px; }
+.tap-open { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; cursor: pointer; font: 400 11.5px var(--scx-sans); color: var(--arv-ink); }
+.tap-open:hover, .tap-open:focus-visible { text-decoration: underline; text-underline-offset: 3px; outline: none; }
+.tap-open kbd, .tap-reply kbd { margin: 0; padding: 0; border: 0; min-width: 0; font: 9.5px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-pr { display: inline-flex; align-items: center; gap: 4px; height: 22px; box-sizing: border-box; padding: 0 7px; border-radius: var(--arv-r-in); border: 1px solid var(--arv-line); font: 10px var(--scx-mono); color: var(--arv-ink-2); text-decoration: none; }
+.tap-pr:hover, .tap-pr:focus-visible { color: var(--arv-ink); background: var(--arv-wash); outline: none; }
+/* The reply: one box holding the field, the mic and send. The field grows a line at a time (ReplyLine, up to
+ * four); the tools stay on its last line. Status sits under the box, never squeezing what you type.
+ * The corners are concentric. The box takes the board's field radius (--arv-r-field, 16 on the notch) and the
+ * buttons inside take it less their 5px inset (4px padding, 1px border): 11, half of 22, a circle. One line tall
+ * (18px of text in 4px of padding) the box is exactly 32px, a pill; as it grows the same radius makes it a
+ * rounded rectangle. A board whose Look squares its corners squares the box and the buttons with it. */
+.tap-reply { --tap-reply-r: max(0px, calc(var(--arv-r-field) - 5px)); flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.tap-foot > .tap-reply { flex: none; width: 100%; }
+.tap-reply__box {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px; padding: 4px 4px 4px 12px; box-sizing: border-box;
+  border-radius: var(--arv-r-field); border: 1px solid var(--arv-line); background: var(--arv-field);
+  transition: border-color 120ms ease-out;
+}
+.tap-reply__box:focus-within { border-color: color-mix(in srgb, var(--arv-ink) 24%, transparent); }
+.tap-reply__field {
+  flex: 1 1 120px; min-width: 0; margin: 2px 0; padding: 0; border: 0; outline: 0; background: none; resize: none;
+  overflow-y: auto; scrollbar-width: none; color: var(--arv-ink); caret-color: var(--arv-ink);
+  font: 12px/18px var(--scx-sans);
+}
+.tap-reply__field::placeholder { color: var(--arv-ink-3); }
+.tap-reply__tools { flex: none; display: flex; align-items: center; gap: 2px; margin-left: auto; }
+/* Send is always there, quiet until there is something to send; then it fills in ink. */
+.tap-reply__send {
+  display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: var(--tap-reply-r);
+  background: none; color: color-mix(in srgb, var(--arv-ink) 28%, transparent); cursor: default;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+.tap-reply.is-ready .tap-reply__send { background: var(--arv-ink); color: var(--arv-pop); cursor: pointer; }
+.tap-reply.is-ready .tap-reply__send:hover { background: color-mix(in srgb, var(--arv-ink) 86%, transparent); }
+.tap-reply__send:focus-visible { outline: 1px solid color-mix(in srgb, var(--arv-ink) 40%, transparent); outline-offset: 1px; }
+.tap-reply__hint { padding-left: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 10px/14px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-reply__hint.is-delivered { color: var(--arv-ink-2); }
+
+/* reduced motion: the panel opens, swaps and closes without motion */
+@media (prefers-reduced-motion: reduce) {
+  .tap-panel[class], .tap-layer[class], .tap-tether, .tap-steps.is-rolling, .tap-steps.is-rolling > li, .tap-steps li { animation: none; transition: none; }
+}
+
+/* The reply's files (dropped on the agent): chips on their own line above the text, × to take one off. */
+.tap-reply__files { display: flex; flex-wrap: wrap; gap: 4px; flex-basis: 100%; padding: 2px 0 0; }
+.tap-reply__files .tap-file { gap: 4px; max-width: 100%; }
+.tap-reply__files .tap-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tap-reply__files .tap-file.is-busy { cursor: default; color: var(--arv-ink-3); border-style: dashed; }
+/* The mic: send's size and shape, ghosted until hovered; a take in progress holds a wash. */
+.tap-reply__mic.s-dictation-mic { width: 22px; height: 22px; border: 0; border-radius: var(--tap-reply-r); background: none; color: var(--arv-ink-3); }
+.tap-reply__mic.s-dictation-mic:not(:disabled):hover { color: var(--arv-ink); background: var(--arv-wash); }
+.tap-reply__mic.s-dictation-mic--recording { color: var(--arv-ink); background: var(--arv-wash); }
+.tap-reply__mic svg { width: 12px; height: 12px; }
+/* A take in progress: the box's edge lifts, and a band across its top draws the mic's live levels (VoiceWaveform,
+ * oldest to newest, left to right) beside the words heard so far. The field and its draft stay below. */
+.tap-reply.is-listening .tap-reply__box { border-color: color-mix(in srgb, var(--arv-ink) 36%, transparent); }
+.tap-reply__voice { flex-basis: 100%; display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 0 0; }
+.tap-reply__wave.s-msg-compose-wave { flex: none; display: flex; align-items: center; gap: 1px; width: 96px; height: 16px; padding: 0; color: var(--arv-ink); pointer-events: none; }
+.tap-reply__wave .s-msg-compose-wave-bar {
+  flex: 1 1 0; min-width: 1px; height: 100%; border-radius: var(--arv-r-cell); background: currentColor;
+  transform-origin: center; transition: transform 40ms linear, opacity 80ms ease;
+}
+.tap-reply__heard { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11.5px/16px var(--scx-sans); color: var(--arv-ink-2); }
+@media (prefers-reduced-motion: reduce) { .tap-reply__wave .s-msg-compose-wave-bar { transition: none; } }
+
+/* Details: the facts, the figure, and the actions that aren't quick. Hairlines, mono labels. */
+.tap-more { margin: 12px 0 0; padding-top: 8px; border-top: 1px solid var(--arv-line); }
+.tap-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 12px; margin: 0; }
+.tap-facts > div { display: contents; }
+.tap-facts dt { font: 10px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-facts dd { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 10.5px var(--scx-mono); color: var(--arv-ink-2); }
+.tap-ref { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--arv-ink) 20%, transparent); text-underline-offset: 2px; cursor: pointer; }
+.tap-ref:hover { color: var(--arv-ink); text-decoration-color: currentColor; }
+.tap-ref > span { color: var(--arv-ink-3); }
+.tap-more__figure { margin: 10px 0 0; }
+.tap-more__label { margin: 0 0 2px; font: 10px var(--scx-mono); letter-spacing: var(--voice-track, 0.06em); text-transform: var(--voice-case, uppercase); color: var(--arv-ink-3); }
+.tap-more__figure .arv-plate__set { margin: 0; padding-top: 4px; border-top: 0; }
+.tap-more__acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 10px 0 0; }
+.tap-more__said { font: 10px var(--scx-mono); color: var(--arv-ink-3); }
+.tap-more .cw-clear { margin-top: 8px; }

@@ -1,0 +1,35 @@
+/* ── Tail look back: one quiet line under an empty tail, or above its oldest row ── */
+
+.s-tail-lookback {
+  font-size: var(--text-xs);
+  color: var(--dim);
+}
+
+.s-tail-lookback-step {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.s-tail-lookback-step:hover,
+.s-tail-lookback-step:focus-visible {
+  outline: 0;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.s-tail-lookback-sep {
+  color: var(--border);
+}
+
+.s-tail-lookback--earlier {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2xs) var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.06em;
+}

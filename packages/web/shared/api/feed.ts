@@ -11,6 +11,7 @@
  *
  * The list carries heads only. Bodies, the per-file diff and video load on view.
  * Post ids are stable, so a client patches in place.
+ * server/feed/DESIGN.md has the blocks, the cost model and the contract.
  */
 import type { FeedMove } from "./feed-moves.ts";
 
@@ -26,7 +27,7 @@ export type WebFeedShow = {
   at: number;
 };
 
-/** A derived `presentation` record, read only while it names the item's current version. */
+/** A derived `presentation` record (arach/scout#193), read only while it names the item's current version. */
 export type WebFeedPresentation = {
   status: "current" | "stale" | "missing";
   title: string | null;
@@ -74,11 +75,6 @@ export type WebFeedTask = {
   harness: string | null;
   /** The session recorded on this turn's invocation, not the owner's current endpoint. */
   sessionId: string | null;
-  /**
-   * The endpoint that turn's session ran on. It holds when Scout promotes
-   * the session's routing id to a harness id mid-run. Older runtimes omit it.
-   */
-  endpointId?: string | null;
   conversationId: string | null;
   parentId: string | null;
   parentTitle: string | null;
@@ -178,13 +174,7 @@ export type FeedAgent = { name: string; harness: string | null };
  * thread's work or conversation; a draft is an open draft pull request; a
  * local branch is an unmerged branch with no pull request.
  */
-export type FeedForYou = {
-  reason: "attention" | "draft" | "local_branch";
-  /** Why it waits, in a few words. */
-  label: string;
-  /** What is being decided, in the request's own words, when the runtime records them (an attention item's title). */
-  detail?: string | null;
-};
+export type FeedForYou = { reason: "attention" | "draft" | "local_branch"; label: string };
 
 export type FeedPostHead = {
   /** Host-scoped slot key: <origin>:thread:<session>, <origin>:work:<work> or <origin>:post:<publication>. */
@@ -381,9 +371,10 @@ export type FeedLiveSession = {
 export type FeedLive = { version: number; sessions: FeedLiveSession[] };
 
 /**
- * GET /api/feed/summaries?posts=<id,id>: each post's newest turn in two lines.
- * A post is null when no summary is available; the reader keeps the words
- * it has.
+ * GET /api/feed/summaries?posts=<id,id>: each post's newest turn in two
+ * lines, written once per turn by the cheap model (server/turn-summary.ts).
+ * A post is null until its summary exists, and stays null when the model
+ * had nothing to say or failed; the reader keeps the words it has.
  */
 export type FeedTurnSummary = {
   /** The turn it is of: a newer turn on the thread gets its own. */

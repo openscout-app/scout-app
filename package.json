@@ -3,13 +3,41 @@
   "private": true,
   "license": "LicenseRef-PolyForm-Shield-1.0.0",
   "type": "module",
-  "engines": { "bun": ">=1.4.4" },
-  "workspaces": ["packages/web/client"],
-  "scripts": {
-    "start": "bun install --frozen-lockfile --ignore-scripts && bun scripts/preview.ts",
-    "check": "tsc --noEmit && tsc -p packages/web/client/tsconfig.json --noEmit",
-    "test": "bun test packages scripts"
+  "exports": {
+    "./feed": "./packages/web/client/screens/feed/index.ts",
+    "./board": "./packages/web/client/screens/work/content.tsx",
+    "./chat": "./packages/web/client/screens/chat/index.ts",
+    "./sessions": "./packages/web/client/screens/sessions/index.ts",
+    "./search": "./packages/web/client/screens/search/index.ts",
+    "./control": "./packages/web/client/screens/ops/index.ts"
   },
-  "dependencies": { "@openscout/scout": "0.5.4" },
-  "devDependencies": { "@types/bun": "^1.3.0", "typescript": "5.9.3" }
+  "engines": {
+    "bun": ">=1.4.4"
+  },
+  "workspaces": [
+    "packages/web"
+  ],
+  "scripts": {
+    "start": "exec bun --no-env-file packages/web/dist/inspect.mjs",
+    "build": "bun run --cwd packages/web build",
+    "check": "bun run --cwd packages/web check",
+    "test": "bun run --cwd packages/web test"
+  },
+  "dependencies": {
+    "@openscout/scout": "0.5.4"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/ws": "8.18.1"
+  },
+  "patchedDependencies": {
+    "hudsonkit@0.3.5": "patches/hudsonkit@0.3.5.patch"
+  },
+  "overrides": {
+    "diff": "8.0.3",
+    "@openscout/agent-sessions": "file:./vendor/agent-sessions-0.5.4.tgz",
+    "@openscout/runtime": "file:./vendor/runtime-0.5.4-public.tgz",
+    "@openscout/pairing": "file:./vendor/pairing-0.5.4-public.tgz",
+    "@types/node": "24.12.2"
+  }
 }

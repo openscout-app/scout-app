@@ -1,0 +1,124 @@
+/* ── Friendly ─────────────────────────────────────────────────────────────
+ * The conventional look, from /studies/work-board-detail: regular-weight
+ * type at readable sizes, labels that read as words, roomier rows, soft
+ * elevation, an accent focus ring and a quiet accent selection plate. It is
+ * the counterpart to Sharp: Sharp is square, thin and flat; Friendly is
+ * rounder, lighter and lifted.
+ *
+ * The look rides on data-scout-look="friendly", on <html> and on the
+ * Provider's outer wrapper, like Sharp. It sets no colour and no corner:
+ * the palette (Paper is its ground) owns colour and the template (Rounded)
+ * owns corners, so each piece also works in a custom mix. Values that the
+ * Provider's outer wrapper sets inline (shadows, fonts) are overridden on
+ * the alias scope, [data-scout-theme], inside it. */
+
+/* ── Type and density: every mode ──────────────────────────────────── */
+:root[data-scout-look="friendly"],
+[data-scout-look="friendly"][data-hudson-theme] {
+  --font-weight-body: 400;
+
+  /* nothing below 10px; small rungs one step up from the rounded scale */
+  --text-3xs: 10px;
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --tracking-xs: 0.01em;
+  --tracking-sm: 0.02em;
+  --tracking-md: 0.03em;
+  --tracking-lg: 0.04em;
+  --tracking-xl: 0.05em;
+
+  --fs-label: 11px;
+  --fs-meta: 12px;
+  --fs-row: 13px;
+  --fs-heading: 15px;
+  --fs-stat: 22px;
+  --w-label: 500;
+  --w-title: 600;
+  --w-row: 400;
+  --w-meta: 400;
+  --w-stat: 500;
+  --w-heading: 600;
+  --tr-label: 0.01em;
+  --tr-title: 0;
+
+  /* density: roomier rows than Sharp's 24/28 (the pane head band is --scout-pane-band) */
+  --row-h-std: 32px;
+  --row-h-dense: 28px;
+  --group-h: 28px;
+  --chip-h: 22px;
+  --control-h: 28px;
+  --input-h: 32px;
+  --mark: 8px;
+}
+
+/* ── The alias scope: elevation, focus, selection ──────────────────── */
+:root[data-scout-look="friendly"] [data-scout-theme] {
+  --shadow-card: 0 1px 2px rgb(24 24 20 / 0.06), 0 1px 1px rgb(24 24 20 / 0.03);
+  --shadow-card-hover: 0 6px 16px rgb(24 24 20 / 0.08), 0 1px 3px rgb(24 24 20 / 0.06);
+  --shadow-pop: 0 12px 32px rgb(24 24 20 / 0.12), 0 2px 6px rgb(24 24 20 / 0.06);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 28%, transparent);
+  --select-bg: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  --row-hover: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+:root[data-scout-look="friendly"][data-scout-theme-mode="dark"] [data-scout-theme] {
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.28), 0 0 0 1px rgb(255 255 255 / 0.02);
+  --shadow-card-hover: 0 8px 20px rgb(0 0 0 / 0.32), 0 1px 3px rgb(0 0 0 / 0.24);
+  --shadow-pop: 0 16px 40px rgb(0 0 0 / 0.42), 0 2px 6px rgb(0 0 0 / 0.24);
+  --select-bg: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  --row-hover: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+/* ── Window ──────────────────────────────────────────────────────────── */
+/* one scrollbar: a rounded thumb inset from the edge */
+[data-scout-look="friendly"] [data-scout-theme] ::-webkit-scrollbar { width: 10px; height: 10px; }
+[data-scout-look="friendly"] [data-scout-theme] ::-webkit-scrollbar-track { background: transparent; }
+[data-scout-look="friendly"] [data-scout-theme] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+[data-scout-look="friendly"] [data-scout-theme] ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--ink) 28%, transparent);
+  background-clip: content-box;
+}
+
+/* ── HUD grid panels ─────────────────────────────────────────────────────
+ * A card on the ground: the surface and a soft lift. The head and its title
+ * are the shared pane head (appearance.css), set in this look's voice. */
+:root[data-scout-look="friendly"] .hud-grid-panel {
+  background-color: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+:root[data-scout-look="friendly"] .hud-grid-panel.is-full { box-shadow: var(--shadow-pop); }
+
+/* ── Column headers ──────────────────────────────────────────────────────
+ * Classic heads each column (the nav's NAVIGATE, a list's CHATS, the
+ * inspector's CONTEXT) with a tinted band, a dashed hairline and an eyebrow,
+ * the way an IDE titles its panels. Friendly doesn't title them: the nav
+ * needs no name, and the top row already names the section the list belongs
+ * to ("← Chats"), so the band repeated it. The band keeps its height, because
+ * it holds the collapse chevron and sets the line every column's first row
+ * starts on; it just stops drawing. The chevron stays, quieter until the
+ * pointer is on the column. */
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="manifest"] > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child,
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="inspector"] > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child,
+:root[data-scout-look="friendly"][data-scout-sidebar-chrome] [data-slot="sidebar-group-label"][data-sidebar-head] {
+  background: transparent;
+  border-bottom-color: transparent !important;
+}
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="manifest"] > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child span[class*="uppercase"],
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="inspector"] > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child span[class*="uppercase"],
+:root[data-scout-look="friendly"][data-scout-sidebar-chrome] [data-sidebar-head] > [data-sidebar-head-text] {
+  visibility: hidden;
+}
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="manifest"] > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child button,
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="inspector"] > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child button {
+  opacity: 0.45;
+  transition: opacity 120ms ease;
+}
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="manifest"]:hover > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child button,
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel="inspector"]:hover > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child button,
+:root[data-scout-look="friendly"] [data-scout-theme] [data-frame-panel] > div[class*="flex-1"][class*="overflow-hidden"] > div:first-child button:focus-visible {
+  opacity: 1;
+}

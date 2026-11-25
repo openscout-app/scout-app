@@ -3,11 +3,11 @@
  * task and its reply. The projection writes these when the turn changes.
  */
 import type { FeedAgent, FeedBody, FeedPr, WebFeedPull, WebFeedTask } from "../../shared/api/feed.ts";
-import { plainLine } from "./plain-line.ts";
-import { leaf } from "./feed-refs.ts";
-import { plainTextExcerpt } from "./plain-excerpt.ts";
-import { displayName, liftStatus } from "./agent-report.ts";
-import { parseWorkResult } from "./work-result-text.ts";
+import { plainLine } from "../../shared/plain-line.ts";
+import { leaf } from "../../shared/feed-refs.ts";
+import { plainTextExcerpt } from "../../shared/plain-excerpt.ts";
+import { displayName, liftStatus } from "../../shared/agent-report.ts";
+import { parseWorkResult } from "../../shared/work-result-text.ts";
 
 /** Glance text, before clipping: keep Markdown labels and PR numbers, not addresses,
  * the preposition introducing an address, or the comma around a removed hash. */
@@ -47,7 +47,7 @@ export function taskTitle(title: string, max = 120): string {
 /* "[answered]", "[ask:f-…]": routing tags a reply opens with, not words. */
 const ENVELOPE = /^\s*(?:\[[a-z_-]+(?::[^\]]+)?\]\s*)+/i;
 
-const SECTION = /^\s{0,3}(?:#{1,6}\s*)?(?:\*\*|__)?(next(?: steps?)?|open(?: questions?)?|follow-?ups?|remaining|checks?|tests?|testing|verification|verified)(?=$|[\s:*_—–-])(?:\*\*|__)?\s*[:—–-]?\s*(?:\*\*|__)?\s*(.*)$/i;
+const SECTION = /^\s{0,3}(?:#{1,6}\s*)?(?:\*\*|__)?(next(?: steps?)?|open(?: questions?)?|follow-?ups?|remaining|checks?|tests?|testing|verification|verified)(?:\*\*|__)?\s*[:—–-]?\s*(?:\*\*|__)?\s*(.*)$/i;
 
 type Sections = { lead: string[]; next: string[]; open: string[]; checks: string[] };
 
@@ -129,7 +129,7 @@ export function operatorLine(raw: { text: string; at: number } | null): { text: 
   return text ? { text, at: raw.at } : null;
 }
 
-/* The ask was for a review ("Review PR #123 …", "Re-review three blockers …"), or the reply leads with a verdict. */
+/* The ask was for a review ("Review PR #1933 …", "Re-review three blockers …"), or the reply leads with a verdict. */
 const REVIEW_ASK = /^(?:please\s+)?(?:re-?review|review|perform an? [\w\s-]*review|do an? [\w\s-]*review)\b/i;
 /* What a reviewer leads with. A worker's "Blocked on …" or "Changes: …" is not a verdict. */
 const REVIEW_LEAD = /^(?:verdict:\s*)?(?:approved?\b|lgtm\b|changes requested\b|request(?:ed)? changes\b|no (?:new )?(?:blockers|findings)\b|not approved\b)/i;
@@ -141,7 +141,7 @@ export function isReviewPass(task: Pick<WebFeedTask, "title" | "reply">): boolea
   return REVIEW_LEAD.test(plainTextExcerpt(task.reply, 200));
 }
 
-/** "#123" in the repository most pull requests come from, "project#123" in any other. */
+/** "#1950" in the repository most pull requests come from, "scout#204" in any other. */
 export function prLabel(pull: Pick<WebFeedPull, "repo" | "number">, mainRepo: string | null): string {
   if (pull.repo === mainRepo) return `#${pull.number}`;
   return `${pull.repo.split("/")[1] ?? pull.repo}#${pull.number}`;

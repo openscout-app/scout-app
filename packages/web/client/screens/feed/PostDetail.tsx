@@ -20,8 +20,6 @@
  */
 import { useState, type MouseEvent, type ReactNode } from "react";
 import "./post-detail.css";
-import { useFeedCapabilities } from "./feed-capabilities.tsx";
-import { discussionTarget, recordedSession } from "../../lib/post-record-routes.ts";
 import { routePath } from "../../lib/router.ts";
 import type { Route } from "../../lib/types.ts";
 import type { FeedLead, FeedPostDetail, FeedPostHead, FeedPr } from "../../../shared/api/feed.ts";
@@ -190,13 +188,10 @@ function CopyLink({ id }: { id: string }) {
 
 /** Where the post leads: the entry points, each one click away. */
 function EntryPoints({ head, detail, navigate }: { head: FeedPostHead; detail: FeedPostDetail; navigate: Navigate }) {
-  const { readOnly } = useFeedCapabilities();
   const prs = pullsOf(head, detail);
   const lead = leadPull(head, prs);
   const sha = detail.diff?.sha ?? null;
-  const ref = readOnly ? recordedSession(head) : head.owner.sessionId;
-  const sessionRoute: Route | null = ref ? { view: "sessions", sessionId: ref } : null;
-  const discussion = discussionTarget(head);
+  const sessionRoute: Route | null = head.owner.sessionId ? { view: "sessions", sessionId: head.owner.sessionId } : null;
   const folder = leaf(head.owner.cwd);
   return (
     <Section title="Links">
@@ -222,9 +217,9 @@ function EntryPoints({ head, detail, navigate }: { head: FeedPostHead; detail: F
         {detail.branch ? <><dt>Branch</dt><dd className="pd-mono pd-wrap">{detail.branch}</dd></> : null}
         {folder ? <><dt>Folder</dt><dd className="pd-mono pd-wrap" title={head.owner.cwd ?? undefined}>{folder}</dd></> : null}
         {head.study ? <><dt>Study</dt><dd><a className="pd-ref" href={head.study} target="_blank" rel="noreferrer">Open the study</a></dd></> : null}
-        {discussion ? <><dt>Thread</dt><dd><RouteLink className="pd-ref" route={discussion} navigate={navigate}>Open the thread</RouteLink></dd></> : null}
+        {head.conversationId ? <><dt>Thread</dt><dd><RouteLink className="pd-ref" route={{ view: "conversation", conversationId: head.conversationId }} navigate={navigate}>Open the thread</RouteLink></dd></> : null}
         {sessionRoute ? <><dt>Session</dt><dd><RouteLink className="pd-ref" route={sessionRoute} navigate={navigate}>Open the session</RouteLink></dd></> : null}
-        {readOnly || head.agentPost?.own ? null : <><dt>Task</dt><dd><RouteLink className="pd-ref" route={{ view: "work", workId: head.workId }} navigate={navigate}>Open the task</RouteLink></dd></>}
+        {head.agentPost?.own ? null : <><dt>Task</dt><dd><RouteLink className="pd-ref" route={{ view: "work", workId: head.workId }} navigate={navigate}>Open the task</RouteLink></dd></>}
         {detail.agents.length > 1 ? (
           <>
             <dt>Agents</dt>
@@ -287,15 +282,6 @@ export function PostDetail({ post, detail, navigate, leadShown, more = null }: {
   const read = session.read;
   // The session's last lines, less what the outcome already says.
   const last = read ? newLines(read.last, [detail.body.landed, detail.body.checks, detail.body.next, detail.body.open, post.caption]) : [];
-  const hasStory = detail.earlier.length > 0 || Boolean(post.line);
-  const evidenceParts: string[] = [];
-  if (asked) evidenceParts.push("Asked");
-  if (read?.steps.length) evidenceParts.push(`${read.steps.length} ${read.steps.length === 1 ? "step" : "steps"}`);
-  if (more) evidenceParts.push("Updates");
-  if (last.length) evidenceParts.push("Session");
-  if (hasStory) evidenceParts.push("History");
-  const hasEvidence = evidenceParts.length > 0 || session.reading;
-
   return (
     <div className="pd">
       {others.length ? (
@@ -304,23 +290,13 @@ export function PostDetail({ post, detail, navigate, leadShown, more = null }: {
         </Section>
       ) : null}
       <Outcome detail={detail} />
+      {asked ? <Section title="Asked"><p className="pd-asked">{asked}</p></Section> : null}
+      {session.reading ? <div className="fd-loading fd-loading--inline" role="status" aria-label="Reading the session"><span aria-hidden /><span aria-hidden /></div> : null}
+      {read?.steps.length ? <Section title="Steps"><StepsBrief steps={read.steps} more={read.moreSteps} /></Section> : null}
       <FilesChanged stat={detail.diff} pull={pull} session={session} />
-      {hasEvidence ? (
-        <details className="pd-evidence">
-          <summary className="pd-evidenceSummary">
-            <span>Evidence and history</span>
-            {evidenceParts.length ? <span className="pd-evidenceMeta">{evidenceParts.join(" · ")}</span> : null}
-          </summary>
-          <div className="pd-evidenceBody">
-            {asked ? <Section title="Asked"><p className="pd-asked">{asked}</p></Section> : null}
-            {session.reading ? <div className="fd-loading fd-loading--inline" role="status" aria-label="Reading the session"><span aria-hidden /><span aria-hidden /></div> : null}
-            {read?.steps.length ? <Section title="Steps"><StepsBrief steps={read.steps} more={read.moreSteps} /></Section> : null}
-            {more ? <Section title="More updates">{more}</Section> : null}
-            {last.length ? <Section title="Since then in the session"><LastLines lines={last} /></Section> : null}
-            <Story head={post} detail={detail} />
-          </div>
-        </details>
-      ) : null}
+      {more ? <Section title="More updates">{more}</Section> : null}
+      {last.length ? <Section title="Since then in the session"><LastLines lines={last} /></Section> : null}
+      <Story head={post} detail={detail} />
       <EntryPoints head={post} detail={detail} navigate={navigate} />
     </div>
   );

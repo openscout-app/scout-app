@@ -1,6 +1,8 @@
-/** The writer's row shapes. Details and evidence stay off the list path. */
+/** The writer's three row shapes. Details and evidence stay off the list path. */
 import type { FeedLiveSession, FeedPostHead, WebFeedTask } from "../../shared/api/feed.ts";
+import type { FeedQuotaEvent } from "../../shared/api/feed-sources.ts";
 import { answersTurn, type FeedMove } from "../../shared/api/feed-moves.ts";
+import { turnEvidence, turnIdOf, type TurnSummaries } from "../turn-summary.ts";
 import { dayKey } from "./days.ts";
 import { leadFiles } from "./leads.ts";
 import { hostKey, taskBranch, taskPulls, taskRepo } from "./links.ts";
@@ -21,6 +23,8 @@ export type Slot = {
   candidate: string | null;
   head: string;
   detail: string | null;
+  summary_request: string | null;
+  summary: string | null;
   files: string | null;
 };
 const channel = {
@@ -28,6 +32,8 @@ const channel = {
   reviewed: 0,
   candidate: null,
   detail: null,
+  summary_request: null,
+  summary: null,
   files: null,
 } as const;
 const json = JSON.stringify;
@@ -48,6 +54,22 @@ export function runningSlot(originHost: string, t: WebFeedTask, postId: string |
     day: dayKey(at),
     refs: "[]",
     head: json(live),
+  };
+}
+
+export function quotaSlot(originHost: string, event: FeedQuotaEvent): Slot {
+  const id = hostKey(originHost, event.id);
+  return {
+    ...channel,
+    id,
+    kind: "quota",
+    state: "crossed",
+    title: event.label,
+    caption: event.window,
+    at: event.crossedAt,
+    day: event.day,
+    refs: json({ provider: event.provider }),
+    head: json({ ...event, id }),
   };
 }
 
@@ -81,6 +103,7 @@ export function finishedSlot(
   thread: WebFeedTask[],
   ctx: PostContext,
   current: (t: WebFeedTask) => boolean,
+  summaries?: TurnSummaries | null,
   move: FeedMove | null = null,
 ) {
   const post = buildPost(thread, ctx)!; // caller has at least one finished turn
@@ -96,11 +119,18 @@ export function finishedSlot(
     h.backToYou = false;
     h.reviewed = true;
   }
+  const base = { ...h, version: 0, selected: false };
+  const request = h.agentPost?.own
+    ? null
+    : { postId: h.id, at: h.at, turnId: turnIdOf(base, task), evidence: turnEvidence(base, task, post.detail.body) };
+  const kept = request ? summaries?.peek([request])[request.postId] : null;
+  // An older gist can name the outcome, but it is not a summary of current evidence.
+  const gist = kept?.gist ?? (request ? summaries?.priorGist(request.turnId) : null);
   const { title, caption, id, at, day, prs, backToYou, ...head } = h;
   const placement =
     h.class === "for_you"
       ? "for_you"
-      : backToYou
+      : backToYou && kept?.need?.kind !== "none"
         ? "back_to_you"
         : h.settled?.state === "merged"
           ? "landed"
@@ -110,7 +140,7 @@ export function finishedSlot(
     kind: kindOf(h),
     placement,
     state: h.settled?.state ?? h.state,
-    title,
+    title: (gist && feedLine(gist)) || title,
     caption,
     at,
     day,
@@ -120,6 +150,8 @@ export function finishedSlot(
     head: json(head),
     detail: json(post.detail),
     files: json(Object.fromEntries(leadFiles(task))),
+    summary: kept ? json(kept) : null,
+    summary_request: request ? json(request) : null,
   };
-  return row;
+  return { row, workId: task.id, request };
 }

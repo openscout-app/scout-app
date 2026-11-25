@@ -1,0 +1,328 @@
+/* Chats: the All, Scout and Slack tabs, then the selected list beside the conversation.
+   The aggregate reads provider catalogs without merging their records. Slack's
+   feed and composer conventions live in slack-place.css. */
+
+.rooms-source-surface { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.rooms-source-content { flex: 1; min-width: 0; min-height: 0; }
+
+/* ── All, Scout and Slack tabs ──────────────────────────────────────────── */
+
+.rooms-tabs-band {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2xs) var(--space-md);
+  min-height: 36px;
+  padding: 0 var(--space-sm);
+  border-bottom: 1px solid var(--scout-line);
+}
+.rooms-tabs { display: flex; align-self: stretch; gap: var(--space-2xs); min-width: 0; }
+.rooms-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 36px;
+  padding: 0 var(--space-sm);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+.rooms-tab:hover { color: var(--ink); }
+.rooms-tab[aria-selected="true"] { color: var(--ink); font-weight: 500; }
+/* The selected tab sits on a square underline; no rounded strip. */
+.rooms-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  right: var(--space-xs);
+  bottom: -1px;
+  left: var(--space-xs);
+  height: 2px;
+  background: var(--ink);
+}
+.rooms-tab:focus-visible { outline: 1px solid var(--accent); outline-offset: -3px; }
+.rooms-tab-mark { display: inline-grid; place-items: center; width: 16px; height: 16px; }
+.rooms-tabs-connection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-sm);
+  min-width: 0;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 15px;
+}
+.rooms-tabs-connection > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rooms-tabs-connection p { flex-basis: 100%; margin: 0; }
+.rooms-tabs-connection button,
+.rooms-tabs-connection a {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.rooms-tabs-connection button:hover,
+.rooms-tabs-connection a:hover { text-decoration: underline; }
+.rooms-tabs-connection button:disabled { color: var(--dim); cursor: default; text-decoration: none; }
+
+/* ── Lists: tabs the operator makes after All, Scout and Slack ──────────── */
+
+.rooms-tabs-lead { display: flex; align-self: stretch; align-items: center; gap: var(--space-xs); min-width: 0; }
+.rooms-tabs-lead > .rooms-tabs { overflow-x: auto; scrollbar-width: none; }
+.rooms-tab-name { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rooms-new-list,
+.rooms-new-list-field button,
+.rooms-list-actions button,
+.rooms-list-rename button,
+.rooms-list-empty button {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rooms-new-list { padding: 0 var(--space-xs); }
+.rooms-new-list:hover,
+.rooms-new-list-field button:hover,
+.rooms-list-actions button:hover,
+.rooms-list-rename button:hover,
+.rooms-list-empty button:hover { color: var(--ink); }
+.rooms-new-list:focus-visible,
+.rooms-new-list-field button:focus-visible,
+.rooms-list-actions button:focus-visible,
+.rooms-list-rename button:focus-visible,
+.rooms-list-empty button:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.rooms-new-list-field button:disabled,
+.rooms-list-rename button:disabled { color: var(--dim); opacity: 0.5; cursor: default; }
+.rooms-list-actions button[data-tone="danger"] { color: var(--red); }
+
+.rooms-new-list-field,
+.rooms-list-rename { display: flex; align-items: center; gap: var(--space-sm); min-width: 0; }
+.rooms-new-list-field input,
+.rooms-list-rename input {
+  width: 22ch;
+  min-width: 0;
+  height: 26px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-md);
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+.rooms-list-rename input { flex: 1; width: auto; }
+.rooms-new-list-field input:focus,
+.rooms-list-rename input:focus { border-color: var(--accent); }
+.rooms-new-list-field input::placeholder { color: var(--dim); }
+
+.rooms-list-head .rooms-aggregate-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rooms-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2xs) var(--space-sm);
+  padding: 0 var(--space-2xs);
+  color: var(--dim);
+  font-size: 11px;
+}
+.rooms-list-actions > span { flex-basis: 100%; }
+.rooms-list-empty p { margin: 0 0 var(--space-xs); }
+.rooms-list-empty button { color: var(--accent); }
+
+/* A Scout DM fills the conversation pane under its own head. */
+.chat-channel--direct { display: flex; flex-direction: column; min-height: 0; }
+.chat-channel--direct > :last-child { flex: 1; min-height: 0; }
+
+/* A foreign workspace is a lifted neutral tile with its corners cut, like the
+   signal frame: another place, in Scout's own hand, never in its colors. */
+.rooms-place-tile {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ink) 13%, var(--bg));
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
+}
+.rooms-place-tile[data-kind="scout"] { background: color-mix(in srgb, var(--ink) 8%, var(--bg)); }
+
+/* ── aggregate room list ────────────────────────────────────────────────── */
+
+.rooms-aggregate { min-height: 0; }
+.rooms-aggregate-head { padding: var(--space-sm); border-bottom: 1px solid var(--scout-line); }
+.rooms-aggregate-title { display: flex; align-items: center; gap: var(--space-sm); min-height: 32px; padding: 0 var(--space-2xs); }
+.rooms-aggregate-title strong { flex: 1; font-size: 13px; font-weight: 500; }
+.rooms-aggregate-title > span { color: var(--dim); font-family: var(--font-mono); font-size: 10px; }
+.rooms-aggregate-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 32px;
+  margin-top: var(--space-xs);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-md);
+  color: var(--dim);
+}
+.rooms-aggregate-search:focus-within { border-color: var(--accent); }
+.rooms-aggregate-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 12px; }
+.rooms-aggregate-search input::placeholder { color: var(--dim); }
+.rooms-aggregate-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-sm); }
+.rooms-aggregate-place + .rooms-aggregate-place { margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--scout-line); }
+.rooms-aggregate-place-head { display: flex; align-items: center; gap: var(--space-sm); min-height: 32px; padding: 0 var(--space-xs) var(--space-xs); }
+.rooms-aggregate-place-head strong { font-size: 12px; font-weight: 500; }
+.rooms-aggregate-place-head small { min-width: 0; overflow: hidden; color: var(--dim); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.rooms-aggregate-space + .rooms-aggregate-space { margin-top: var(--space-sm); }
+.rooms-aggregate-subhead { padding: var(--space-sm) var(--space-sm) var(--space-2xs); color: var(--dim); font-size: 11px; }
+.rooms-aggregate-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  min-height: 32px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+}
+.rooms-aggregate-row:hover { background: var(--scout-chrome-hover); color: var(--ink); }
+.rooms-aggregate-row[data-active] { background: color-mix(in srgb, var(--ink) 7%, transparent); color: var(--ink); }
+.rooms-aggregate-row:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.rooms-aggregate-hash { color: var(--dim); }
+.rooms-aggregate-hash[data-board] { display: inline-flex; align-items: center; }
+/* the Vercel place's mark, in the 20px slot a place tile takes */
+.rooms-aggregate-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; color: var(--ink); }
+.rooms-aggregate-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rooms-aggregate-row small { margin-left: auto; color: var(--dim); font-size: 10px; }
+.rooms-aggregate-unread { margin-left: auto; color: var(--accent); font-family: var(--font-mono); font-size: 10px; }
+.rooms-aggregate-unread[data-dot] { width: 6px; height: 6px; flex: none; border-radius: 50%; background: currentColor; opacity: 0.8; }
+.rooms-aggregate-note { margin: 0; padding: var(--space-md) var(--space-sm); color: var(--dim); font-size: 12px; line-height: 1.5; }
+.rooms-aggregate-error { padding: var(--space-sm); color: var(--muted); font-size: 12px; line-height: 1.5; }
+.rooms-aggregate-error p { margin: 0 0 var(--space-xs); }
+.rooms-aggregate-error button { padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; cursor: pointer; }
+.rooms-aggregate-error button:hover { text-decoration: underline; }
+
+/* ── channel header, Slack place ────────────────────────────────────────── */
+
+.chat-chan-divider:has(+ .chat-chan-tools:empty) { display: none; }
+.chat-chan-open {
+  flex-shrink: 0;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0 var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--dim);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+.chat-chan-open:hover { border-color: var(--scout-line); background: var(--scout-chrome-hover); color: var(--ink); }
+.chat-chan-open:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.chat-chan-open svg { transition: transform 150ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.chat-chan-open:hover svg { transform: translate(1px, -1px); }
+
+/* ── feed, Slack place ──────────────────────────────────────────────────── */
+
+.chat-space[data-chat-source="slack"] .chat-turn-meta .chat-who { letter-spacing: -0.005em; }
+.chat-space[data-chat-source="slack"] .chat-who-via {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  align-self: center;
+  color: var(--chat-faint);
+  font-size: 12px;
+  font-weight: 400;
+}
+.chat-space[data-chat-source="slack"] .chat-who-via > svg { flex: 0 0 auto; }
+.chat-space[data-chat-source="slack"] .chat-who-via-text {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 220ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 150ms ease;
+}
+.chat-space[data-chat-source="slack"] .chat-turn:hover .chat-who-via-text,
+.chat-space[data-chat-source="slack"] .chat-turn:focus-within .chat-who-via-text,
+.chat-space[data-chat-source="slack"] .chat-turn[data-focused="true"] .chat-who-via-text { max-width: 180px; opacity: 1; }
+.chat-space[data-chat-source="slack"] .chat-turn-tools {
+  transform: translateY(2px);
+  transition: opacity 120ms ease, transform 150ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.chat-space[data-chat-source="slack"] .chat-turn:hover .chat-turn-tools,
+.chat-space[data-chat-source="slack"] .chat-turn:focus-within .chat-turn-tools,
+.chat-space[data-chat-source="slack"] .chat-turn[data-reacting="true"] .chat-turn-tools { transform: none; }
+
+/* ── composer destination (the rest is in chat-space.css) ─────────────── */
+
+.chat-composer-destination .rooms-place-tile { font-size: 8px; }
+
+/* ── Slack address while Slack is not connected ─────────────────────────── */
+
+.rooms-slack-offline { display: grid; grid-template-columns: minmax(0, 1fr); height: 100%; min-height: 0; }
+.rooms-slack-offline[data-with-list] { grid-template-columns: minmax(240px, 288px) minmax(0, 1fr); }
+.rooms-slack-offline-list { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--scout-line); }
+.rooms-slack-offline-list > .rooms-aggregate { display: flex; flex: 1; flex-direction: column; border-right: 0; }
+.rooms-slack-offline-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: min(420px, 100%);
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-lg);
+}
+.rooms-slack-offline-notice h2 { margin: var(--space-xs) 0 0; color: var(--ink); font-size: 18px; font-weight: 500; }
+.rooms-slack-offline-notice p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.rooms-slack-offline-notice .rooms-slack-offline-error { color: var(--dim); }
+.rooms-slack-offline-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-xs); }
+
+@media (max-width: 899px) {
+  .rooms-slack-offline[data-with-list] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .rooms-slack-offline[data-with-list] .rooms-slack-offline-notice { order: -1; margin: 0; }
+  .rooms-slack-offline-list { border-top: 1px solid var(--scout-line); border-right: 0; }
+}
+
+@media (hover: none) {
+  .chat-composer-destination-keys { display: none; }
+  .chat-space[data-chat-source="slack"] .chat-who-via-text { max-width: none; opacity: 1; }
+}
+
+@media (max-width: 760px) {
+  .rooms-tabs-connection > span { display: none; }
+  .chat-chan-open > span { display: none; }
+  .chat-composer-destination { padding-right: var(--space-4xl); }
+  .chat-composer-destination-keys { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rooms-tab,
+  .chat-chan-open svg,
+  .chat-space[data-chat-source="slack"] .chat-who-via-text,
+  .chat-space[data-chat-source="slack"] .chat-turn-tools { transition: none; }
+  .chat-space[data-chat-source="slack"] .chat-turn-tools,
+  .chat-chan-open:hover svg { transform: none; }
+}
