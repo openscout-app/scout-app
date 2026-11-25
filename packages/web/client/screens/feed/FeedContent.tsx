@@ -104,7 +104,7 @@ function Folded({ posts, stream, label }: { posts: FeedPostHead[]; stream: Strea
     <div className="fd-folded">
       <button type="button" className="fd-fold" onClick={() => setUnfolded(!unfolded)} aria-expanded={unfolded}>
         <span className="fd-foldIcon" data-open={unfolded || undefined}><Glyph d={G.chevron} size={11} /></span>
-        <span className="fd-foldCount">{label ?? foldInventoryLabel(posts)}</span>
+        <span className="fd-foldCount s-ds-section-head">{label ?? foldInventoryLabel(posts)}</span>
         {unfolded ? null : <FoldSummary posts={posts} />}
       </button>
       {unfolded ? <div className="fd-foldItems">{posts.map((p) => <Item key={p.id} post={p} base="s" stream={stream} />)}</div> : null}
@@ -199,6 +199,8 @@ type FeedStreamProps = {
   exclude?: ReadonlySet<string>;
   /** The host owns scrolling and the undo toast. */
   embedded?: boolean;
+  /** Hosted streams fill a rail and let the host scroll. */
+  layout?: "standalone" | "hosted";
   /** A post to open expanded once it loads: the post a link (/?post=<id>) names. */
   expand?: string;
   /** Receives each updated snapshot of the unfiltered stream. */
@@ -216,7 +218,7 @@ export function FeedStream({ capabilities, ...props }: FeedStreamProps & { capab
   );
 }
 
-function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, onFeed, slots }: FeedStreamProps) {
+function FeedStreamView({ navigate, sources, exclude, embedded = false, layout = "standalone", expand, onFeed, slots }: FeedStreamProps) {
   const { readOnly, handoff } = useFeedCapabilities();
   const [view, setView] = useState<Exclude<FeedViewId, "home" | "following">>("all");
   const [resultsOnly, setResultsOnly] = useState(false);
@@ -423,7 +425,7 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, 
   }).filter(({ extra, github, featured, folded }) => extra.length > 0 || github.rows.length > 0 || featured.length > 0 || folded.length > 0);
 
   return (
-    <div className="s-feed" data-embedded={embedded || undefined} data-lens={resultsOnly ? "results" : view}>
+    <div className="s-feed" data-embedded={embedded || undefined} data-layout={layout} data-lens={resultsOnly ? "results" : view}>
       <div className="fd-column">
         {showFilters ? (
           <div className="fd-bar">
@@ -466,13 +468,12 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, 
         ) : null}
 
         {!loaded && failed ? <p className="fd-empty">Couldn&apos;t load the feed. Retrying.</p> : null}
-        {!loaded && !failed ? <ScoutPageSkeleton variant="feed" label="Loading Feed" /> : null}
+        {!loaded && !failed ? <ScoutPageSkeleton variant="feed" inline label="Loading Feed" /> : null}
 
         {loaded && waiting.length > 0 ? (
           <section className="fd-attention" aria-label="Waiting on you">
             <header className="fd-attentionHead">
-              <span className="fd-attentionDot" aria-hidden="true" />
-              <h2>Waiting on you</h2>
+              <h2 className="s-ds-section-head">Waiting on you</h2>
               <span className="fd-attentionCount">{waiting.length}</span>
             </header>
             {/* The first few decisions at full size; the rest one quiet row away, so the day still shows below. */}
@@ -496,7 +497,7 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, expand, 
             .map(({ post }) => [post.id, post]));
           return (
             <section key={day.day} className="fd-day" aria-label={label || dayDate(day.day)}>
-              <h2 className="fd-dayHead">
+              <h2 className="fd-dayHead s-ds-section-head">
                 {label ? <span>{label}</span> : null}
                 <span className={label ? "fd-faint" : undefined}>{dayDate(day.day)}</span>
               </h2>

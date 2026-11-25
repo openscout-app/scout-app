@@ -127,7 +127,9 @@ describe("Feed attention model", () => {
     const title = "Design a reading view";
     const agent = { name: "Review Agent", harness: "codex" };
     for (const detail of [
-      "Session Ab12Cd Ef34Gh is ready",
+      "Session Mwrgkgn6 Ewhgmu is ready",
+      "Session Mwscugkg Ucsr9y is ready",
+      "feynman-14 is ready",
       "Session <id> is ready",
       "[review-agent-12] is ready.",
       "  Review Agent   is READY.  ",

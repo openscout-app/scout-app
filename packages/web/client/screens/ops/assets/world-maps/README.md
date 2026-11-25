@@ -52,6 +52,6 @@ The other map textures and landmarks in this directory preserve the existing
 continuous terrain and daylight/engraved map collection.
 The original `garden-meadow.webp` adds a restrained botanical detail pass over
 the quieter refined grass. The original `garden-stone.webp`, `garden-stone-v2.webp` and planted rock
-material remain as saved material studies. The quieter third stone material was
-generated with the built-in image tool and converted to WebP quality 90 without
-resampling; its exact prompt and master are recorded under `round4`.
+material remain as saved material studies. The built-in image tool created the
+quieter third stone material. The WebP conversion used quality 90 without
+resampling. See `round4` for the exact prompt and master.

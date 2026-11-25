@@ -66,12 +66,13 @@ test("one FeedStream switches between read-only and full actions without a rebui
     const root = createRoot(window.document.body as unknown as HTMLElement);
     unmount = () => root.unmount();
     const navigate = () => {};
-    const draw = (capabilities: Partial<FeedCapabilities>) => act(async () => {
-      root.render(<FeedStream sources={null} navigate={navigate} capabilities={capabilities} />);
+    const draw = (capabilities: Partial<FeedCapabilities>, embedded = false) => act(async () => {
+      root.render(<FeedStream layout="hosted" embedded={embedded} sources={null} navigate={navigate} capabilities={capabilities} />);
     });
     const buttons = () => [...window.document.querySelectorAll(".fd-moves button")].map(node => node.textContent);
 
     await draw({ readOnly: true });
+    expect(window.document.querySelector('.s-feed[data-layout="hosted"]')).not.toBeNull();
     const chat = window.document.querySelector('a[href="/c/chat%2F1?workId=work%2F1"]');
     expect(chat?.textContent).toBe("Open in Chat");
     expect(buttons()).toEqual([]);
@@ -82,6 +83,8 @@ test("one FeedStream switches between read-only and full actions without a rebui
     expect(buttons()).toEqual(expect.arrayContaining([
       expect.stringMatching(/^Continue/), expect.stringMatching(/^Ship it/), expect.stringMatching(/^Hide/),
     ]));
+    expect(window.document.querySelector('.fd-moves .s-ds-btn[data-tier="primary"]')?.textContent).toMatch(/^Continue/);
+    expect(window.document.querySelector(".fd-moves .pa-quiet")?.textContent).toContain("Hide");
     expect(window.document.querySelector('a[href="/sessions/turn%2F1"]')?.textContent).toBe("Session");
     expect(window.document.querySelector(".fd-handoff")).toBeNull();
     expect(sockets.map(socket => socket.url)).toEqual(["wss://example.test/ws/events"]);
@@ -93,6 +96,9 @@ test("one FeedStream switches between read-only and full actions without a rebui
     expect(window.document.querySelector(".fd-handoff a")?.textContent).toBe("Open the app");
     await sockets[0]!.closed.promise;
     expect(sockets[0]?.readyState).toBe(Socket.CLOSED);
+
+    await draw({ readOnly: true }, true);
+    expect(window.document.querySelector(".fd-handoff")).toBeNull();
 
     await draw({ readOnly: true, handoff: null });
     expect(window.document.querySelector(".fd-handoff")).toBeNull();

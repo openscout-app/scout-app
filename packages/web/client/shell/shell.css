@@ -4,6 +4,30 @@
 @import "../app.css";
 @import "../scout/sidebar/frame.css";
 @import "./skeleton.css";
+@import "./surface-primitives.css";
+
+/* Thin surfaces keep the boot palette; the full app owns its own appearance. */
+.s-thin-editorial {
+  --scout-thin-bg: #0c0d10;
+  --scout-thin-ink: #eceef2;
+  --accent: #e8a33d;
+  --scout-page-paint: var(--scout-thin-bg);
+  color: var(--scout-thin-ink);
+}
+
+[data-scout-theme="light"] .s-thin-editorial {
+  --scout-thin-bg: #fbfbfa;
+  --scout-thin-ink: #18191c;
+  --accent: #b86e00;
+}
+
+.s-thin-masthead {
+  box-sizing: border-box;
+  background: var(--scout-thin-bg);
+  color: var(--scout-thin-ink);
+}
+
+.s-thin-masthead .s-scout-nav-brand { color: inherit; }
 
 .s-thin-single-shell {
   display: flex;
@@ -12,22 +36,27 @@
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  background: var(--background);
+  background: var(--scout-thin-bg);
 }
 
-.s-thin-single-shell > .s-surface,
-.s-thin-single-shell > [data-scout-surface] {
+.s-thin-scroll {
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable both-edges;
 }
+
+.s-thin-scroll > .scout-surface { flex: 1 1 auto; min-height: 0; height: auto; color: inherit; }
+.s-thin-content-rail { display: flex; flex-direction: column; }
 
 .s-thin-multi-shell {
   display: flex;
   height: 100vh;
   width: 100%;
   overflow: hidden;
-  background: var(--background);
+  background: var(--scout-thin-bg);
 }
 
 .s-thin-multi-main {
@@ -47,26 +76,19 @@
   justify-content: space-between;
   padding: 0 var(--space-2xl);
   border-bottom: 1px solid var(--scout-line);
-  font-family: var(--font-mono);
-  font-size: var(--text-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-xl);
 }
 
 .s-thin-topbar-title {
-  font-weight: 600;
-  letter-spacing: var(--tracking-sm);
-  color: var(--foreground);
+  font-weight: 500;
+  letter-spacing: -0.005em;
 }
 
 .s-thin-topbar-right {
   display: inline-flex;
   align-items: center;
   gap: var(--space-md);
-}
-
-.s-thin-multi-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
 }
 
 .s-thin-status {
@@ -77,10 +99,10 @@
   padding: 0 var(--space-sm);
   border-radius: var(--radius-sm);
   border: 1px solid var(--scout-line);
-  background: var(--card);
+  background: transparent;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: var(--muted-foreground);
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -108,15 +130,18 @@
 }
 
 .s-thin-setup {
+  flex: none;
+  border-bottom: 1px solid var(--scout-line);
+  font-size: var(--text-md);
+}
+
+.s-thin-setup-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-lg);
-  padding: var(--space-md) var(--space-2xl);
-  border-bottom: 1px solid var(--scout-line);
-  background: var(--card);
-  font-size: var(--text-md);
+  padding-block: var(--space-md);
 }
 
 .s-thin-setup-copy {
@@ -124,48 +149,34 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-sm);
-  color: var(--muted-foreground);
+  color: var(--muted);
 }
 
 .s-thin-setup-copy strong {
-  color: var(--foreground);
+  color: var(--scout-thin-ink, var(--ink));
   font-weight: 600;
 }
 
 .s-thin-setup-actions {
   display: inline-flex;
+  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   gap: var(--space-sm);
 }
 
 .s-thin-setup-cmd {
+  overflow-wrap: anywhere;
   padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-sm);
   border: 1px solid var(--scout-line);
-  background: var(--background);
+  background: transparent;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: var(--foreground);
+  color: var(--scout-thin-ink, var(--ink));
 }
 
-.s-thin-setup-btn {
-  height: 26px;
-  padding: 0 var(--space-md);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--scout-line-strong);
-  background: var(--foreground);
-  color: var(--background);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.s-standalone-record {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: var(--space-3xl);
-}
+.s-standalone-record { padding-block: var(--space-3xl); }
 
 .s-standalone-record-head {
   display: flex;
@@ -187,7 +198,7 @@
   padding: var(--space-2xs) var(--space-md);
   font-family: var(--font-mono);
   font-size: var(--text-md);
-  color: var(--foreground);
+  color: var(--scout-thin-ink, var(--ink));
   cursor: pointer;
 }
 
@@ -197,5 +208,5 @@
   gap: var(--space-sm);
   font-family: var(--font-mono);
   font-size: var(--text-md);
-  color: var(--muted-foreground);
+  color: var(--muted);
 }

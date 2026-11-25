@@ -18,3 +18,4 @@ export {
   navigateBrowserForward,
   type BrowserLocationState,
 } from "../lib/browser-location.ts";
+export { type ScoutRail } from "./boot-html.ts";

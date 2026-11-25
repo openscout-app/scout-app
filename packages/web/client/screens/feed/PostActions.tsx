@@ -20,6 +20,8 @@
  */
 import { useEffect, useImperativeHandle, useRef, useState, type MouseEvent, type Ref } from "react";
 import "./post-actions.css";
+import { ScoutActionButton } from "../../primitives/ScoutActionButton.tsx";
+import { isWaitingOnYou } from "./attention-model.ts";
 import { api } from "../../lib/api.ts";
 import { replyToSession } from "../../lib/session-start.ts";
 import { routePath } from "../../lib/router.ts";
@@ -207,6 +209,8 @@ export function PostActions({ post, detail = null, navigate, ref, sheet = false 
     navigate(route);
   };
 
+  const waiting = isWaitingOnYou(post);
+  const Resolution = waiting ? ScoutActionButton : "button";
   const busy = status.at === "busy";
   const agent = post.agent.name;
   const inSession = actions.react.to === "session";
@@ -225,18 +229,31 @@ export function PostActions({ post, detail = null, navigate, ref, sheet = false 
 
       <div className="pa-strip" data-open={panel || status.at !== "idle" || undefined}>
         <div className="pa-row" role="group" aria-label="Actions">
-          {actions.continue ? <button type="button" className="pa-act pa-act--resolution" aria-expanded={panel === "continue"} onClick={() => toggle("continue")}>{post.agentPost?.own ? "Reply" : "Continue"}<Key k={ACTION_KEY.continue} /></button> : null}
-          {actions.done ? <button type="button" className="pa-act pa-act--resolution" onClick={() => move("done")}>Done<Key k={ACTION_KEY.done} /></button> : null}
-          <button type="button" className="pa-act" aria-expanded={panel === "ask"} onClick={() => toggle("ask")}>Ask about this<Key k={ACTION_KEY.ask} /></button>
-          <button type="button" className="pa-act" aria-expanded={panel === "react"} onClick={() => toggle("react")}>React<Key k={ACTION_KEY.react} /></button>
-          {actions.drop ? <button type="button" className="pa-act" onClick={() => move("drop")}>Drop<Key k={ACTION_KEY.drop} /></button> : null}
-          <button type="button" className="pa-act" onClick={hide}>Hide<Key k={ACTION_KEY.hide} /></button>
-          {actions.open.length ? <span className="pa-sep" aria-hidden /> : null}
-          {actions.open.map((o) => o.kind === "session" ? (
-            <a key="session" className="pa-act" href={routePath({ view: "sessions", sessionId: o.sessionId })} onClick={(e) => openSession(e, { view: "sessions", sessionId: o.sessionId })}>{o.label}</a>
-          ) : (
-            <a key={o.kind} className="pa-act" href={o.href} target="_blank" rel="noreferrer">{o.label}</a>
-          ))}
+          {actions.continue ? (
+            <Resolution type="button" className={waiting ? undefined : "pa-act"} data-tier="primary" aria-expanded={panel === "continue"} onClick={() => toggle("continue")}>
+              {post.agentPost?.own ? "Reply" : "Continue"}<Key k={ACTION_KEY.continue} />
+            </Resolution>
+          ) : null}
+          {actions.done ? (
+            <Resolution type="button" className={waiting ? undefined : "pa-act"} {...(waiting ? { quiet: true } : {})} data-tier="primary" onClick={() => move("done")}>
+              Done<Key k={ACTION_KEY.done} />
+            </Resolution>
+          ) : null}
+          <span className="pa-quiet">
+            <button type="button" className="pa-act s-ds-act" aria-expanded={panel === "ask"} onClick={() => toggle("ask")}>Ask<Key k={ACTION_KEY.ask} /></button>
+            <button type="button" className="pa-act s-ds-act" aria-expanded={panel === "react"} onClick={() => toggle("react")}>React<Key k={ACTION_KEY.react} /></button>
+            {actions.drop ? <button type="button" className="pa-act s-ds-act" onClick={() => move("drop")}>Drop<Key k={ACTION_KEY.drop} /></button> : null}
+            <button type="button" className="pa-act s-ds-act" aria-label="Hide until something new happens" onClick={hide}>Hide<Key k={ACTION_KEY.hide} /></button>
+          </span>
+          {actions.open.length ? (
+            <span className="pa-open">
+              {actions.open.map((o) => o.kind === "session" ? (
+                <a key="session" className="pa-act s-ds-act" href={routePath({ view: "sessions", sessionId: o.sessionId })} onClick={(e) => openSession(e, { view: "sessions", sessionId: o.sessionId })}>{o.label}</a>
+              ) : (
+                <a key={o.kind} className="pa-act s-ds-act" href={o.href} target="_blank" rel="noreferrer">{o.label}</a>
+              ))}
+            </span>
+          ) : null}
         </div>
 
         {panel === "continue" ? (

@@ -1,0 +1,30 @@
+/* Keep these measures and the mobile breakpoint in sync with boot-html.ts. */
+:root {
+  --scout-rail-reading: 760px;
+  --scout-rail-wide: 1180px;
+  --scout-rail-gutter: var(--space-4xl);
+}
+
+@media (max-width: 560px) {
+  :root { --scout-rail-gutter: var(--space-2xl); }
+}
+
+.s-surface-rail {
+  --scout-rail-measure: var(--scout-rail-reading);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(var(--scout-rail-measure) + 2 * var(--scout-rail-gutter));
+  margin-inline: auto;
+  padding-inline: var(--scout-rail-gutter);
+  min-width: 0;
+}
+
+.s-surface-rail[data-rail="wide"] { --scout-rail-measure: var(--scout-rail-wide); }
+.s-surface-rail[data-rail="full"] { max-width: none; padding-inline: 0; }
+
+/* A standalone surface can also mount inside a frame that already owns its rail. */
+.s-thin-content-rail > .s-surface-rail {
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}

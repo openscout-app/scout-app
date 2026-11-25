@@ -1,9 +1,11 @@
+@import "./rail.css";
+
 .s-page-skeleton {
-  --sb-bg: var(--background);
-  --sb-surface: var(--card);
+  --sb-bg: var(--bg);
+  --sb-surface: var(--surface);
   --sb-border: var(--scout-line);
-  --sb-ink: var(--foreground);
-  --sb-muted: var(--muted-foreground);
+  --sb-ink: var(--ink);
+  --sb-muted: var(--muted);
   --sb-bar: var(--scout-line);
   --sb-bar-strong: var(--scout-line-strong);
   width: 100%;
@@ -15,16 +17,14 @@
 }
 
 .s-page-skeleton .sb-skel {
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: var(--space-3xl);
-  box-sizing: border-box;
+  padding-block: var(--space-3xl);
   animation: sbPulse 1.6s ease-in-out infinite;
 }
 
-.s-page-skeleton .sb-skel--wide {
-  max-width: 1200px;
+.s-page-skeleton[data-inline] .sb-skel {
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
 }
 
 .s-page-skeleton .sb-skel-toolbar {
@@ -53,7 +53,7 @@
 
 .s-page-skeleton .sb-skel-row {
   display: grid;
-  grid-template-columns: 76px 140px 160px 76px 72px 1fr;
+  grid-template-columns: 76px 140px minmax(0, 1fr) 76px 72px minmax(0, 1fr);
   gap: var(--space-lg);
   align-items: center;
   padding: var(--space-sm) var(--space-lg);
@@ -81,4 +81,16 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-xl);
+}
+
+
+.s-page-skeleton :is(.sb-skel-row > *, .sb-skel-cols .sb-skel-line, .sb-skel-grid .sb-skel-line) { max-width: 100%; }
+
+@media (max-width: 560px) {
+  .s-page-skeleton .sb-skel-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .s-page-skeleton :is(.sb-skel-cols, .sb-skel-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-boot-dot, .sb-skel, .s-page-skeleton .sb-skel { animation: none; }
 }
