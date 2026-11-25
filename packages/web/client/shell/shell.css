@@ -378,6 +378,18 @@
 }
 
 /* Real Scout framed sidebar shell (FrameSheet rounded inner page card + centered search) */
+html[data-scout-frame][data-scout-frame-backdrop="plain"] {
+  --scout-frame-paint: color-mix(in srgb, var(--hud-ink) 3.5%, var(--hud-bg));
+  --scout-sheet-radius: 14px;
+  --scout-sheet-edge: var(--scout-line-strong, var(--scout-line-edge));
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"][data-hudson-template="editorial"] {
+  --scout-sheet-radius: 4px;
+}
+html[data-scout-frame][data-scout-frame-backdrop="plain"][data-hudson-template="drafting"] {
+  --scout-sheet-radius: 0px;
+}
+
 .s-thin-framed-shell {
   --scout-thin-bg: var(--hud-bg);
   --scout-thin-ink: var(--hud-ink);
@@ -399,7 +411,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: var(--scout-sheet-radius, 8px);
+  border-radius: var(--scout-sheet-radius, 14px);
   background: var(--scout-page-paint, var(--hud-bg));
 }
 
