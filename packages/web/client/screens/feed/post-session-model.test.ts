@@ -64,8 +64,8 @@ describe("reading the session for an L item", () => {
   });
 
   test("last lines the post already says drop out, markup and case aside", () => {
-    const lines = ["Inspected app `7053fc9d`.", "**41 passed**, 0 failed.", "Now on the next fix."];
-    expect(newLines(lines, ["Inspected app 7053fc9d. All clear.", "41 passed, 0 failed.", null])).toEqual(["Now on the next fix."]);
+    const lines = ["Inspected app `1234abcd`.", "**41 passed**, 0 failed.", "Now on the next fix."];
+    expect(newLines(lines, ["Inspected app 1234abcd. All clear.", "41 passed, 0 failed.", null])).toEqual(["Now on the next fix."]);
     expect(newLines(lines, [])).toEqual(lines);
   });
 

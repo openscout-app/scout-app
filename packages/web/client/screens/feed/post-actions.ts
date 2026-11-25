@@ -6,8 +6,7 @@
  * writer. Nothing here merges or pushes: shipping and pushing ask the agent,
  * which lands the work with its own local checks.
  *
- * A failed run would offer Retry once the runtime has `work_retry`
- * (arach/scout#204). Until then it is not offered.
+ * A failed run would offer Retry once the runtime has `work_retry`. Until then it is not offered.
  */
 import type { FeedDiffStat, FeedPostDetail, FeedPostHead, FeedPr } from "../../../shared/api/feed.ts";
 import { reactionMessage, type ReactionKind } from "../canvas/reactions.ts";

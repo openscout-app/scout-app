@@ -1,0 +1,139 @@
+/* Harness plates: a monogram per harness family, told apart by letterform, shape and tone. No logos (no copied
+   brand art in this repository) and no hues (DESIGN.md: one accent per window; colour is kept for state), so
+   every family speaks the same neutral ink at a different weight, face or cut.
+
+   --hm-size     the plate's side: 16px inline (folds, compact rows, meta lines), 28px on a post's plate head
+   --hm-fs       the monogram's size, whole pixels
+   --hm-ink      the letters
+   --hm-fill     the plate
+   --hm-edge     its hairline */
+
+.hm.hm-compact {
+  --hm-size: 16px;
+  --hm-fs: 9px;
+  --hm-serif-fs: 10px;
+  --hm-ink: var(--scout-chrome-ink-soft, currentColor);
+  --hm-fill: color-mix(in srgb, var(--hud-ink) 5%, transparent);
+  --hm-edge: var(--scout-line-strong);
+
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: var(--hm-size);
+  height: var(--hm-size);
+  padding: 0 var(--space-2xs);
+  overflow: hidden;
+  border: 1px solid var(--hm-edge);
+  border-radius: var(--radius-sm);
+  background: var(--hm-fill);
+  color: var(--hm-ink);
+  font-family: var(--hud-font-mono);
+  font-size: var(--hm-fs);
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-overflow: clip;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+}
+
+/* Claude: a set serif in mixed case, on a soft plate without a rule. */
+.hm.hm-compact[data-harness="claude"] {
+  --hm-fill: color-mix(in srgb, var(--hud-ink) 8%, transparent);
+  --hm-ink: var(--scout-chrome-ink-strong, currentColor);
+  border-color: transparent;
+  font-family: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  font-size: var(--hm-serif-fs);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Codex: a machine plate. Bold mono capitals in a squared outline, no fill. */
+.hm.hm-compact[data-harness="codex"] {
+  --hm-fill: transparent;
+  --hm-edge: var(--scout-line-strong);
+  --hm-ink: var(--scout-chrome-ink-strong, currentColor);
+  border-radius: var(--radius-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* Grok: the one inverted plate. Heavy grotesque, ink reversed out of a solid block. */
+.hm.hm-compact[data-harness="grok"] {
+  --hm-fill: color-mix(in srgb, var(--hud-ink) 86%, transparent);
+  --hm-edge: transparent;
+  --hm-ink: var(--hud-bg);
+  font-family: var(--hud-font-sans);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Gemini: round, a ring inside the rule. */
+.hm.hm-compact[data-harness="gemini"] {
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--hud-bg) 70%, transparent);
+  font-family: var(--hud-font-sans);
+  font-weight: 500;
+}
+
+/* Google Antigravity: round and reversed, spaced capitals. */
+.hm.hm-compact[data-harness="antigravity"] {
+  --hm-fill: color-mix(in srgb, var(--hud-ink) 78%, transparent);
+  --hm-edge: transparent;
+  --hm-ink: var(--hud-bg);
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.08em;
+}
+
+/* Cursor: a caret under mono letters. */
+.hm.hm-compact[data-harness="cursor"] {
+  border-radius: var(--radius-xs);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--hud-ink) 42%, transparent);
+}
+
+/* Kimi: one cut corner. */
+.hm.hm-compact[data-harness="kimi"] {
+  --hm-fill: color-mix(in srgb, var(--hud-ink) 12%, transparent);
+  --hm-ink: var(--scout-chrome-ink-strong, currentColor);
+  border: none;
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 5px) 0, 100% 5px, 100% 100%, 0 100%);
+  font-family: var(--hud-font-sans);
+  font-weight: 600;
+}
+
+/* OpenCode: lowercase mono in a dashed rule, as a source file would set it. */
+.hm.hm-compact[data-harness="opencode"] {
+  --hm-fill: transparent;
+  --hm-edge: var(--scout-line-strong);
+  border-style: dashed;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Pi: the letter itself, in serif, on a round plate. */
+.hm.hm-compact[data-harness="pi"] {
+  border-radius: var(--radius-pill);
+  font-family: ui-serif, "New York", Georgia, serif;
+  font-size: var(--hm-serif-fs);
+  font-weight: 500;
+}
+
+/* Devin: a double rule. */
+.hm.hm-compact[data-harness="devin"] { border-width: 3px; border-style: double; --hm-edge: var(--scout-line-strong); }
+
+/* GitHub: reversed mono, the platform rather than an agent. */
+.hm.hm-compact[data-harness="github"] {
+  --hm-fill: color-mix(in srgb, var(--hud-ink) 70%, transparent);
+  --hm-edge: transparent;
+  --hm-ink: var(--hud-bg);
+}
+
+/* Amp: a pill. */
+.hm.hm-compact[data-harness="amp"] { border-radius: var(--radius-pill); font-family: var(--hud-font-sans); font-weight: 700; }
+
+/* A harness Scout does not know: a dotted rule, so it never passes for a known one. */
+.hm.hm-compact[data-harness="other"] { --hm-fill: transparent; border-style: dotted; font-weight: 500; }

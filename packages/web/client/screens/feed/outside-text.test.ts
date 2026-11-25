@@ -3,10 +3,10 @@ import { outsideSpans } from "./outside-text.tsx";
 
 describe("outside thread text", () => {
   test("an agent's Markdown reads without its marks", () => {
-    expect(outsideSpans("**Done** Preview: [http://localhost:43141/studies/a](http://localhost:43141/studies/a) (left running)")).toEqual([
+    expect(outsideSpans("**Done** Preview: [https://example.org/studies/a](https://example.org/studies/a) (left running)")).toEqual([
       { kind: "bold", text: "Done" },
       { kind: "text", text: " Preview: " },
-      { kind: "link", text: "localhost:43141/studies/a", href: "http://localhost:43141/studies/a" },
+      { kind: "link", text: "example.org/studies/a", href: "https://example.org/studies/a" },
       { kind: "text", text: " (left running)" },
     ]);
   });

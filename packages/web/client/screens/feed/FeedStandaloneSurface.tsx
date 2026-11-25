@@ -62,14 +62,14 @@ function ConversationExchangeView({
       ) : (
         <div className="fd-column">
           {messages.map((msg) => (
-            <article key={msg.id} className="fd-post" style={{ padding: "14px 16px", marginBottom: 10 }}>
-              <header style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 12, opacity: 0.72 }}>
+            <article key={msg.id} className="fd-exchangeMessage">
+              <header className="fd-exchangeHead">
                 <strong>{msg.actorName || msg.actorId}</strong>
                 <time dateTime={new Date(msg.createdAt).toISOString()}>
                   {new Date(msg.createdAt).toLocaleString()}
                 </time>
               </header>
-              <div style={{ whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.55 }}>{msg.body}</div>
+              <div className="fd-exchangeBody">{msg.body}</div>
             </article>
           ))}
         </div>
@@ -161,7 +161,6 @@ export function FeedStandaloneSurface({
       sources={null}
       expand={params.get("post") ?? undefined}
       navigate={(route) => navigate(routePath(route))}
-      embedded
     />
   );
 }

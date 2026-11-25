@@ -5,7 +5,7 @@ import { hasUsageReading, heat, mergedDays, outsideLine, postKind, providerRows,
 const NOW = new Date(2026, 10, 16, 14, 0).getTime();
 const H = 3_600_000;
 
-const pr = (state: "open" | "draft" | "merged" | "closed") => ({ key: `o/r#1`, label: "#1", title: "t", state, url: "https://x/pull/1" });
+const pr = (state: "open" | "draft" | "merged" | "closed") => ({ key: `o/r#1`, label: "#1", title: "t", state, url: "https://example.org/pull/1" });
 const head = (p: Partial<Parameters<typeof postKind>[0]>) => ({ forYou: null, lead: { kind: "text" } as const, prs: [], ...p }) as Parameters<typeof postKind>[0];
 
 describe("postKind", () => {

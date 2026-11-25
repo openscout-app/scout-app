@@ -6,13 +6,14 @@
  *
  * Colour says one of three things and nothing else: a small accent dot for
  * what waits on you, the error colour for what went over or failed, and the
- * live colour for what is running. Harness marks keep their logo colours.
+ * live colour for what is running.
  */
 import { OutsideText } from "./outside-text.tsx";
 import "./sources.css";
 
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { HarnessMark, harnessLabel, harnessTint } from "../../components/HarnessMark.tsx";
+import { HarnessMark } from "./FeedHarnessMark.tsx";
+import { HarnessMark as GlyphMark, type HarnessMarkProps } from "../../components/HarnessMark.tsx";
 import { WorkMark } from "../../components/work-mark/WorkMark.tsx";
 import { api } from "../../lib/api.ts";
 import { useBrokerRefresh } from "../../lib/broker-refresh.ts";
@@ -20,6 +21,7 @@ import { usePageRefresh } from "../../lib/page-refresh.ts";
 import { FLEET_EVENT_KINDS, matchesKinds } from "../../lib/broker-event-kinds.ts";
 import type { FeedOutsideThread, FeedQuotaEvent, FeedSources } from "../../../shared/api/feed-sources.ts";
 import type { ServiceGauge } from "../home/quota-gauge.ts";
+import { useFeedCapabilities } from "./feed-capabilities.tsx";
 import { channelName, outsideLine, providerRows, quotaCurve, quotaHeadline, quotaMeta, shortWhen, type WeekMap } from "./source-model.ts";
 
 /* Posts finishing move the week; Slack and the quota readings move on their own clock. */
@@ -27,6 +29,7 @@ const SOURCES_REFRESH_POLICY = { matches: matchesKinds(FLEET_EVENT_KINDS), fallb
 
 /** The feed's other sources; null until the first read. A failed refresh keeps what is shown. */
 export function useFeedSources(): FeedSources | null {
+  const { readOnly } = useFeedCapabilities();
   const [sources, setSources] = useState<FeedSources | null>(null);
   const load = useCallback(async () => {
     try {
@@ -34,18 +37,16 @@ export function useFeedSources(): FeedSources | null {
     } catch { /* keep what is shown */ }
   }, []);
   useEffect(() => { void load(); }, [load]);
-  useBrokerRefresh(() => void load(), SOURCES_REFRESH_POLICY);
+  useBrokerRefresh(() => void load(), SOURCES_REFRESH_POLICY, !readOnly);
   usePageRefresh(load);
   return sources;
 }
 
 /* ── marks ─────────────────────────────────────────────────────────────── */
 
-/** A harness or provider mark in its logo colour; GitHub and unknown marks stay in ink. */
-export function Mark({ harness, size = 12, title }: { harness: string | null | undefined; size?: number; title?: string | null }) {
-  if (!harness) return null;
-  const tint = harnessTint(harness);
-  return <HarnessMark harness={harness} size={size} className="src-mark" title={title ?? null} style={tint ? { color: tint } : undefined} />;
+export function Mark({ harness, compact, size, title }: Pick<HarnessMarkProps, "harness" | "size" | "title"> & { compact?: boolean }) {
+  if (size !== undefined) return <GlyphMark harness={harness} size={size} title={title} className="src-mark" />;
+  return <HarnessMark harness={harness} compact={compact} className="src-mark" />;
 }
 
 /* ── a post's head ─────────────────────────────────────────────────────── */
@@ -62,7 +63,7 @@ export type PostHeadWho = {
 /**
  * The one head every post in Home's stream and the Feed carries:
  * what kind of post it is and where it sits on the left; who made it, as the
- * harness mark in its colour beside the agent's name, and when, on the right.
+ * harness name beside the agent's name, and when, on the right.
  * The context gives way first when the line is short; on a phone, the agent
  * and time can take a second line. `signal` is the waits dot or the live dot,
  * read with the kind.
@@ -86,7 +87,7 @@ export function PostHead({ kind, signal, context = [], note, who, at }: {
       {who || at ? (
         <span className="src-headWho">
           {who?.withYou ? <span className="src-headYou">You <span className="src-faint">with</span></span> : null}
-          {who ? <Mark harness={who.harness} title={who.harness ? harnessLabel(who.harness) : null} /> : null}
+          {who ? <Mark harness={who.harness} /> : null}
           {who ? <span className="src-headName">{who.name}</span> : null}
           {who?.more ? <span className="src-faint" title={`and ${who.more} more ${who.more === 1 ? "agent" : "agents"}`}>+{who.more}</span> : null}
           {at ? <span className="src-headAt">{at}</span> : null}
@@ -204,10 +205,7 @@ export function QuotaWarning({ event, nowMs }: { event: FeedQuotaEvent; nowMs: n
   const open = event.resetAt > nowMs;
   return (
     <div className="src-quota" data-open={open || undefined}>
-      <h3 className="src-title">
-        <Mark harness={event.provider} size={14} />
-        <span>{quotaHeadline(event, nowMs)}</span>
-      </h3>
+      <h3 className="src-title">{quotaHeadline(event, nowMs)}</h3>
       <p className="src-meta">{quotaMeta(event, nowMs)}</p>
       {curve ? (
         <figure className="src-curve">
@@ -242,13 +240,13 @@ export function ProviderList({ gauges, nowMs }: { gauges: readonly ServiceGauge[
     <div className="src-providers">
       {rows.map((row) => row.kind === "status" ? (
         <div key={row.id} className="src-provider" data-kind="status">
-          <span className="src-providerName"><Mark harness={row.id} />{row.name}</span>
+          <span className="src-providerName">{row.name}</span>
           <span className="src-providerStatus">{row.status}</span>
         </div>
       ) : (
         <div key={row.id} className="src-provider" data-over={row.over || undefined}
           title={[`${row.window} window`, row.reset ? `resets ${row.reset}` : "waiting on a reading", ...row.others, row.plan].filter(Boolean).join(" · ")}>
-          <span className="src-providerName"><Mark harness={row.id} />{row.name}</span>
+          <span className="src-providerName">{row.name}</span>
           <span className="src-bar" aria-hidden><i style={{ width: `${Math.max(1, row.percent)}%` }} /></span>
           <span className="src-pct">{row.percent}%<span className="src-faint"> {row.window}</span></span>
           <span className="src-reset" aria-label={row.reset ? `resets ${row.reset}` : "waiting on a reading"}>{row.reset ?? "–"}</span>
@@ -277,7 +275,7 @@ export function WeekGrid({ map }: { map: WeekMap }) {
               {c.count || ""}
             </span>
           ))}
-          <span className="src-weekWho">{row.harnesses.map((h) => <Mark key={h} harness={h} size={11} title={h} />)}</span>
+          <span className="src-weekWho">{row.harnesses.map((h) => <Mark key={h} harness={h} compact />)}</span>
         </div>
       ))}
     </div>

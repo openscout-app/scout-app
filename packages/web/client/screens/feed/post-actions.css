@@ -139,3 +139,20 @@
 .fd-you { margin: 0; color: var(--scout-chrome-ink-soft); font-size: var(--text-xs); line-height: 1.45; overflow-wrap: anywhere; }
 .fd-you .fd-youWords { color: var(--scout-chrome-ink-strong); }
 .fd-you .fd-faint { color: var(--scout-chrome-ink-faint); }
+
+/* Keep resolution on the reading line. Secondary controls retain their tab stops;
+   focusing one reveals the row before the operator interacts with it. */
+.fd-post[data-waiting] > .fd-moves .pa-act--resolution {
+  color: var(--pa-ink);
+  font-weight: 600;
+}
+.fd-post[data-waiting] > .fd-moves .pa-act--resolution:is(:hover, [aria-expanded="true"]) {
+  color: var(--accent);
+}
+@media (hover: hover) {
+  .fd-post[data-waiting]:not(:hover, :focus-within, [data-focused]) > .fd-moves
+    .pa-strip:not([data-open]) :is(.pa-act:not(.pa-act--resolution), .pa-sep, .pa-key) {
+    opacity: 0;
+    pointer-events: none;
+  }
+}

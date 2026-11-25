@@ -1,14 +1,27 @@
 /* Feed: the most useful finished work, led by what was made. A post with
    something to look at takes the large slot: the picture, film, running
-   output, diff or page first, then its title and one sentence. Text-only
-   posts are short. Rows are ruled off by one thin line; the accent is kept
-   for what you can open. */
+   output, diff or page first, then its title and words. Rows are ruled off
+   by one thin line; the accent is kept for what waits on you and what you
+   can open.
+
+   One grid for everything in the column. Two vertical lines carry it:
+     the rail   x = 0      filters, day heads, plates, folds, cards, the handoff
+     the body   x = indent a post's words, leads and moves, a fold's rows
+   so the eye runs down one edge for "what" and one for "who and when".
+   Type is whole pixels (DESIGN.md); structure (days, counts, states, paths)
+   is mono, content is the grotesque. */
 
 .s-feed {
   --fd-ink: var(--scout-chrome-ink-strong);
   --fd-soft: var(--scout-chrome-ink-soft);
   --fd-faint: var(--scout-chrome-ink-faint);
   --fd-wash: color-mix(in srgb, var(--hud-ink) 4%, transparent);
+  --fd-raise: color-mix(in srgb, var(--hud-ink) 2.5%, var(--hud-bg));
+  --fd-plate-size: 28px;
+  --fd-indent: calc(var(--fd-plate-size) + var(--space-sm, 8px));
+  /* A reading measure for words; leads and cards keep the column. */
+  --fd-measure: 68ch;
+  --fd-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   height: 100%;
   min-height: 0;
@@ -18,106 +31,207 @@
   font-family: var(--hud-font-sans);
 }
 
-/* Left-aligned beside the nav at the column width (sources.css), with a
-   fixed gutter. A centered column floats in an empty field on a wide
-   window; the Feed has no side rails to anchor it. */
-.fd-column { box-sizing: content-box; max-width: var(--post-width); margin: 0; padding: 8px 24px 48px; }
+/* Standalone, the column is centred and the page around it (preview.css) uses the same measure, so the heading,
+   the filters and every post share one left edge. Embedded beside a nav, it keeps to the parent's rail. */
+.fd-column { box-sizing: content-box; max-width: var(--post-width, 760px); margin: 0 auto; padding: var(--space-2xs) var(--space-4xl) var(--space-8xl); }
+.fd-column > .s-page-skeleton .sb-skel { padding-inline: 0; }
+.s-feed[data-embedded] .fd-column { margin: 0; padding: 8px 24px 48px; }
 
 .fd-faint { color: var(--fd-faint); }
 .fd-small { font-size: var(--text-xs); }
 
+/* The eyebrow voice: uppercase mono on the tracking scale, for structure only. */
+.fd-dayHead, .fd-attentionHead h2, .fd-foldCount, .fd-ghTitle {
+  font-family: var(--hud-font-mono);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* ── Bar: the filters, when something sits behind them ─────────────── */
 
-.fd-bar { display: flex; align-items: center; gap: 12px; padding: 8px 0 0; }
-.fd-filters { display: inline-flex; gap: 2px; }
+.fd-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 0 4px; }
+.fd-filters { display: inline-flex; align-items: center; gap: 2px; margin-left: -10px; }
 .fd-filter {
-  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: none;
   color: var(--fd-soft);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: 13px;
   cursor: pointer;
+  transition: color 120ms var(--fd-ease), border-color 120ms var(--fd-ease), background-color 120ms var(--fd-ease);
 }
-.fd-filter:hover { color: var(--fd-ink); }
-.fd-filter[data-on] { border-color: var(--scout-line); color: var(--fd-ink); }
-.fd-barRight { display: inline-flex; align-items: center; gap: var(--space-md); margin-left: auto; }
-.fd-stale { color: var(--fd-faint); font-size: var(--text-xs); }
-.fd-density {
-  display: inline-flex;
+.fd-filter:hover { color: var(--fd-ink); background: var(--fd-wash); }
+.fd-filter[data-on] { border-color: var(--scout-line-strong, var(--scout-line)); background: var(--fd-wash); color: var(--fd-ink); font-weight: 500; }
+.fd-filterCount { font-family: var(--hud-font-mono); font-size: 11px; color: var(--fd-faint); font-variant-numeric: tabular-nums; }
+.fd-stale { color: var(--fd-soft); font-family: var(--hud-font-mono); font-size: 11px; }
+
+/* ── Waiting on you: the decisions, pinned above the days ──────────── */
+
+.fd-attention {
+  margin-top: var(--space-2xl);
+}
+.fd-attentionHead {
+  display: flex;
   align-items: center;
-  padding: var(--space-3xs);
-  border: 1px solid var(--scout-line);
-  border-radius: var(--radius-md);
-  background: var(--fd-wash);
+  gap: 8px;
+  height: 40px;
+  border-bottom: 1px solid var(--scout-line);
 }
-.fd-densityBtn {
-  min-width: 24px;
-  height: 22px;
-  padding: 0 var(--space-xs);
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--fd-faint);
+.fd-attentionHead h2 { margin: 0; color: var(--fd-ink); font-size: 11px; }
+.fd-attentionDot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.fd-attentionCount {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
   font-family: var(--hud-font-mono);
-  font-size: var(--text-sm);
+  font-size: 11px;
   font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color var(--motion-duration-fast) var(--motion-ease-standard),
-    color var(--motion-duration-fast) var(--motion-ease-standard);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
-.fd-densityBtn:hover { color: var(--fd-ink); }
-.fd-densityBtn[data-on] { background: var(--hud-bg); color: var(--fd-ink); }
-.fd-densityBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fd-attentionList > .fd-post:last-child { border-bottom: none; }
+.fd-attentionList:has(+ .fd-folded) > .fd-post:last-child { border-bottom: 1px solid var(--scout-line); }
+.fd-attention > .fd-folded { border-bottom: none; }
+.fd-attention .fd-foldCount { color: var(--fd-ink); }
 
 /* ── Days ──────────────────────────────────────────────────────────── */
 
-.fd-day { margin-top: 24px; }
+.fd-day { margin-top: 32px; }
 .fd-dayHead {
   display: flex;
-  gap: 8px;
+  align-items: baseline;
+  gap: 10px;
   margin: 0;
-  padding: 0 0 8px;
-  border-bottom: 1px solid var(--scout-line);
-  color: var(--fd-soft);
-  font-size: var(--text-sm);
-  font-weight: 400;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--scout-line-strong, var(--scout-line));
+  color: var(--fd-ink);
+  font-size: 11px;
 }
+.fd-dayHead > .fd-faint { font-weight: 400; }
 
 /* ── A post ────────────────────────────────────────────────────────── */
 
-/* One column, every kind alike: the head, then what was made at the column
-   width, then the words at the measure; the primary action and the others
-   on one line under them, the others shown on hover, focus or a key. */
+/* One column, every kind alike: the plate head on the rail, then what was made, the words at the measure, and
+   the moves, all on the body line. */
 .fd-post {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas: "body body" "primary strip";
   align-items: center;
-  gap: 8px 0;
-  padding: 14px 0 8px;
+  gap: 4px 0;
+  padding: var(--space-3xl) 0 var(--space-xs);
   border-bottom: 1px solid var(--scout-line);
   outline: none;
+  transition: background-color 150ms var(--fd-ease), box-shadow 150ms var(--fd-ease);
 }
-.fd-post[data-large] { padding: 20px 0 10px; }
-.fd-post[data-focused] { box-shadow: inset 2px 0 0 var(--accent); padding-left: 12px; }
-.fd-postBody { grid-area: body; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.fd-post[data-large] .fd-postBody { gap: 10px; }
+.fd-post[data-large] { padding-top: 20px; }
+/* Focus: the accent strip sits just outside the rail, so nothing in the post moves. */
+.fd-post[data-focused] { box-shadow: -12px 0 0 -10px var(--accent); }
+.fd-postBody { grid-area: body; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fd-post:is([data-size="m"], [data-size="l"]) .fd-postBody > :not(.fd-plateHead) { margin-left: var(--fd-indent); }
 .fd-post > .pa-primary { justify-content: flex-start; }
 .fd-post > .pa-primary:not(:empty) { margin-right: 12px; }
 .fd-post > .pa-primary:empty { display: none; }
 
 .fd-sourcePost { grid-template-columns: minmax(0, 1fr); grid-template-areas: "body"; }
 
-/* Every part of a post, words included, fills the one column width. */
-.fd-line { margin: 0; color: var(--fd-ink); font-size: var(--text-lg); line-height: 1.45; }
+/* At M the whole post opens it: a soft wash on hover, a little past its edges. */
+.fd-post[data-opens] { cursor: pointer; }
+.fd-post[data-opens] :is(a, button, video) { cursor: pointer; }
+.fd-post[data-opens]:not([data-focused]):hover { border-radius: var(--radius-md); background: var(--fd-wash); box-shadow: 0 0 0 var(--space-sm, 8px) var(--fd-wash); }
+.fd-attentionList > .fd-post[data-opens]:not([data-focused]):hover { box-shadow: none; }
+
+/* The operator's own line on an open post. */
+.fd-line { margin: 0; max-width: var(--fd-measure); color: var(--fd-ink); font-size: 14px; line-height: 1.5; }
+
+/* ── The plate head: who on the rail, where beside them, when (or why it waits) at the right ── */
+
+.fd-plateHead { display: grid; grid-template-columns: var(--fd-plate-size) minmax(0, 1fr); column-gap: var(--space-sm, 8px); align-items: center; min-width: 0; }
+.fd-plate { display: inline-grid; place-items: center; width: var(--fd-plate-size); height: var(--fd-plate-size); }
+.fd-plate > .hm.hm-compact { --hm-size: var(--fd-plate-size); --hm-fs: 11px; --hm-serif-fs: 14px; width: 100%; border-radius: var(--radius-md); }
+.fd-plate > .hm.hm-compact:is([data-harness="gemini"], [data-harness="antigravity"], [data-harness="pi"], [data-harness="amp"]) { border-radius: var(--radius-pill); }
+.fd-plate > .hm.hm-compact[data-harness="kimi"] { border-radius: 0; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); }
+.fd-plate > .hm.hm-compact[data-harness="codex"] { border-radius: var(--radius-sm); }
+.fd-plate > .hm.hm-compact[data-harness="cursor"] { box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--hud-ink) 42%, transparent); }
+.fd-plateLines { display: flex; flex-direction: column; min-width: 0; font-size: 13px; line-height: 1.35; }
+.fd-plateName { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; color: var(--fd-ink); }
+.fd-plateAgent { overflow: hidden; min-width: 0; color: var(--fd-soft); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.fd-plateName > :not(.fd-plateAgent) { flex: none; }
+.fd-plateYou { color: var(--fd-ink); }
+.fd-plateWhere { overflow: hidden; min-width: 0; color: var(--fd-faint); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.fd-plateContext {
+  max-width: 220px;
+  overflow: hidden;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--fd-wash);
+  color: var(--fd-faint);
+  font-family: var(--hud-font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fd-plateAt { flex: none; margin-left: auto; padding-left: 12px; color: var(--fd-faint); font-family: var(--hud-font-mono); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Why it waits, at the right where the time would be: the accent dot, a few words, how long. */
+.fd-waitBadge {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  max-width: 60%;
+  min-width: 0;
+  height: 22px;
+  margin-left: auto;
+  padding: 0 10px 0 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--scout-line));
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 10%, var(--hud-bg));
+  color: var(--fd-ink);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.fd-plateName > .fd-waitBadge { flex: 0 1 auto; }
+.fd-waitBadge > span:nth-child(2) { overflow: hidden; min-width: 0; text-overflow: ellipsis; }
+.fd-waitDot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.fd-waitAge { flex: none; color: var(--fd-soft); font-family: var(--hud-font-mono); font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; }
+
+/* An actual operator prompt, inset beneath the work title. */
+.fd-decision {
+  max-width: var(--fd-measure);
+  margin: 0;
+  overflow: hidden;
+  padding-inline-start: var(--space-lg);
+  border-inline-start: 2px solid var(--accent);
+  color: var(--fd-ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+/* The clamp sits on the words, not the block, so the padding never shows half a line. */
+.fd-decision > span { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.fd-post[data-expanded] .fd-decision > span { display: inline; }
+
+/* ── The words: outcome, then the ask ──────────────────────────────── */
 
 .fd-head {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  max-width: var(--fd-measure);
   padding: 0;
   border: none;
   background: none;
@@ -126,25 +240,59 @@
   text-align: left;
   cursor: pointer;
 }
-.fd-title { color: var(--fd-ink); font-size: var(--text-md); font-weight: 400; line-height: 1.4; }
-.fd-post[data-agent-only] .fd-title { color: var(--fd-soft); }
-.fd-caption { color: var(--fd-soft); font-size: var(--text-sm); line-height: 1.5; }
+.fd-title { color: var(--fd-ink); font-size: 15px; font-weight: 500; line-height: 1.45; letter-spacing: -0.01em; text-wrap: pretty; }
+.fd-caption { color: var(--fd-soft); font-size: 13px; line-height: 1.5; text-wrap: pretty; }
 .fd-head:hover .fd-title { color: var(--accent); }
+.fd-post[data-opens]:hover .fd-title { color: var(--fd-ink); }
+.fd-post[data-waiting] .fd-title { font-weight: 600; }
+
+/* M: a post with real substance keeps room to read it (up to six lines of outcome); a post that leads with
+   a picture, film or page lets the lead speak and keeps three. The ask is two lines either way. Chatter is
+   folded before it gets here (attention-model.ts). */
+.fd-post[data-size="m"] .fd-title { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 6; }
+.fd-post[data-size="m"][data-large] .fd-title { -webkit-line-clamp: 3; }
+.fd-post[data-size="m"] .fd-caption { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.fd-post:is([data-size="m"], [data-size="l"]) :is(.fd-prLine, .fd-you) { font-size: 12px; }
 
 /* ── Leads: the large slot ─────────────────────────────────────────── */
 
-/* A picture or film fills the column in one frame, as Home draws its own:
-   16:10, from the top left. The whole picture opens from it. */
+/* A picture or film fills the body width in one 16:10 frame, from the top left: a hairline, a soft lift, the
+   caption on a dark chip at the bottom left. The whole picture opens from it. */
 .fd-media {
+  position: relative;
   display: block;
   aspect-ratio: 16 / 10;
   overflow: hidden;
   border: 1px solid var(--scout-line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   background: var(--fd-wash);
 }
-.fd-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
-.fd-media video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.fd-media img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; transition: opacity 160ms ease-out; }
+/* Loading: the slot keeps its size so the stream does not jump, but no frame or fill stands empty; the picture fades in. */
+.fd-media[data-loading] { border-color: transparent; background: none; box-shadow: none; }
+.fd-media[data-loading] img { opacity: 0; }
+.fd-media video { display: block; width: 100%; height: 100%; object-fit: contain; background: color-mix(in srgb, black 88%, var(--hud-bg)); }
+.fd-mediaVisual {
+  box-shadow: 0 1px 2px color-mix(in srgb, black 6%, transparent), 0 8px 24px color-mix(in srgb, black 8%, transparent);
+  transition: transform 220ms var(--fd-ease), box-shadow 220ms var(--fd-ease);
+}
+.fd-mediaVisual:hover { transform: translateY(-1px); box-shadow: 0 2px 4px color-mix(in srgb, black 8%, transparent), 0 14px 32px color-mix(in srgb, black 14%, transparent); }
+.fd-mediaCaption {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  max-width: calc(100% - 20px);
+  overflow: hidden;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, black 66%, transparent);
+  color: white;
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
 
 .fd-live {
   display: flex;
@@ -152,46 +300,82 @@
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--scout-line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
+  background: var(--fd-raise);
   font-family: var(--hud-font-mono);
-  font-size: var(--text-xs);
+  font-size: 11px;
 }
 /* Before the first output there is nothing to add to the head's Running: the lead folds to nothing but stays in place, so it is seen coming on screen and starts its poll. */
 .fd-live[data-empty] { height: 0; margin-bottom: -10px; padding: 0; border: 0; overflow: hidden; }
 .fd-liveDot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); align-self: center; }
 .fd-liveText { flex: 1; min-width: 0; color: var(--fd-ink); overflow-wrap: anywhere; }
-/* Folded, the newest output is two lines; the expanded post shows it whole. */
 .fd-post:not([data-expanded]) > .fd-postBody > .fd-live .fd-liveText { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 
-/* The change's size: one quiet line, the lines in their colors. The per-file diff is only in an expanded post. */
-.fd-change { display: inline-flex; align-items: baseline; gap: 6px; color: var(--fd-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A page or HTML study: a browser window in Scout's own chrome. Three quiet dots, the address in a mono field,
+   Preview and Open as small buttons; the page opens inside it. */
+.fd-pageCard {
+  overflow: hidden;
+  border: 1px solid var(--scout-line-strong, var(--scout-line));
+  border-radius: var(--radius-lg);
+  background: var(--fd-raise);
+  box-shadow: 0 1px 2px color-mix(in srgb, black 5%, transparent);
+}
+.fd-pageChrome { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 8px 0 12px; }
+.fd-pageCard[data-open] .fd-pageChrome { border-bottom: 1px solid var(--scout-line); }
+.fd-pageDots { display: inline-flex; flex: none; gap: 6px; }
+.fd-pageDots span { width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--hud-ink) 14%, transparent); }
+.fd-pagePath {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--fd-wash);
+  color: var(--fd-ink);
+  font-family: var(--hud-font-mono);
+  font-size: 11px;
+}
+.fd-pagePath > svg { flex: none; color: var(--fd-faint); }
+.fd-pagePath > span { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
+.fd-pageActions { display: inline-flex; flex: none; align-items: center; gap: 4px; }
+.fd-pageBtn {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: var(--hud-bg);
+  color: var(--fd-soft);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 120ms var(--fd-ease), border-color 120ms var(--fd-ease);
+}
+.fd-pageBtn:hover { border-color: var(--scout-line-strong, var(--scout-line)); color: var(--fd-ink); }
+.fd-embed { overflow: hidden; border: 1px solid var(--scout-line); border-radius: var(--radius-sm); }
+.fd-pageCard .fd-embed { border: none; border-radius: 0; }
+.fd-embed iframe { display: block; width: 100%; height: 520px; border: 0; background: var(--hud-bg); }
+
+/* ── The change, the diff, pull requests ───────────────────────────── */
+
+.fd-change { display: inline-flex; align-items: baseline; gap: 6px; color: var(--fd-faint); font-family: var(--hud-font-mono); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fd-add { color: var(--green); }
 .fd-del { color: var(--red); }
 .fd-chips > .fd-change { margin-right: 4px; }
-.fd-diff { display: flex; flex-direction: column; gap: 4px; }
-.fd-diffRow { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; align-items: center; gap: 10px; font-size: var(--text-xs); }
+.fd-diff { display: flex; flex-direction: column; gap: 6px; }
+.fd-diffRow { display: grid; grid-template-columns: minmax(0, 1fr) 160px 88px; align-items: center; gap: 12px; font-size: 11px; }
 .fd-diffPath { overflow: hidden; color: var(--fd-soft); font-family: var(--hud-font-mono); text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
-.fd-diffBar { display: flex; height: 6px; overflow: hidden; border-radius: var(--radius-sm); background: var(--fd-wash); }
+.fd-diffBar { display: flex; height: 6px; overflow: hidden; border-radius: var(--radius-pill); background: var(--fd-wash); }
 .fd-diffAdd { background: var(--diff-add); }
 .fd-diffDel { background: var(--diff-del); }
-.fd-diffNum { color: var(--fd-faint); font-family: var(--hud-font-mono); font-variant-numeric: tabular-nums; }
-.fd-diffFoot { display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 2px; color: var(--fd-faint); font-size: var(--text-xs); }
-
-.fd-pageRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--scout-line);
-  border-radius: var(--radius-sm);
-  color: var(--fd-soft);
-  font-size: var(--text-xs);
-}
-.fd-pagePath { flex: 1; min-width: 0; overflow: hidden; color: var(--fd-ink); font-family: var(--hud-font-mono); text-overflow: ellipsis; white-space: nowrap; }
-.fd-embed { overflow: hidden; border: 1px solid var(--scout-line); border-radius: var(--radius-sm); }
-.fd-embed iframe { display: block; width: 100%; height: 480px; border: 0; background: var(--hud-bg); }
-
-/* ── Pull requests ─────────────────────────────────────────────────── */
+.fd-diffNum { color: var(--fd-faint); font-family: var(--hud-font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.fd-diffFoot { display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 2px; color: var(--fd-faint); font-size: 11px; }
 
 .fd-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .fd-chip {
@@ -202,7 +386,7 @@
   border: 1px solid var(--scout-line);
   border-radius: var(--radius-sm);
   color: var(--fd-soft);
-  font-size: var(--text-xs);
+  font-size: 11px;
   text-decoration: none;
 }
 .fd-chip:hover { border-color: var(--scout-line-strong); color: var(--fd-ink); }
@@ -210,8 +394,51 @@
 .fd-chipState { color: var(--fd-faint); }
 .fd-chipState[data-state="merged"] { color: var(--accent); }
 
+/* A pull request's one line under the words: glyph, number, title, and its state as a pill at the right. */
+.fd-prLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: var(--fd-measure);
+  min-width: 0;
+  color: var(--fd-faint);
+  text-decoration: none;
+}
+.fd-prLine > svg { flex: none; color: var(--fd-soft); }
+.fd-prLine[data-state="open"] > svg { color: var(--green); }
+.fd-prLine[data-state="merged"] > svg { color: var(--accent); }
+.fd-prNum { flex: none; color: var(--fd-ink); font-family: var(--hud-font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+.fd-prTitle { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
+.fd-prState {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 8px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-pill);
+  color: var(--fd-faint);
+  font-family: var(--hud-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.fd-prLine[data-state="open"] .fd-prState { border-color: color-mix(in srgb, var(--green) 36%, transparent); background: color-mix(in srgb, var(--green) 8%, transparent); color: var(--green); }
+.fd-prLine[data-state="merged"] .fd-prState { border-color: color-mix(in srgb, var(--accent) 36%, transparent); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
+.fd-prLine:hover .fd-prTitle { color: var(--fd-ink); }
+
+/* The byline's left end says what a post is by its data: a pull request's glyph, number and state, or a milestone's flag. */
+.fd-kindPr { display: inline-flex; align-items: center; gap: var(--space-2xs, 4px); color: var(--fd-soft); font-variant-numeric: tabular-nums; text-decoration: none; }
+.fd-kindPr:hover { color: var(--fd-ink); }
+.fd-kindPr:hover > span:not(.fd-kindState) { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.fd-kindPr > svg { flex: none; }
+.fd-kindPr[data-state="merged"] > svg { color: var(--accent); }
+.fd-kindState { color: var(--fd-faint); }
+.fd-kindFlag { display: inline-flex; color: var(--fd-soft); }
+.src-headKind:empty { display: none; }
+
 /* A folded post's one meta line: the change's size and how many more updates. */
-.fd-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--fd-faint); font-size: var(--text-xs); }
+.fd-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; color: var(--fd-faint); font-size: 11px; }
 .fd-meta > .fd-more { align-self: auto; padding: 0; }
 
 .fd-more, .fd-older {
@@ -221,65 +448,145 @@
   background: none;
   color: var(--fd-faint);
   font: inherit;
-  font-size: var(--text-xs);
+  font-size: 12px;
   text-decoration: none;
   cursor: pointer;
 }
 .fd-more:hover, .fd-older:hover { color: var(--fd-ink); }
-.fd-older { margin-top: 20px; font-size: var(--text-sm); }
+.fd-older {
+  display: block;
+  width: 100%;
+  margin-top: 24px;
+  padding: 10px 0;
+  border: 1px dashed var(--scout-line-strong, var(--scout-line));
+  border-radius: var(--radius-md);
+  font-family: var(--hud-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
 
-/* ── A compact item's time ─────────────────────────────────────────── */
+/* ── M's moves ─────────────────────────────────────────────────────── */
 
-.fd-when { white-space: nowrap; color: var(--fd-faint); font-family: var(--hud-font-mono); font-size: var(--text-xs); font-variant-numeric: tabular-nums; line-height: 1.7; }
+/* The moves, and what folds under the post, in one row at its foot on the body line. At rest the row is empty
+   space; hover, focus or a key fills it, so nothing below moves. A touch screen keeps it shown. A waiting post
+   keeps its moves at rest: it is asking for one. */
+.fd-moves {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 24px;
+  margin-left: var(--fd-indent);
+  visibility: hidden;
+}
+.fd-post[data-size="m"] { padding-bottom: 4px; }
+.fd-moves:empty { display: none; min-height: 0; }
+.fd-moves > .pa-primary:empty { display: none; }
+.fd-moves > .pa-strip { flex: 1 1 auto; }
+.fd-moves > .fd-movesMore { flex: none; margin-left: auto; font-family: var(--hud-font-mono); font-size: 11px; }
+.fd-post:is(:hover, :focus-within, [data-focused], [data-waiting]) > .fd-moves,
+.fd-moves:has(.pa-strip[data-open]) { visibility: visible; }
+.fd-post:is(:hover, :focus-within, [data-focused], [data-waiting]) > .fd-moves .pa-row,
+.fd-moves .pa-strip[data-open] .pa-row { visibility: visible; }
+@media (hover: none) { .fd-moves { visibility: visible; } }
+
+/* ── S: a compact row. Mark, name and time; two lines of title; a line of gist; the picture at the right. ── */
+
+.fd-post[data-size="s"] { display: block; padding: 0; border-bottom: none; }
+.fd-s {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 2px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 8px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--fd-soft);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms var(--fd-ease);
+}
+.fd-s:hover { background: var(--fd-wash); }
+.fd-s[data-thumb] { grid-template-columns: minmax(0, 1fr) 112px; column-gap: 16px; }
+.fd-s:hover .fd-sTitle { color: var(--fd-ink); }
+.fd-sHead { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--fd-faint); font-size: 12px; }
+.fd-sName { overflow: hidden; min-width: 0; color: var(--fd-soft); text-overflow: ellipsis; white-space: nowrap; }
+.fd-sHead .fd-when { margin-left: auto; }
+.fd-sTitle { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--fd-ink); line-height: 1.45; text-wrap: pretty; }
+.fd-sCaption { overflow: hidden; min-width: 0; color: var(--fd-faint); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.fd-sThumb { position: relative; grid-column: 2; grid-row: 1 / span 3; align-self: start; overflow: hidden; width: 112px; aspect-ratio: 16 / 10; border: 1px solid var(--scout-line); border-radius: var(--radius-sm); background: var(--fd-wash); }
+.fd-sThumb :is(img, video) { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+.fd-sPlay { position: absolute; inset: 0; width: 22px; height: 22px; margin: auto; padding: var(--space-2xs, 4px); border-radius: 50%; background: color-mix(in srgb, black 55%, transparent); fill: white; }
+.fd-sWait {
+  flex: none;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--fd-ink);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.fd-post[data-size="s"][data-focused] > .fd-s { background: var(--fd-wash); }
+.fd-joined { display: flex; flex-direction: column; }
+
+.fd-when { white-space: nowrap; color: var(--fd-faint); font-family: var(--hud-font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
 
 /* ── The fold: the rest of the day, one quiet row ──────────────────── */
 
-.fd-folded { padding: 8px 0; border-bottom: 1px solid var(--scout-line); }
+/* Closed, the chevron sits on the rail and the count, the plates and the threads follow on one line. Open, its
+   rows sit on the body line under the posts' words, so a fold reads as the day's small print. */
+.fd-folded { border-bottom: 1px solid var(--scout-line); }
 .fd-fold {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
   min-width: 0;
-  padding: 2px 0;
+  height: 40px;
+  padding: 0;
   border: none;
   background: none;
   color: var(--fd-soft);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
 .fd-fold:hover { color: var(--fd-ink); }
-.fd-fold > span:not(.fd-foldList) { flex: none; white-space: nowrap; }
-.fd-foldIcon { display: inline-flex; color: var(--fd-faint); transition: transform 120ms ease; }
+.fd-fold > span:not(.fd-foldList, .fd-foldMarks) { flex: none; white-space: nowrap; }
+.fd-foldIcon { display: inline-grid; place-items: center; width: var(--fd-plate-size); color: var(--fd-faint); transition: transform 150ms var(--fd-ease); }
 .fd-foldIcon[data-open] { transform: rotate(90deg); }
-.fd-foldMarks { display: inline-flex; align-items: center; gap: var(--space-2xs); margin-left: 2px; }
+.fd-foldCount { color: var(--fd-soft); font-size: 10px; }
+.fd-fold:hover .fd-foldCount { color: var(--fd-ink); }
+.fd-foldMarks { display: inline-flex; flex: none; flex-wrap: nowrap; align-items: center; gap: 4px; }
 .fd-foldList { overflow: hidden; min-width: 0; color: var(--fd-faint); text-overflow: ellipsis; white-space: nowrap; }
+.fd-foldItems { display: flex; flex-direction: column; gap: 2px; padding: 0 0 10px calc(var(--fd-indent) - 8px); }
 
 /* ── States ───────────────────────────────────────────────────────── */
 
-.fd-empty { margin: 24px 0 0; color: var(--fd-faint); font-size: var(--text-sm); }
+.fd-empty { margin: 32px 0 0; color: var(--fd-faint); font-size: 13px; }
 .fd-loading { display: flex; flex-direction: column; gap: 12px; padding-top: 32px; }
 .fd-loading--inline { padding-top: 4px; gap: 8px; }
 .fd-loading span { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--fd-wash); }
 .fd-loading span:nth-child(2) { width: 70%; }
 .fd-loading span:nth-child(3) { width: 45%; }
 
-@media (max-width: 560px) {
-  .fd-column { padding: 8px 16px 40px; }
-  .fd-diffRow { grid-template-columns: minmax(0, 1fr) 80px; }
-  .fd-diffNum { display: none; }
-  .fd-stale, .fd-arrivalCta { display: none; }
-}
+/* ── A post open in the lightbox (PostDetail.tsx) ──────────────────── */
 
-/* ── A post expanded in place (PostDetail.tsx) ─────────────────────── */
-
-/* A post expands from its title or its picture. Open, its moves stay shown:
-   it is the post being worked with. */
-/* Open, the moves sit under the title (FeedItem.tsx): the primary move and the
-   row share one line, and a panel (the box to write to the agent, Ask, React)
-   spans the width under them, so opening one moves nothing above it. */
+/* Open, the moves sit under the title (FeedItem.tsx): the primary move and the row share one line, and a panel
+   (the box to write to the agent, Ask, React) spans the width under them, so opening one moves nothing above it. */
 .fd-sheetMoves {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -298,238 +605,26 @@
 /* Open, the lead's picture or film shows whole, at its own shape. */
 .fd-post[data-expanded] .fd-media { aspect-ratio: auto; }
 .fd-post[data-expanded] .fd-media :is(img, video) { height: auto; max-height: 78vh; object-fit: contain; }
+.fd-post[data-expanded] .fd-mediaVisual:hover { transform: none; }
 
-/* ── Sizes (post-size.ts): one item, S, M or L ─────────────────────── */
+/* The open post's keys, once, quietly. */
+.fd-keysHint { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--fd-faint); font-size: 11px; }
+.fd-keysHint kbd { min-width: 16px; padding: 0 4px; border: 1px solid var(--scout-line); border-radius: var(--radius-sm); font-family: var(--hud-font-mono); font-size: 10px; text-align: center; }
 
-/* S: a tweet. The mark, name and time; two lines of title; a line of gist; the picture as a thumbnail at the right. */
-.fd-post[data-size="s"] { display: block; padding: 0; border-bottom: none; }
-.fd-post[data-size="s"][data-focused] { padding-left: 12px; }
-.fd-s {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  gap: 2px;
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 10px 0;
-  border: none;
-  background: none;
-  color: var(--fd-soft);
-  font: inherit;
-  font-size: var(--text-sm);
-  text-align: left;
-  cursor: pointer;
-}
-.fd-s[data-thumb] { grid-template-columns: minmax(0, 1fr) 112px; column-gap: 16px; }
-.fd-s:hover .fd-sTitle { color: var(--fd-ink); }
-.fd-sHead { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--fd-faint); font-size: var(--text-xs); }
-.fd-sName { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
-.fd-sHead .fd-when { margin-left: auto; font-family: inherit; line-height: inherit; }
-.fd-sTitle { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; color: var(--fd-ink); line-height: 1.45; text-wrap: pretty; }
-.fd-sCaption { overflow: hidden; min-width: 0; color: var(--fd-faint); text-overflow: ellipsis; white-space: nowrap; }
-.fd-sWait {
-  overflow: hidden;
-  max-width: 180px;
-  color: var(--accent);
-  font-size: var(--text-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.fd-post[data-size="s"][data-modality="decision"] > .fd-s {
-  padding-left: var(--space-md);
-  border-left: 2px solid var(--accent);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  background: color-mix(in srgb, var(--accent) 5%, transparent);
-}
-.fd-sPr {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2xs);
-  height: 18px;
-  padding: 0 var(--space-xs);
-  border: 1px solid var(--scout-line);
-  border-radius: var(--radius-sm);
-  color: var(--fd-soft);
-  font-family: var(--hud-font-mono);
-  font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
-}
-.fd-sPrDot { width: 5px; height: 5px; border-radius: 50%; background: var(--fd-faint); }
-.fd-sPr[data-state="open"] .fd-sPrDot { background: var(--green); }
-.fd-sPr[data-state="merged"] .fd-sPrDot { background: var(--accent); }
-.fd-sMilestone {
-  display: inline-flex;
-  align-items: center;
-  height: 18px;
-  padding: 0 var(--space-xs);
-  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--scout-line));
-  border-radius: var(--radius-pill);
-  color: var(--accent);
-  font-family: var(--hud-font-mono);
-  font-size: var(--text-xs);
-}
-.fd-sPage {
-  overflow: hidden;
-  max-width: 180px;
-  padding: 0 var(--space-xs);
-  border-radius: var(--radius-sm);
-  background: var(--fd-wash);
-  color: var(--fd-soft);
-  font-family: var(--hud-font-mono);
-  font-size: var(--text-xs);
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.fd-sCode {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-top: var(--space-3xs);
-  color: var(--fd-faint);
-  font-family: var(--hud-font-mono);
-  font-size: var(--text-sm);
-  font-variant-numeric: tabular-nums;
-}
-.fd-sDiffBar {
-  display: inline-flex;
-  overflow: hidden;
-  width: 44px;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--fd-wash);
-}
-.fd-sDiffAdd { height: 100%; background: var(--green); }
-.fd-sDiffDel { height: 100%; background: var(--red); }
-.fd-sDiffNum { display: inline-flex; gap: var(--space-2xs); }
-.fd-sFiles { color: var(--fd-faint); }
-.fd-sThumb { position: relative; grid-column: 2; grid-row: 1 / span 3; align-self: start; overflow: hidden; width: 112px; aspect-ratio: 16 / 10; border: 1px solid var(--scout-line); border-radius: var(--radius-sm); background: var(--fd-wash); }
-.fd-sThumb :is(img, video) { display: block; width: 100%; height: 100%; object-fit: cover; object-position: left top; }
-.fd-sPlay { position: absolute; inset: 0; width: 22px; height: 22px; margin: auto; padding: var(--space-2xs); border-radius: 50%; background: color-mix(in srgb, black 55%, transparent); fill: white; }
-.fd-foldItems .fd-s { padding-left: 16px; }
-.fd-joined { display: flex; flex-direction: column; }
-
-/* Incoming rows never move a reader who has scrolled into the stream. */
-.fd-arrivalDock {
-  position: sticky;
-  top: var(--space-md);
-  z-index: 12;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  height: 0;
-  pointer-events: none;
-}
-.fd-arrivalPill {
-  pointer-events: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  height: 30px;
-  padding: 0 var(--space-lg);
-  border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--scout-line));
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--hud-bg) 92%, var(--accent) 8%);
-  box-shadow: 0 6px 20px color-mix(in srgb, black 24%, transparent);
-  color: var(--fd-ink);
-  font-size: var(--text-md);
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    transform var(--motion-duration-hover) var(--motion-ease-emphasis),
-    border-color var(--motion-duration-hover) var(--motion-ease-standard);
-}
-.fd-arrivalPill:hover { transform: translateY(-1px); border-color: var(--accent); }
-.fd-arrivalPill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.fd-arrivalArrow { color: var(--accent); font-family: var(--hud-font-mono); font-weight: 700; }
-.fd-arrivalCta { color: var(--accent); font-family: var(--hud-font-mono); font-size: var(--text-sm); }
-
-@keyframes fd-arrive {
-  0% { opacity: 0.72; transform: translateY(-6px); box-shadow: inset 2px 0 0 var(--accent); }
-  18% { opacity: 1; transform: translateY(0); box-shadow: inset 2px 0 0 var(--accent); }
-  100% { opacity: 1; transform: translateY(0); box-shadow: inset 2px 0 0 transparent; }
-}
-.fd-post[data-arriving] { animation: fd-arrive 2.2s var(--motion-ease-emphasis) both; }
-
-/* M: the full post. The title keeps to two lines and the outcome to three. */
-.fd-post[data-size="m"] .fd-title { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.fd-post[data-size="m"] .fd-caption { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-/* A post with nothing to look at is its outcome and one line of the ask; the rest is a click away. Posts that lead
-   with a picture, film or page keep the room, so they stand out in the stream rather than every post reading alike. */
-.fd-post[data-size="m"]:not([data-large]) .fd-caption { -webkit-line-clamp: 1; }
-/* M and L open on the plate head: who at the top left, the time alone at the top right. What follows sits under
-   the agent's name, past the plate. */
-.fd-post { --fd-indent: calc(28px + var(--space-sm)); }
-.fd-plateHead { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; column-gap: var(--space-sm); align-items: start; min-width: 0; }
-.fd-plate {
-  display: inline-grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  box-sizing: border-box;
-  border: 1px solid var(--scout-line);
-  border-radius: var(--radius-sm);
-  background: var(--fd-wash);
-}
-.fd-plateLines { display: flex; flex-direction: column; min-width: 0; font-size: var(--text-sm); line-height: 1.25; }
-.fd-plateName { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--fd-ink); }
-.fd-plateAgent { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
-.fd-plateName > :not(.fd-plateAgent) { flex: none; }
-.fd-plateYou { color: var(--fd-ink); }
-.fd-plateWhere { overflow: hidden; min-width: 0; color: var(--fd-faint); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
-.fd-plateAt { padding-top: 6px; padding-left: 12px; color: var(--fd-faint); font-size: var(--text-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.fd-post:is([data-size="m"], [data-size="l"]) .fd-postBody > :not(.fd-plateHead) { margin-left: var(--fd-indent); }
-
-/* A pull request's one line under the words: glyph, number, title, state. */
-.fd-prLine {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: var(--fd-faint);
-  font-size: var(--text-xs);
-  text-decoration: none;
-}
-.fd-prLine > svg { flex: none; color: var(--fd-soft); }
-.fd-prLine[data-state="merged"] > svg { color: var(--accent); }
-.fd-prNum { flex: none; color: var(--fd-ink); font-variant-numeric: tabular-nums; }
-.fd-prTitle { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
-.fd-prState { flex: none; margin-left: auto; padding-left: 12px; }
-.fd-prLine:hover .fd-prTitle { color: var(--fd-ink); }
-
-/* M's moves, and what folds under the post, in one row at its foot that the post always keeps. At rest the row is
-   empty space; hover, focus or a key fills it, so nothing below moves. A touch screen keeps it shown. */
-.fd-moves {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  min-height: 26px;
-  margin-left: var(--fd-indent);
-  visibility: hidden;
-}
-.fd-post[data-size="m"] { row-gap: 4px; padding-bottom: 6px; }
-.fd-moves > .pa-primary:empty { display: none; }
-.fd-moves > .pa-strip { flex: 1 1 auto; }
-.fd-moves > .fd-movesMore { flex: none; margin-left: auto; }
-.fd-post:is(:hover, :focus-within, [data-focused]) > .fd-moves,
-.fd-moves:has(.pa-strip[data-open]) { visibility: visible; }
-.fd-post:is(:hover, :focus-within, [data-focused]) > .fd-moves .pa-row,
-.fd-moves .pa-strip[data-open] .pa-row { visibility: visible; }
-@media (hover: none) { .fd-moves { visibility: visible; } }
-
-/* ── L: the lightbox. The post above the stream, wider than the column, the
-   Feed dimmed behind. Its copy in the stream stays at M, so closing it
-   (Escape, or a click outside) leaves the reader where they were. ───── */
+/* ── L: the lightbox. The post above the stream, wider than the column, the Feed dimmed behind. Its copy in the
+   stream stays at M, so closing it (Escape, or a click outside) leaves the reader where they were. The panel
+   keeps the stream's grid: plate on its rail, everything else on the body line. ── */
 
 .fd-lightbox {
   --fd-ink: var(--scout-chrome-ink-strong);
   --fd-soft: var(--scout-chrome-ink-soft);
   --fd-faint: var(--scout-chrome-ink-faint);
   --fd-wash: color-mix(in srgb, var(--hud-ink) 4%, transparent);
+  --fd-raise: color-mix(in srgb, var(--hud-ink) 2.5%, var(--hud-bg));
+  --fd-plate-size: 32px;
+  --fd-indent: calc(var(--fd-plate-size) + 12px);
+  --fd-measure: 72ch;
+  --fd-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   position: fixed;
   inset: 0;
@@ -540,66 +635,212 @@
   padding: 48px 24px;
   background: color-mix(in srgb, black 55%, transparent);
   font-family: var(--hud-font-sans);
+  animation: fd-dim 220ms var(--fd-ease);
 }
 .fd-lightboxPanel {
   box-sizing: border-box;
   width: min(1040px, 100%);
-  padding: 8px 32px 24px;
-  border: 1px solid var(--scout-line);
+  padding: 16px 40px 32px 32px;
+  border: 1px solid var(--scout-line-strong, var(--scout-line));
   border-radius: var(--radius-xl);
   background: var(--hud-bg);
   color: var(--fd-ink);
   box-shadow: 0 24px 64px color-mix(in srgb, black 40%, transparent);
+  animation: fd-rise 340ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .fd-lightboxPanel > .fd-post { grid-template-columns: minmax(0, 1fr); grid-template-areas: "body"; border-bottom: none; }
 .fd-lightboxPanel > .fd-post:focus { outline: none; }
-/* The open post is the one being read: the stream's focus strip and its indent do not show in the lightbox. */
-.fd-lightboxPanel > .fd-post[data-focused] { box-shadow: none; padding-left: 0; }
+.fd-lightboxPanel > .fd-post[data-focused] { box-shadow: none; }
+.fd-lightboxPanel .fd-plate > .hm.hm-compact { --hm-fs: 12px; --hm-serif-fs: 15px; }
+.fd-lightboxPanel .fd-title { font-size: 18px; font-weight: 600; line-height: 1.4; }
+.fd-lightboxPanel .fd-post[data-decision] .fd-title { font-size: 15px; font-weight: 500; }
+.fd-lightboxPanel .fd-caption { font-size: 14px; }
+@keyframes fd-dim { from { background: transparent; } }
+@keyframes fd-rise { from { opacity: 0; transform: translateY(8px) scale(0.995); } }
 @media (max-width: 640px) {
   .fd-lightbox { padding: 0; }
   .fd-lightboxPanel { min-height: 100%; padding: 8px 16px 24px; border: none; border-radius: 0; }
 }
 
-/* The byline's left end says what a post is by its data: a pull request's glyph, number and state, or a milestone's flag. */
-.fd-kindPr { display: inline-flex; align-items: center; gap: var(--space-2xs); color: var(--fd-soft); font-variant-numeric: tabular-nums; text-decoration: none; }
-.fd-kindPr:hover { color: var(--fd-ink); }
-.fd-kindPr:hover > span:not(.fd-kindState) { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.fd-kindPr > svg { flex: none; }
-.fd-kindPr[data-state="merged"] > svg { color: var(--accent); }
-.fd-kindState { color: var(--fd-faint); }
-.fd-kindFlag { display: inline-flex; color: var(--fd-soft); }
-.src-headKind:empty { display: none; }
+/* ── GitHub catch-up: a day's pull requests in one card ────────────── */
 
-/* At M the whole post opens it; its links and buttons keep their own click. */
-.fd-post[data-opens] { cursor: pointer; }
-.fd-post[data-opens] :is(a, button, video) { cursor: pointer; }
-.fd-post[data-opens]:hover .fd-title { color: var(--fd-ink); }
-/* The open post's keys, once, quietly. */
-.fd-keysHint { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--fd-faint); font-size: var(--text-xs); }
-.fd-keysHint kbd { min-width: 16px; padding: 0 4px; border: 1px solid var(--scout-line); border-radius: var(--radius-sm); font-family: var(--hud-font-mono); font-size: var(--text-xs); text-align: center; }
+.fd-ghCard {
+  container-type: inline-size;
+  margin: var(--space-lg) 0 var(--space-2xs);
+}
+.fd-ghHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 40px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--scout-line);
+}
+.fd-ghTitle { display: inline-flex; align-items: center; gap: 8px; color: var(--fd-ink); font-size: 11px; }
+.fd-ghTitle > svg { color: var(--fd-soft); }
+.fd-ghPills { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.fd-ghPill {
+  color: var(--fd-soft);
+  font-family: var(--hud-font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.fd-ghPill + .fd-ghPill::before { content: "· "; }
+.fd-ghTotal { display: inline-flex; gap: 6px; margin-left: auto; font-family: var(--hud-font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+.fd-ghList {
+  display: grid;
+  grid-template-columns: fit-content(26%) minmax(0, 1fr) auto;
+  column-gap: var(--space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fd-ghList[data-mixed] { grid-template-columns: fit-content(26%) minmax(0, 1fr) auto 7ch; }
+.fd-ghRow {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: var(--space-md) var(--space-xl);
+  border-top: 1px solid var(--scout-line);
+}
+.fd-ghRow:first-child { border-top: none; }
+.fd-ghRow:hover { background: var(--fd-wash); }
+.fd-ghNum {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--space-2xs);
+  color: var(--fd-soft);
+  font-family: var(--hud-font-mono);
+  font-size: var(--text-xs);
+  text-decoration: none;
+}
+.fd-ghNum > svg { flex: none; }
+.fd-ghNum > span { min-width: 0; overflow-wrap: anywhere; }
+.fd-ghNum:hover { color: var(--accent); }
+.fd-ghMain { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.fd-ghPrTitle { overflow: hidden; color: var(--fd-ink); font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.fd-ghMain:hover .fd-ghPrTitle { color: var(--accent); }
+.fd-ghMeta { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: var(--fd-faint); font-size: 12px; }
+.fd-ghMeta { flex-wrap: wrap; }
+.fd-ghMeta > span { min-width: 0; overflow-wrap: anywhere; }
+.fd-ghUpdates, .fd-ghMeta > .fd-when { font-family: var(--hud-font-mono); font-size: 11px; }
+.fd-ghRight { display: contents; }
+.fd-ghDiff { display: inline-grid; grid-template-columns: 56px auto; align-items: center; gap: 8px; }
+/* The bar's length is the row's lines against the card's largest; green and red split it. */
+.fd-ghBar { display: flex; width: 56px; height: 6px; overflow: hidden; border-radius: var(--radius-pill); background: var(--fd-wash); }
+.fd-ghBarFill { display: flex; height: 100%; min-width: 4px; overflow: hidden; border-radius: var(--radius-pill); }
+.fd-ghBarFill > span { height: 100%; }
+.fd-ghDiffNum { display: inline-flex; justify-content: flex-end; gap: 6px; min-width: 72px; font-family: var(--hud-font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+.fd-ghState {
+  justify-self: end;
+  color: var(--fd-soft);
+  font-family: var(--hud-font-mono);
+  font-size: var(--text-xs);
+}
+.fd-ghState[data-state="merged"] { color: var(--accent); }
+.fd-ghState[data-state="open"] { color: var(--green); }
+.fd-ghOpenHost { display: none; }
 
-/* ── One voice ─────────────────────────────────────────────────────────
-   A post reads like a post: one size (the app's base), two weights (the
-   name is bold), two tones (ink for what it says, faint for who and when).
-   The byline is the name and the time on one line; where it ran is on
-   hover. The summary is read whole, not clipped at two lines. Waiting on
-   you is a quiet "waiting 2h" where the time would be, never a colour. */
-.fd-plateHead { grid-template-columns: 28px minmax(0, 1fr); align-items: center; }
-.fd-plateLines, .fd-plateName { font-size: 14px; line-height: 1.35; }
-.fd-plateAgent { font-weight: 600; }
-.fd-plateAt { flex: none; padding: 0; color: var(--fd-faint); font-size: inherit; font-weight: 400; }
-.fd-post:is([data-size="m"], [data-size="l"]) .fd-title { font-size: 14px; font-weight: 400; line-height: 1.5; }
-.fd-post:is([data-size="m"], [data-size="l"]) .fd-caption { font-size: 14px; line-height: 1.5; }
-.fd-post[data-size="m"] .fd-title { -webkit-line-clamp: 4; }
-.fd-post[data-size="m"] .fd-caption,
-.fd-post[data-size="m"]:not([data-large]) .fd-caption { -webkit-line-clamp: 2; }
-.fd-post:is([data-size="m"], [data-size="l"]) :is(.fd-prLine, .fd-you) { font-size: var(--text-sm); }
-/* A post is something to press: a soft fill on hover, just past its words. */
-.fd-post[data-opens]:not([data-focused]):hover { border-radius: var(--radius-sm); background: var(--fd-wash); box-shadow: 0 0 0 var(--space-sm) var(--fd-wash); }
+@container (max-width: 560px) {
+  .fd-ghList, .fd-ghList[data-mixed] { display: block; }
+  .fd-ghRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2xs) var(--space-lg);
+  }
+  .fd-ghMain { grid-column: 1 / -1; grid-row: 2; }
+  .fd-ghPrTitle { white-space: normal; overflow-wrap: anywhere; }
+  .fd-ghDiff { display: none; }
+}
 
+/* Standalone conversation records share the Feed measure. */
+.fd-exchangeMessage {
+  padding: var(--space-xl) var(--space-2xl);
+  border-bottom: 1px solid var(--scout-line);
+}
+.fd-exchangeHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  color: var(--scout-chrome-ink-soft);
+  font-size: var(--text-sm);
+}
+.fd-exchangeBody {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-base);
+  line-height: 1.55;
+}
+
+/* ── Results: a two-up gallery of what was made ────────────────────── */
+
+.s-feed[data-lens="results"] { --post-width: 980px; }
+.fd-showcaseGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding-top: 16px; }
+.fd-showcaseGrid > .fd-post {
+  align-content: start;
+  padding: 14px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-lg);
+  background: var(--fd-raise);
+}
+.fd-showcaseGrid > .fd-post[data-size="m"] .fd-postBody > :not(.fd-plateHead) { margin-left: 0; }
+.fd-showcaseGrid > .fd-post > .fd-moves { margin-left: 0; }
+.fd-showcaseGrid > .fd-post[data-opens]:not([data-focused]):hover { box-shadow: none; border-color: var(--scout-line-strong, var(--scout-line)); }
+.fd-showcaseGrid > .fd-post[data-focused] { border-color: color-mix(in srgb, var(--accent) 50%, var(--scout-line)); box-shadow: none; }
+
+/* ── The handoff: everything this preview cannot do happens in Scout ─ */
+
+.fd-handoff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 32px;
+  padding: 12px 16px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-lg);
+  background: var(--fd-raise);
+  color: var(--fd-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.fd-handoffLink {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--scout-line));
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  font-family: var(--hud-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.fd-handoffLink:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* ── Small screens, reduced motion ─────────────────────────────────── */
+
+@media (max-width: 820px) {
+  .fd-showcaseGrid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .s-feed { --fd-plate-size: 24px; }
+  .fd-column { padding: 4px 16px 40px; }
+  .fd-diffRow { grid-template-columns: minmax(0, 1fr) 80px; }
+  .fd-diffNum { display: none; }
+  .fd-waitBadge { max-width: 100%; margin-left: 0; }
+  .fd-plateHead { align-items: start; }
+  .fd-foldMarks { display: none; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .fd-post[data-arriving] { animation: none; }
-  .fd-arrivalPill,
-  .fd-arrivalPill:hover,
-  .fd-densityBtn { transform: none; transition: none; }
+  .fd-lightbox, .fd-lightboxPanel { animation: none; }
+  .fd-mediaVisual, .fd-mediaVisual:hover { transform: none; transition: none; }
+  .fd-post, .fd-s, .fd-foldIcon, .fd-filter { transition: none; }
 }

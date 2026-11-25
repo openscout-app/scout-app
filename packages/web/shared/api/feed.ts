@@ -174,7 +174,12 @@ export type FeedAgent = { name: string; harness: string | null };
  * thread's work or conversation; a draft is an open draft pull request; a
  * local branch is an unmerged branch with no pull request.
  */
-export type FeedForYou = { reason: "attention" | "draft" | "local_branch"; label: string };
+export type FeedForYou = {
+  reason: "attention" | "draft" | "local_branch";
+  label: string;
+  /** The recorded request, when the runtime has one. */
+  detail?: string | null;
+};
 
 export type FeedPostHead = {
   /** Host-scoped slot key: <origin>:thread:<session>, <origin>:work:<work> or <origin>:post:<publication>. */

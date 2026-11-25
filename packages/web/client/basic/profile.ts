@@ -9,7 +9,7 @@ import { isSyntheticAgentId, sessionRefFromSyntheticAgentId } from "../lib/synth
 import { normalizeTimestampMs } from "../lib/time.ts";
 
 /** Compile-time npm surface selection; the ordinary web build remains full. */
-export const BASIC_WEB = import.meta.env.VITE_SCOUT_WEB_PROFILE === "basic";
+export const BASIC_WEB = import.meta.env?.VITE_SCOUT_WEB_PROFILE === "basic";
 
 /**
  * The basic build's sidebar: the full app's sidebar with basic's own rows. The

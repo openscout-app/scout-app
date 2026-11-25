@@ -18,7 +18,7 @@ export const CREW_PACK_BASE_URL = "/crew";
  * build draws everyone with the generative sprite, which needs no files; the
  * full app, which carries the pack, keeps the cast.
  */
-export const CREW_ASSETS_AVAILABLE = import.meta.env.VITE_SCOUT_WEB_PROFILE !== "basic";
+export const CREW_ASSETS_AVAILABLE = import.meta.env?.VITE_SCOUT_WEB_PROFILE !== "basic";
 
 export function crewAssetUrl(relativePath: string): string {
   return `${CREW_PACK_BASE_URL}/${relativePath.replace(/^\/+/u, "")}`;

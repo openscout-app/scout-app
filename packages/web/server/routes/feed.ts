@@ -174,7 +174,11 @@ export function attentionForFeed(items: ReadonlyArray<{ id: string; kind?: strin
     const fromId = item.id.startsWith("work_item:") ? item.id.slice("work_item:".length) : null;
     // A Ready task names its work item itself.
     const fromReady = item.ready?.workId ?? null;
-    return { id: item.id, workId: fromAction ?? fromId ?? fromReady, conversationId: item.conversationId, label: item.title };
+    return {
+      id: item.id, workId: fromAction ?? fromId ?? fromReady, conversationId: item.conversationId,
+      label: item.kind === "ready" ? "Ready" : "Waiting on you",
+      ...(item.kind === "ready" ? {} : { detail: item.title }),
+    };
   });
 }
 

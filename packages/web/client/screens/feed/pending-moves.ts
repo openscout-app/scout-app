@@ -12,7 +12,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { api } from "../../lib/api.ts";
-import type { WebWorkMoveResponse } from "../../../shared/api/web.ts";
+import type { WebWorkMoveResponse } from "../../lib/work-move.ts";
 import { moveFor } from "./post-actions.ts";
 import { recordMove } from "./feed-moves.ts";
 

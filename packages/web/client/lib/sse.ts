@@ -115,6 +115,7 @@ function ensureSubscribed(): void {
   if (!wsClient) {
     wsClient = createWSClient({
       url: resolveScoutEventsStreamUrl(),
+      lazy: { enabled: true, closeMs: 0 },
       // The socket reconnects on its own and re-sends the subscription; only
       // `onStarted` below marks the stream live again.
       onClose: () => setStreamLive(false),
@@ -175,15 +176,16 @@ export function subscribeBrokerEvents(handler: BrokerEventSubscription): () => v
  * Subscribe to broker control events over the broker tRPC WebSocket.
  * Calls `onEvent` with the parsed event whenever the broker emits one.
  */
-export function useBrokerEvents(onEvent: (event: BrokerEvent) => void) {
+export function useBrokerEvents(onEvent: (event: BrokerEvent) => void, enabled = true) {
   const cbRef = useRef(onEvent);
   cbRef.current = onEvent;
 
   useEffect(() => {
+    if (!enabled) return;
     return subscribeBrokerEvents((event) => {
       cbRef.current(event);
     });
-  }, []);
+  }, [enabled]);
 }
 
 /**
