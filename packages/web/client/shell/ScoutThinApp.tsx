@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { navigateBrowser } from "../lib/browser-location.ts";
 import { defaultScoutRail, type ScoutRail, type ScoutSkeletonVariant } from "./boot-html.ts";
-import { ScoutAppFrame, type ScoutRuntimeBadge, type ScoutSetupCallout } from "./ScoutAppFrame.tsx";
+import { ScoutAppFrame, type ScoutPageTab, type ScoutRuntimeBadge, type ScoutSetupCallout } from "./ScoutAppFrame.tsx";
+import type { ScoutThinSettingsConfig } from "./ScoutThinSettingsPanel.tsx";
 import { StandaloneRecordRouter } from "./StandaloneRecordViews.tsx";
 
 export interface ScoutThinStatusBase {
@@ -58,6 +59,9 @@ export interface ScoutThinAppProps<TStatus extends ScoutThinStatusBase = ScoutTh
   product: string;
   variant: ScoutSkeletonVariant;
   rail?: ScoutRail;
+  pages?: readonly ScoutPageTab[];
+  chrome?: "auto" | "sidebar" | "masthead";
+  settings?: ScoutThinSettingsConfig | false;
   navigate?: (href: string) => void;
   badge?: (status: TStatus | null) => ScoutRuntimeBadge;
   setupCallout?: (ctx: {
@@ -80,6 +84,9 @@ export function ScoutThinApp<TStatus extends ScoutThinStatusBase = ScoutThinStat
   product,
   variant,
   rail = defaultScoutRail(variant),
+  pages,
+  chrome,
+  settings,
   navigate = navigateBrowser,
   badge,
   setupCallout,
@@ -103,6 +110,9 @@ export function ScoutThinApp<TStatus extends ScoutThinStatusBase = ScoutThinStat
       product={product}
       variant={variant}
       rail={rail}
+      pages={pages}
+      chrome={chrome}
+      settings={settings}
       navigate={navigate}
       status={resolvedBadge}
       setupCallout={resolvedCallout}

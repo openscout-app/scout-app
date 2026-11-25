@@ -20,6 +20,20 @@ export {
 } from "./StandaloneRecordViews.tsx";
 export { ScoutNavigationBar, type ScoutNavigationBarProps } from "./ScoutNavigationBar.tsx";
 export { ScoutPageSkeleton, type ScoutSkeletonVariant } from "./ScoutPageSkeleton.tsx";
+export { ScoutThinSettingsPanel, type ScoutThinSettingsConfig } from "./ScoutThinSettingsPanel.tsx";
+export {
+  CanvasGlyph,
+  ChatsGlyph,
+  FeedGlyph,
+  FolderGlyph,
+  HomeGlyph,
+  OpsGlyph,
+  RecordGlyph,
+  SearchGlyph,
+  SessionsGlyph,
+  SettingsGlyph,
+  type NavIcon,
+} from "../components/ScoutGlyph.tsx";
 export { ScoutAppearance } from "../scout/ScoutAppearance.tsx";
 export { ScoutSurface } from "../scout/slots/ScoutSurface.tsx";
 export {
