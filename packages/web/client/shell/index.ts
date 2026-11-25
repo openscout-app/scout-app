@@ -2,6 +2,7 @@ export {
   ScoutAppFrame,
   type ScoutAppFrameProps,
   type ScoutPageTab,
+  type ScoutTopNavTab,
   type ScoutRuntimeBadge,
   type ScoutSetupCallout,
 } from "./ScoutAppFrame.tsx";

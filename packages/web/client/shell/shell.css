@@ -3,6 +3,7 @@
 @import "./thin-tailwind.css";
 @import "../app.css";
 @import "../scout/sidebar/frame.css";
+@import "../scout/sidebar/top-row-actions.css";
 @import "./skeleton.css";
 @import "./surface-primitives.css";
 
@@ -374,4 +375,77 @@
   font-family: var(--font-mono);
   font-size: var(--text-md);
   color: var(--muted);
+}
+
+/* Real Scout framed sidebar shell (FrameSheet rounded inner page card + centered search) */
+.s-thin-framed-shell {
+  --scout-thin-bg: var(--hud-bg);
+  --scout-thin-ink: var(--hud-ink);
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--scout-frame-paint, var(--hud-bg));
+  color: var(--hud-ink);
+}
+
+.s-thin-framed-shell .scout-top-row-frame {
+  z-index: 30;
+}
+
+.s-thin-framed-center {
+  position: fixed;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--scout-sheet-radius, 8px);
+  background: var(--scout-page-paint, var(--hud-bg));
+}
+
+.s-thin-framed-center > .s-thin-scroll {
+  height: 100%;
+  scrollbar-gutter: auto;
+}
+
+.s-thin-framed-center > .s-thin-scroll > .scout-surface {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.s-thin-framed-center .s-thin-content-rail[data-rail="full"] {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.s-thin-framed-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 2px;
+  background: transparent;
+  color: var(--scout-chrome-ink-faint);
+  cursor: pointer;
+}
+.s-thin-framed-search-clear:hover {
+  color: var(--scout-chrome-ink);
+}
+
+.s-thin-framed-search-kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--scout-chrome-ink-faint);
+  border: 1px solid var(--scout-line);
+  border-radius: 3px;
+  padding: 2px 4px;
+  pointer-events: none;
+}
+
+.scout-top-row-search:focus-within .s-thin-framed-search-kbd {
+  display: none;
 }
