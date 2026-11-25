@@ -187,6 +187,7 @@ export const ChatsGlyph = glyph("chats");
 export const InboxGlyph = glyph("inbox");
 export const FolderGlyph = glyph("folder");
 export const FeedGlyph = glyph("feed");
+export const CanvasGlyph = glyph("canvas");
 export const RecordGlyph = glyph("record");
 export const HostsGlyph = glyph("hosts");
 export const OpsGlyph = glyph("ops");

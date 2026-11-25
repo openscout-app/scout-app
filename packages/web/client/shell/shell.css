@@ -71,9 +71,10 @@
 .s-thin-topbar {
   height: 40px;
   flex: 0 0 40px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 420px) minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-lg);
   padding: 0 var(--space-2xl);
   border-bottom: 1px solid var(--scout-line);
   font-family: var(--font-sans);
@@ -83,12 +84,176 @@
 .s-thin-topbar-title {
   font-weight: 500;
   letter-spacing: -0.005em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.s-thin-topbar-center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.s-thin-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.s-thin-search-icon {
+  position: absolute;
+  left: 9px;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.s-thin-search-input {
+  width: 100%;
+  height: 27px;
+  padding: 0 28px 0 28px;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--scout-thin-ink, currentColor) 3%, transparent);
+  color: var(--scout-thin-ink, var(--ink));
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  outline: none;
+}
+
+.s-thin-search-input:focus {
+  border-color: var(--scout-line-strong, var(--scout-line));
+}
+
+.s-thin-search-kbd {
+  position: absolute;
+  right: 7px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--muted-foreground);
+  border: 1px solid var(--scout-line);
+  border-radius: 3px;
+  padding: 2px 5px;
+  pointer-events: none;
+}
+
+.s-thin-search-input:focus + .s-thin-search-kbd { display: none; }
+
+.s-thin-search-clear {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.s-thin-search-clear:hover { color: var(--scout-thin-ink, var(--ink)); }
 
 .s-thin-topbar-right {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-md);
+  min-width: 0;
+}
+
+/* Standard Settings page inside ScoutAppFrame */
+.s-thin-settings {
+  padding-block: var(--space-3xl);
+  display: grid;
+  gap: var(--space-2xl);
+}
+
+.s-thin-settings-head {
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--scout-line);
+}
+
+.s-thin-settings-head h1 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.s-thin-settings-head p {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+.s-thin-settings-section {
+  display: grid;
+  gap: var(--space-md);
+  padding-bottom: var(--space-2xl);
+  border-bottom: 1px solid var(--scout-line);
+}
+
+.s-thin-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.s-thin-settings-row h2 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.s-thin-settings-row p {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--muted);
+}
+
+.s-thin-settings-seg {
+  display: inline-flex;
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.s-thin-settings-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--text-md);
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.s-thin-settings-seg button + button {
+  border-left: 1px solid var(--scout-line);
+}
+
+.s-thin-settings-seg button[aria-checked="true"] {
+  background: color-mix(in srgb, var(--scout-thin-ink, currentColor) 8%, transparent);
+  color: var(--scout-thin-ink, var(--ink));
+  font-weight: 500;
+}
+
+.s-thin-settings-callout {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border: 1px solid var(--scout-line);
+  border-radius: var(--radius-md);
+}
+
+.s-thin-settings-callout p {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--muted);
 }
 
 .s-thin-status {
