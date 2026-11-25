@@ -40,6 +40,7 @@ import { ScoutThinSettingsPanel, type ScoutThinSettingsConfig } from "./ScoutThi
 
 const TOP_ROW_HEIGHT = 40;
 const HANDLE_WIDTH = 8;
+const SCOUT_THIN_THEME_STORAGE_KEY = "openscout.thin.theme";
 
 function useViewportWidth(): number {
   const [width, setWidth] = useState(() => (typeof window === "undefined" ? 1280 : window.innerWidth));
@@ -51,16 +52,17 @@ function useViewportWidth(): number {
   return width;
 }
 
-function hasSavedTemplate(): boolean {
-  if (typeof window === "undefined") return false;
+function readThinSavedTemplate(): "hudson" | "editorial" | "drafting" {
+  if (typeof window === "undefined") return "hudson";
   try {
-    const raw = window.localStorage.getItem(SCOUT_THEME_STORAGE_KEY);
-    if (!raw) return false;
+    const raw = window.localStorage.getItem(SCOUT_THIN_THEME_STORAGE_KEY);
+    if (!raw) return "hudson";
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return typeof parsed?.template === "string";
-  } catch {
-    return false;
-  }
+    if (parsed?.template === "editorial" || parsed?.template === "drafting" || parsed?.template === "hudson") {
+      return parsed.template;
+    }
+  } catch {}
+  return "hudson";
 }
 
 export interface ScoutPageTab {
@@ -581,7 +583,7 @@ function ScoutAppFrameInner({
 
 export function ScoutAppFrame(props: ScoutAppFrameProps) {
   const initialTheme = resolveScoutStartupTheme();
-  const initialTemplate = hasSavedTemplate() ? resolveScoutStartupTemplate() : "hudson";
+  const initialTemplate = readThinSavedTemplate();
   const [appearanceDetails, setAppearanceDetails] = useState<ScoutAppearanceDetails>(
     () => resolveScoutStartupAppearanceDetails(),
   );
@@ -598,7 +600,7 @@ export function ScoutAppFrame(props: ScoutAppFrameProps) {
     <ThemeProvider
       defaultTheme={initialTheme}
       defaultTemplate={initialTemplate}
-      storageKey={SCOUT_THEME_STORAGE_KEY}
+      storageKey={SCOUT_THIN_THEME_STORAGE_KEY}
     >
       <ScoutAppearance initialTheme={initialTheme} appearanceDetails={appearanceDetails}>
         <ContextMenuProvider>
