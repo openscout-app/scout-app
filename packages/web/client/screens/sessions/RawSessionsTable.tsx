@@ -27,7 +27,6 @@ import {
 } from "../../lib/time.ts";
 import { useTailEvents } from "../../lib/tail-events.ts";
 import { openContent } from "../../scout/slots/openContent.ts";
-import { useScout } from "../../scout/Provider.tsx";
 import type {
   Route,
   TailDiscoveredProcess,
@@ -271,13 +270,16 @@ function buildRows(
     });
 }
 
+const DEFAULT_SESSIONS_ROUTE: Route = { view: "sessions" };
+
 /** Composable sessions table — discovery, filtering, and keyboard nav. No secondary nav shell. */
 export function RawSessionsTable({
   navigate,
+  route = DEFAULT_SESSIONS_ROUTE,
 }: {
   navigate: (r: Route) => void;
+  route?: Route;
 }) {
-  const { route } = useScout();
   const showContextMenu = useContextMenu();
   const [initialDiscovery] = useState(() =>
     peekApiGet<TailDiscoverySnapshot>(DISCOVERY_PATH, ROUTE_CACHE_MAX_AGE_MS),

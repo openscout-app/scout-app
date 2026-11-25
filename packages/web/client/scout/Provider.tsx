@@ -38,6 +38,7 @@ import {
 } from "../lib/scoutbot.ts";
 import { applyEmbedProjectSelection } from "../screens/projects/embed-project-selection.ts";
 import { ContextMenuProvider } from "../components/ContextMenu.tsx";
+import { ScoutAppearance } from "./ScoutAppearance.tsx";
 import { FilePreviewOverlay } from "./FilePreviewOverlay.tsx";
 import { ScoutbotStateProvider } from "./scoutbot/ScoutbotStateContext.tsx";
 import { ScoutbotRealtimeVoiceProvider } from "./scoutbot/ScoutbotRealtimeVoiceContext.tsx";
@@ -654,55 +655,26 @@ export function ScoutProvider({
 
   return (
     <ScoutContext.Provider value={value}>
-      {/* Two nested scopes, and the nesting is load-bearing. The outer element
-        * hosts Hudson's and Scout's *raw* palette input (`--accent: 0.78 0.12
-        * 75`), which HudsonKit resolves into `--hud-*` colors. The inner
-        * element hosts Scout's legacy aliases (`--accent: var(--hud-accent)`).
-        * They cannot share an element: HudsonKit declares the raw triplets at
-        * [data-hudson-template][data-hudson-theme] (0,2,0) and appearance.css
-        * at [data-scout-theme-mode][data-scout-palette] (0,2,0), both of which
-        * outrank [data-scout-theme] (0,1,0) — so `--accent`/`--border`/
-        * `--muted` would compute to bare triplets and every `var(--accent)` in
-        * Scout's own CSS would be invalid (SVG strokes fall back to black,
-        * hairlines to currentColor). Raising the alias specificity is not an
-        * option either: on one element the two contracts form a var() cycle. */}
-      <div
-        data-scout-theme-mode={resolvedTheme}
-        data-scout-palette={appearanceDetails.palette}
-        data-scout-contrast={appearanceDetails.contrast}
-        data-scout-accent={appearanceDetails.accent}
-        data-scout-shell={appearanceDetails.shell}
-        data-scout-avatar-style={appearanceDetails.avatarStyle}
-        data-scout-look={appearanceDetails.look}
-        data-hudson-theme={resolvedTheme}
-        data-hudson-template={activeTemplate}
-        data-scout-host-palette={hasScoutHostPalette(nativeThemeVars) ? "" : undefined}
-        style={{
-          ...themeVars,
-        }}
-      >
-        {/* display:contents so the alias scope adds no box to the layout. */}
-        <div data-scout-theme={resolvedTheme} style={{ display: "contents" }}>
-          <ContextMenuProvider>
-            <ScoutbotStateProvider>
-              {realtimeVoiceEnabled
-                ? <ScoutbotRealtimeVoiceProvider>{children}</ScoutbotRealtimeVoiceProvider>
-                : children}
-              {!BASIC_WEB && <FilePreviewOverlay
-                path={filePreviewPath}
-                onOpenPath={openFilePreview}
-                onOpenInCode={openFileInCode}
-                onClose={closeFilePreview}
-              />}
-              {!BASIC_WEB && <ContextCaptureHost
-                request={contextCaptureRequest}
-                onClose={closeContextCapture}
-                onOpenCapture={openContextCapture}
-              />}
-            </ScoutbotStateProvider>
-          </ContextMenuProvider>
-        </div>
-      </div>
+      <ScoutAppearance initialTheme={resolvedTheme} appearanceDetails={appearanceDetails}>
+        <ContextMenuProvider>
+          <ScoutbotStateProvider>
+            {realtimeVoiceEnabled
+              ? <ScoutbotRealtimeVoiceProvider>{children}</ScoutbotRealtimeVoiceProvider>
+              : children}
+            {!BASIC_WEB && <FilePreviewOverlay
+              path={filePreviewPath}
+              onOpenPath={openFilePreview}
+              onOpenInCode={openFileInCode}
+              onClose={closeFilePreview}
+            />}
+            {!BASIC_WEB && <ContextCaptureHost
+              request={contextCaptureRequest}
+              onClose={closeContextCapture}
+              onOpenCapture={openContextCapture}
+            />}
+          </ScoutbotStateProvider>
+        </ContextMenuProvider>
+      </ScoutAppearance>
     </ScoutContext.Provider>
   );
 }

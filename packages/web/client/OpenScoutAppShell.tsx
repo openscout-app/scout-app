@@ -10,6 +10,7 @@ import { PRIMARY_AREAS, defaultRouteForArea } from "./scout/primary-areas.ts";
 import type { PrimaryAreaId } from "./scout/route-areas.ts";
 import { ScoutFeatureFlagPanel } from "./components/ScoutFeatureFlagPanel.tsx";
 import { ScoutMark } from "./components/ScoutMark.tsx";
+import { ScoutNavigationBar } from "./shell/ScoutNavigationBar.tsx";
 import { DevFlagToggle } from "./components/DevFlagToggle.tsx";
 import { isScoutDevToolsAvailable } from "./lib/use-scout-dev-flags.ts";
 import { CommandPalette, TerminalDrawer } from "@hudsonkit/overlays";
@@ -130,17 +131,6 @@ const AREA_KEY_ORDER: readonly PrimaryAreaId[] = PRIMARY_AREAS
 /** The single top-row height (study: 40px permanent horizontal). Matches --scout-top-row in styles/appearance.css. */
 const SIDEBAR_TOP_ROW_HEIGHT = 40;
 
-interface ScoutNavigationBarProps {
-  title: string;
-  center?: React.ReactNode;
-  actions?: React.ReactNode;
-  search?: {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-  };
-}
-
 /**
  * ⌘⇧B on a composition: the terminal's panel (the one typed into, else the
  * first drawing a terminal) takes the grid's full view, or gives it back.
@@ -156,116 +146,6 @@ function computeSidePanelMaxWidth(viewportWidth: number) {
   return Math.min(
     SIDE_PANEL_MAX_WIDTH_HARD_CAP,
     Math.max(SIDE_PANEL_MAX_WIDTH_FLOOR, Math.floor(viewportWidth * SIDE_PANEL_MAX_WIDTH_VIEWPORT_RATIO)),
-  );
-}
-
-function ScoutNavigationBar({ title, center, actions, search }: ScoutNavigationBarProps) {
-  const { dragRegionProps, onInteractiveMouseDown } = usePlatform();
-  const { navTotalHeight } = usePlatformLayout();
-  const isFiltered = Boolean(search?.value);
-  const barRef = useRef<HTMLDivElement>(null);
-  const leftRef = useRef<HTMLDivElement>(null);
-  const rightRef = useRef<HTMLDivElement>(null);
-  const centerRef = useRef<HTMLDivElement>(null);
-
-  // The center strip shifts itself to stay centered over the content area
-  // (see .scout-nav-tabs transform). Publish the real widths of the bar's
-  // left/right groups and the strip so the CSS clamp can keep the strip from
-  // sliding under either absolutely-positioned side group.
-  useEffect(() => {
-    const bar = barRef.current;
-    if (!bar) return;
-    const update = () => {
-      const leftW = (leftRef.current?.offsetWidth ?? 0) + 16;
-      const rightW = (rightRef.current?.offsetWidth ?? 0) + 16;
-      const stripW = centerRef.current?.firstElementChild?.clientWidth ?? 0;
-      bar.style.setProperty("--scout-nav-left-w", `${leftW}px`);
-      bar.style.setProperty("--scout-nav-right-w", `${rightW}px`);
-      bar.style.setProperty("--scout-nav-strip-w", `${stripW}px`);
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    const strip = centerRef.current?.firstElementChild;
-    for (const el of [leftRef.current, rightRef.current, strip]) {
-      if (el) observer.observe(el);
-    }
-    window.addEventListener("resize", update);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", update);
-    };
-  }, []);
-
-  return (
-    <div
-      ref={barRef}
-      data-frame-panel="navigation"
-      className="fixed top-0 left-0 right-0 z-50 pointer-events-auto"
-      {...dragRegionProps}
-    >
-      <div
-        className="bg-background/95 border-b shadow-[var(--hud-shadow-nav)] flex items-end px-4"
-        style={{ height: navTotalHeight, borderColor: "var(--hud-chrome-border, oklch(var(--border) / 0.8))" }}
-      >
-        <div
-          ref={leftRef}
-          className="absolute left-4 bottom-0 h-12 z-10 flex items-center gap-2.5 select-none"
-          onMouseDown={onInteractiveMouseDown}
-        >
-          <div
-            aria-label={title}
-            className="flex items-center gap-2 rounded-sm px-0.5 -mx-0.5 leading-none text-foreground/90"
-          >
-            {/* Inherits the chrome's own ink instead of a baked cream, and sized
-                a step up from the 16px nav icons — the brand should be the
-                largest mark in the bar, not the smallest. The glow is dropped
-                with the hardcoded colour: a white bloom is a dark-theme effect,
-                and on paper it only fogged the mark it was meant to lift. */}
-            <ScoutMark className="h-[18px] w-[18px] text-[var(--scout-chrome-ink-strong,currentColor)]" />
-            <span className="font-mono text-sm font-medium tracking-[0.06em] leading-none">
-              {title}
-            </span>
-          </div>
-        </div>
-
-        {center && (
-          <div ref={centerRef} className="flex-1 flex justify-center h-12 items-center" onMouseDown={onInteractiveMouseDown}>
-            {center}
-          </div>
-        )}
-
-        <div ref={rightRef} className="absolute right-4 bottom-0 h-12 z-10 flex items-center gap-3" onMouseDown={onInteractiveMouseDown}>
-          {actions}
-
-          {search && (
-            <div data-field-shell className="hidden sm:block relative w-[220px] max-w-[34vw] bg-card border border-input rounded px-2.5 shadow-[inset_0_1px_0_oklch(var(--foreground)/0.02)] hover:border-[var(--field-focus)] focus-within:border-[var(--field-focus)] focus-within:bg-card transition-colors duration-200">
-              <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                value={search.value}
-                onChange={(event) => search.onChange(event.target.value)}
-                placeholder={search.placeholder ?? "Search"}
-                className={`
-                  w-full h-7 pl-5 pr-6 bg-transparent text-sm font-mono font-normal tracking-[0.02em]
-                  placeholder:text-muted-foreground/80 placeholder:font-light text-foreground
-                  focus:outline-none transition-all duration-200
-                  ${isFiltered ? "text-accent" : ""}
-                `}
-              />
-              {isFiltered && (
-                <button
-                  type="button"
-                  onClick={() => search.onChange("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none rounded-sm"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 
