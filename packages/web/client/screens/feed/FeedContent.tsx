@@ -34,6 +34,7 @@ import { feedCommand } from "./post-actions.ts";
 import { clock, G, Glyph, isNotModified, type Navigate } from "./post-parts.tsx";
 import { FeedItem, type ItemHandle, type Register } from "./FeedItem.tsx";
 import { dismissTarget, grow, type PostSize } from "./post-size.ts";
+import { ScoutPageSkeleton } from "../../shell/ScoutPageSkeleton.tsx";
 
 /* Work finishing is a fleet event; the live net catches pull requests merging on GitHub. */
 /* A stream left open beside another app keeps taking new posts: it refreshes while visible, focused or not. */
@@ -491,7 +492,7 @@ export function FeedStream({ navigate, sources, exclude, embedded = false, expan
         ) : null}
 
         {!loaded && failed ? <p className="fd-empty">Couldn't load the feed. Retrying.</p> : null}
-        {!loaded && !failed ? <div className="fd-loading" role="status" aria-label="Loading">{[0, 1, 2].map((i) => <span key={i} aria-hidden />)}</div> : null}
+        {!loaded && !failed ? <ScoutPageSkeleton variant="feed" label="Loading Feed" /> : null}
         {loaded && days.length === 0 ? <p className="fd-empty">Nothing finished yet.</p> : null}
 
         {days.map((key, dayIndex) => {

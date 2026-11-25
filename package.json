@@ -4,6 +4,11 @@
   "license": "LicenseRef-PolyForm-Shield-1.0.0",
   "type": "module",
   "exports": {
+    "./shell": "./packages/web/client/shell/index.ts",
+    "./shell.css": "./packages/web/client/shell/shell.css",
+    "./shell/boot-html": "./packages/web/client/shell/boot-html.ts",
+    "./primitives": "./packages/web/client/primitives/index.ts",
+    "./vite": "./packages/web/vite-thin-app.ts",
     "./feed": "./packages/web/client/screens/feed/index.ts",
     "./board": "./packages/web/client/screens/work/content.tsx",
     "./chat": "./packages/web/client/screens/chat/index.ts",

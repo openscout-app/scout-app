@@ -1,9 +1,9 @@
 {
   "note": "Client CSS that predates the token gate (scripts/css-tokens.mjs). Counts per file of literal line colors, literal radii and off-scale spacing. Never raise a number by hand; the gate lowers them on its own when a file is migrated.",
   "totals": {
-    "line": 1225,
-    "radius": 918,
-    "spacing": 1540
+    "line": 1211,
+    "radius": 897,
+    "spacing": 1481
   },
   "files": {
     "app.css": {
@@ -146,26 +146,6 @@
       "radius": 6,
       "spacing": 10
     },
-    "hosted-chat/hosted-chat-admin.css": {
-      "line": 1,
-      "radius": 0,
-      "spacing": 0
-    },
-    "hosted-chat/hosted-chat-brand.css": {
-      "line": 4,
-      "radius": 2,
-      "spacing": 11
-    },
-    "hosted-chat/hosted-chat-landing.css": {
-      "line": 5,
-      "radius": 7,
-      "spacing": 8
-    },
-    "hosted-chat/hosted-chat-room.css": {
-      "line": 2,
-      "radius": 7,
-      "spacing": 8
-    },
     "lib/agent-autocomplete.css": {
       "line": 4,
       "radius": 0,
@@ -230,11 +210,6 @@
       "line": 14,
       "radius": 15,
       "spacing": 3
-    },
-    "scoped-access/access.css": {
-      "line": 2,
-      "radius": 5,
-      "spacing": 32
     },
     "scout/context-capture.css": {
       "line": 3,
