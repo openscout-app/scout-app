@@ -1,8 +1,8 @@
 # Sprout authored action proof v1
 
 Original reference: `public/crew/sprout-bust.webp`. That approved art is untouched.
-The new atlas was generated with the built-in image tool, then corrected through
-that tool for stride/passing frames and actual background removal. No CSS body
+The built-in image tool created the atlas and supplied corrections to the
+stride and passing frames and background removal. No CSS body
 rotation or translation is used to simulate running in the renderer.
 
 Rows: run, jump, land, idle. Four frames each. Actual leg/arm poses, airborne tuck,

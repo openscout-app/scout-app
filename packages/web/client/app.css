@@ -137,7 +137,7 @@
 /* Hudson chrome is imported from the local SDK and can still emit hard
  * frame seams via Tailwind utilities. Keep those shell borders quieter than
  * Scout's content cards. */
-[data-scout-theme] [data-frame-panel="navigation"] > div {
+[data-scout-theme] [data-frame-panel="navigation"] > div:not(.s-thin-masthead) {
   border-bottom-color: transparent !important;
 }
 

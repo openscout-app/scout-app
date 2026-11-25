@@ -44,7 +44,7 @@ function ConversationExchangeView({
   }, [conversationId, workId]);
 
   return (
-    <div className="s-standalone-record">
+    <div className="s-standalone-record s-surface-rail" data-rail="reading">
       <div className="s-standalone-record-head">
         <button type="button" className="s-standalone-back" onClick={onBack}>
           ← Feed
@@ -56,11 +56,11 @@ function ConversationExchangeView({
       {error ? (
         <p role="alert">{error}</p>
       ) : !messages ? (
-        <ScoutPageSkeleton variant="feed" label="Loading messages" />
+        <ScoutPageSkeleton variant="feed" inline label="Loading messages" />
       ) : messages.length === 0 ? (
         <p>No messages recorded in this conversation.</p>
       ) : (
-        <div className="fd-column">
+        <div className="fd-exchangeList">
           {messages.map((msg) => (
             <article key={msg.id} className="fd-exchangeMessage">
               <header className="fd-exchangeHead">
@@ -109,7 +109,7 @@ function FeedSessionView({
   }, [sessionId]);
 
   return (
-    <div className="s-standalone-record">
+    <div className="s-standalone-record s-surface-rail" data-rail="reading">
       <div className="s-standalone-record-head">
         <button type="button" className="s-standalone-back" onClick={onBack}>
           ← Feed
@@ -119,7 +119,7 @@ function FeedSessionView({
       {error ? (
         <p role="alert">{error}</p>
       ) : !data ? (
-        <ScoutPageSkeleton variant="feed" label="Loading session" />
+        <ScoutPageSkeleton variant="feed" inline label="Loading session" />
       ) : (
         <ObservedThread data={data} working={false} timestamped />
       )}
@@ -157,10 +157,13 @@ export function FeedStandaloneSurface({
   }
 
   return (
-    <FeedStream
-      sources={null}
-      expand={params.get("post") ?? undefined}
-      navigate={(route) => navigate(routePath(route))}
-    />
+    <div className="s-feed-standalone s-surface-rail" data-rail="reading">
+      <FeedStream
+        layout="hosted"
+        sources={null}
+        expand={params.get("post") ?? undefined}
+        navigate={(route) => navigate(routePath(route))}
+      />
+    </div>
   );
 }

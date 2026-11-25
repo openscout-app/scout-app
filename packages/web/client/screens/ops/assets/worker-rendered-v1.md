@@ -1,6 +1,6 @@
 # Rendered worker prototype
 
-Generated with the built-in image-generation tool. Transparent PNG; single static pose animated by the existing activity-driven character wrapper. One actor uses it by default; Layers → Rendered prototype switches back to the existing sprite.
+The built-in image tool created this sprite. Transparent PNG; single static pose animated by the existing activity-driven character wrapper. One actor uses it by default; Layers → Rendered prototype switches back to the existing sprite.
 
 ## Generation prompt
 

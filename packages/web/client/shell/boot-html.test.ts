@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   BOOT_SHELL_CRITICAL_CSS,
+  defaultScoutRail,
   renderBootShellHtml,
   renderSkeletonMarkup,
   type ScoutSkeletonVariant,
@@ -22,6 +23,17 @@ describe("boot-html", () => {
       expect(markup).toContain("role=\"status\"");
       expect(markup).toContain("sb-skel");
     }
+  });
+
+  test("the boot shell and hydrated markup use the same default and explicit rails", () => {
+    expect(variants.map(defaultScoutRail)).toEqual(["reading", "wide", "reading", "wide", "full", "wide"]);
+    for (const variant of variants) {
+      const markup = renderSkeletonMarkup(variant);
+      expect(markup).toContain(`data-rail="${defaultScoutRail(variant)}"`);
+      expect(renderBootShellHtml({ product: "Scout", variant })).toContain(markup);
+    }
+    expect(renderBootShellHtml({ product: "Feed", variant: "feed", rail: "wide" }))
+      .toContain(renderSkeletonMarkup("feed", "wide"));
   });
 
   test("renders full standalone boot shell HTML with escaped product title and status", () => {

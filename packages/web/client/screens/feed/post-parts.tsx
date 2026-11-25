@@ -355,12 +355,11 @@ export function PlateHead({ post }: { post: FeedPostHead }) {
           {post.reviewed ? <span className="fd-plateYou">You <span className="fd-faint">with</span></span> : null}
           <span className="fd-plateAgent">{post.agent.name}</span>
           {post.others ? <span className="fd-faint" title={`and ${post.others} more ${post.others === 1 ? "agent" : "agents"}`}>+{post.others}</span> : null}
-          {where ? <span className="fd-plateContext" title={where}>{where}</span> : null}
+          {where ? <span className="fd-plateContext">{where}</span> : null}
           {milestone ? <span className="fd-kindFlag" title="Milestone"><Glyph d={G.flag} /></span> : null}
           {live ? <LiveDot /> : null}
           {waiting ? (
             <span className="fd-waitBadge" data-reason={post.forYou?.reason}>
-              <span className="fd-waitDot" aria-hidden="true" />
               <span>{reason}</span>
               <span className="fd-waitAge">· {timeAgo(post.at)}</span>
             </span>

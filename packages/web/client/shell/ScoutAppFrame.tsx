@@ -1,7 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { ThemeProvider } from "hudsonkit/theme";
 import { Frame } from "@hudsonkit/chrome";
-import { usePlatformLayout } from "@hudsonkit";
+import { ScoutActionButton } from "../primitives/ScoutActionButton.tsx";
+import { defaultScoutRail, SCOUT_MASTHEAD_HEIGHT, type ScoutRail } from "./boot-html.ts";
 import { ContextMenuProvider } from "../components/ContextMenu.tsx";
 import type { NavIcon } from "../components/ScoutGlyph.tsx";
 import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarProvider } from "../components/ui/sidebar.tsx";
@@ -56,6 +57,7 @@ export interface ScoutAppFrameProps {
   };
   /** Optional skeleton variant shown automatically while `loading` is true. */
   variant?: ScoutSkeletonVariant;
+  rail?: ScoutRail;
   loading?: boolean;
   children: ReactNode;
 }
@@ -70,20 +72,20 @@ function StatusPill({ status }: { status: ScoutRuntimeBadge }) {
   );
 }
 
-function SetupBanner({ callout }: { callout: ScoutSetupCallout }) {
+function SetupBanner({ callout, rail }: { callout: ScoutSetupCallout; rail: ScoutRail }) {
   return (
     <aside className="s-thin-setup" aria-label={callout.title}>
-      <div className="s-thin-setup-copy">
-        <strong>{callout.title}</strong>
-        <span>{callout.description}</span>
-      </div>
-      <div className="s-thin-setup-actions">
-        <code className="s-thin-setup-cmd">{callout.command}</code>
-        {callout.onAction ? (
-          <button type="button" className="s-thin-setup-btn" onClick={callout.onAction}>
-            {callout.actionLabel ?? "Run setup"}
-          </button>
-        ) : null}
+      <div className="s-thin-setup-inner s-surface-rail" data-rail={rail}>
+        <div className="s-thin-setup-copy">
+          <strong>{callout.title}</strong>
+          <span>{callout.description}</span>
+        </div>
+        <div className="s-thin-setup-actions">
+          <code className="s-thin-setup-cmd">{callout.command}</code>
+          {callout.onAction ? (
+            <ScoutActionButton onClick={callout.onAction}>{callout.actionLabel ?? "Start runtime"}</ScoutActionButton>
+          ) : null}
+        </div>
       </div>
     </aside>
   );
@@ -99,11 +101,11 @@ function ScoutAppFrameInner({
   headerActions,
   search,
   variant,
+  rail = defaultScoutRail(variant),
   loading = false,
   children,
 }: ScoutAppFrameProps) {
   const { pathname } = useBrowserLocation();
-  const { navTotalHeight } = usePlatformLayout();
   const resolvedPage = pages.find((page) =>
     activePageId
       ? page.id === activePageId
@@ -126,7 +128,13 @@ function ScoutAppFrameInner({
     document.documentElement.setAttribute("data-scout-no-status-bar", "");
   }, []);
 
-  const body = loading && variant ? <ScoutPageSkeleton variant={variant} label={`Loading ${title}`} /> : children;
+  const body = (
+    <ScoutSurface>
+      <div className="s-thin-content-rail s-surface-rail" data-rail={rail}>
+        {loading && variant ? <ScoutPageSkeleton variant={variant} inline label={`Loading ${title}`} /> : children}
+      </div>
+    </ScoutSurface>
+  );
 
   const actions = (
     <>
@@ -138,15 +146,21 @@ function ScoutAppFrameInner({
   if (!multiPage) {
     return (
       <Frame mode="panel">
-        <ScoutNavigationBar
-          title={title}
-          onHome={() => navigate(pages[0]?.route ?? "/")}
-          actions={actions}
-          search={search}
-        />
-        <div className="s-thin-single-shell" style={{ paddingTop: navTotalHeight }}>
-          {setupCallout ? <SetupBanner callout={setupCallout} /> : null}
-          <ScoutSurface>{body}</ScoutSurface>
+        <div className="s-thin-editorial">
+          <ScoutNavigationBar
+            title={title}
+            editorial
+            height={SCOUT_MASTHEAD_HEIGHT}
+            onHome={() => navigate(pages[0]?.route ?? "/")}
+            actions={actions}
+            search={search}
+          />
+          <div className="s-thin-single-shell" style={{ paddingTop: SCOUT_MASTHEAD_HEIGHT }}>
+            <div className="s-thin-scroll">
+              {setupCallout ? <SetupBanner callout={setupCallout} rail={rail} /> : null}
+              {body}
+            </div>
+          </div>
         </div>
       </Frame>
     );
@@ -155,7 +169,7 @@ function ScoutAppFrameInner({
   return (
     <SidebarProvider defaultOpen>
       <Frame mode="panel">
-        <div className="s-thin-multi-shell">
+        <div className="s-thin-multi-shell s-thin-editorial">
           <ScoutSidebarFrame
             brandLabel={product}
             homeLabel={pages[0]?.label ?? product}
@@ -183,9 +197,9 @@ function ScoutAppFrameInner({
               <span className="s-thin-topbar-title">{resolvedPage?.label ?? title}</span>
               <div className="s-thin-topbar-right">{actions}</div>
             </header>
-            {setupCallout ? <SetupBanner callout={setupCallout} /> : null}
-            <div className="s-thin-multi-content">
-              <ScoutSurface>{body}</ScoutSurface>
+            <div className="s-thin-scroll">
+              {setupCallout ? <SetupBanner callout={setupCallout} rail={rail} /> : null}
+              {body}
             </div>
           </div>
         </div>

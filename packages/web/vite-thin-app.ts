@@ -9,6 +9,7 @@ import {
   BOOT_SHELL_CRITICAL_CSS,
   renderBootShellHtml,
   type ScoutSkeletonVariant,
+  type ScoutRail,
 } from "./client/shell/boot-html.ts";
 
 const webDir = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,8 @@ export interface ScoutThinViteOptions {
   product: string;
   /** Initial HTML skeleton painted inside `<div id="root">` before JS runs. */
   variant: ScoutSkeletonVariant;
+  /** Match the frame rail when overriding the variant default. */
+  rail?: ScoutRail;
   /** Default dev server port. */
   port?: number;
   /** Optional Node HTTP middleware for `/api/*` during `vite` dev. */
@@ -32,11 +35,11 @@ export interface ScoutThinViteOptions {
   outDir?: string;
 }
 
-function scoutBootSkeletonPlugin(product: string, variant: ScoutSkeletonVariant): Plugin {
+function scoutBootSkeletonPlugin(product: string, variant: ScoutSkeletonVariant, rail?: ScoutRail): Plugin {
   return {
     name: "scout-boot-skeleton-html",
     transformIndexHtml(html) {
-      const bootHtml = renderBootShellHtml({ product, variant });
+      const bootHtml = renderBootShellHtml({ product, variant, rail });
       const withStyle = html.includes("</head>")
         ? html.replace("</head>", `<style id="scout-boot-css">${BOOT_SHELL_CRITICAL_CSS}</style>\n</head>`)
         : html;
@@ -72,7 +75,7 @@ export function defineScoutThinViteConfig(options: ScoutThinViteOptions): UserCo
   const plugins: Plugin[] = [
     react() as unknown as Plugin,
     tailwindcss() as unknown as Plugin,
-    scoutBootSkeletonPlugin(options.product, options.variant),
+    scoutBootSkeletonPlugin(options.product, options.variant, options.rail),
   ];
 
   if (options.apiHandler) {

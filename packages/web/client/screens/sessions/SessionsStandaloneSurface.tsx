@@ -90,7 +90,7 @@ function StandaloneSessionDetail({
   const working = lookup ? observedSessionWorking({ agentTurn: null, data: lookup.data }) : false;
 
   return (
-    <div className="s-standalone-record">
+    <div className="s-standalone-record s-surface-rail" data-rail="wide">
       <div className="s-standalone-record-head">
         <button type="button" className="s-standalone-back" onClick={onBack}>
           ← Sessions
@@ -110,7 +110,7 @@ function StandaloneSessionDetail({
       </div>
 
       {loading ? (
-        <ScoutPageSkeleton variant="feed" label="Loading session turns" />
+        <ScoutPageSkeleton variant="sessions" inline label="Loading session turns" />
       ) : error ? (
         <p role="alert">{error}</p>
       ) : lookup ? (

@@ -7,6 +7,8 @@
  * any JavaScript bundle finishes loading or any CLI/runtime read completes.
  */
 
+import { scoutHexCore, scoutHexRing } from "../components/scout-mark-paths.ts";
+
 export type ScoutSkeletonVariant =
   | "feed"
   | "sessions"
@@ -14,6 +16,21 @@ export type ScoutSkeletonVariant =
   | "board"
   | "chat"
   | "canvas";
+
+export type ScoutRail = "reading" | "wide" | "full";
+
+export function defaultScoutRail(variant?: ScoutSkeletonVariant): ScoutRail {
+  switch (variant) {
+    case "feed":
+    case "search": return "reading";
+    case "sessions":
+    case "board":
+    case "canvas": return "wide";
+    default: return "full";
+  }
+}
+
+export const SCOUT_MASTHEAD_HEIGHT = 40;
 
 function escapeHtml(value: string): string {
   return value
@@ -23,7 +40,7 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-const SCOUT_MARK_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2.5 20.5 7.4 20.5 16.6 12 21.5 3.5 16.6 3.5 7.4"/><circle cx="12" cy="12" r="2.6"/></svg>`;
+const SCOUT_MARK_SVG = `<svg viewBox="0 0 18 18" width="18" height="18" fill="none" aria-hidden="true"><path d="${scoutHexRing}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="${scoutHexCore}" fill="currentColor"/></svg>`;
 
 export const BOOT_SHELL_CRITICAL_CSS = `
 :root {
@@ -35,43 +52,60 @@ export const BOOT_SHELL_CRITICAL_CSS = `
   --sb-muted: rgba(236, 238, 242, 0.48);
   --sb-bar: rgba(236, 238, 242, 0.07);
   --sb-bar-strong: rgba(236, 238, 242, 0.12);
-  --sb-accent: #56b6c2;
+  --sb-accent: #e8a33d;
+  --sb-rail-reading: 760px;
+  --sb-rail-wide: 1180px;
+  --sb-rail-gutter: 24px;
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --sb-bg: #f6f6f4;
+    --sb-bg: #fbfbfa;
     --sb-surface: #ffffff;
     --sb-border: rgba(16, 18, 24, 0.1);
-    --sb-ink: #15171c;
+    --sb-ink: #18191c;
     --sb-muted: rgba(21, 23, 28, 0.5);
     --sb-bar: rgba(21, 23, 28, 0.06);
     --sb-bar-strong: rgba(21, 23, 28, 0.11);
-    --sb-accent: #0f766e;
+    --sb-accent: #b86e00;
   }
 }
-html, body { margin: 0; padding: 0; background: var(--sb-bg); color: var(--sb-ink); font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter", sans-serif; }
+@media (max-width: 560px) {
+  :root { --sb-rail-gutter: 16px; }
+}
+body:has(.sb-boot) { margin: 0; padding: 0; background: var(--sb-bg); }
 @keyframes sbPulse { 0%, 100% { opacity: 0.92; } 50% { opacity: 0.46; } }
-.sb-boot { min-height: 100vh; display: flex; flex-direction: column; background: var(--sb-bg); }
-.sb-boot-nav { height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--sb-border); background: var(--sb-bg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; letter-spacing: 0.05em; }
-.sb-boot-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
-.sb-boot-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--sb-muted); padding: 3px 8px; border: 1px solid var(--sb-border); border-radius: 4px; }
+.sb-boot { height: 100vh; display: flex; flex-direction: column; background: var(--sb-bg); color: var(--sb-ink); font-family: system-ui, sans-serif; }
+.sb-boot main { flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-gutter: stable both-edges; }
+.sb-boot-nav { box-sizing: border-box; flex: none; height: ${SCOUT_MASTHEAD_HEIGHT}px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--sb-border); background: var(--sb-bg); }
+.sb-boot-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; line-height: 1; letter-spacing: -0.005em; }
+.sb-boot-pill { box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; height: 24px; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--sb-muted); padding: 0 8px; border: 1px solid var(--sb-border); border-radius: 4px; }
 .sb-boot-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--sb-accent); animation: sbPulse 1.5s ease-in-out infinite; }
-.sb-skel { width: 100%; max-width: 960px; margin: 0 auto; padding: 24px 20px; box-sizing: border-box; animation: sbPulse 1.6s ease-in-out infinite; }
-.sb-skel--wide { max-width: 1180px; }
+.sb-boot .sb-skel { --sb-rail: var(--sb-rail-reading); width: 100%; max-width: calc(var(--sb-rail) + 2 * var(--sb-rail-gutter)); margin-inline: auto; padding: 20px var(--sb-rail-gutter); box-sizing: border-box; animation: sbPulse 1.6s ease-in-out infinite; }
+.sb-boot .sb-skel[data-rail="wide"] { --sb-rail: var(--sb-rail-wide); }
+.sb-boot .sb-skel[data-rail="full"] { max-width: none; padding-inline: 0; }
 .sb-skel-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--sb-border); }
 .sb-skel-chip { height: 24px; border-radius: 4px; background: var(--sb-bar); border: 1px solid var(--sb-border); }
 .sb-skel-card { border: 1px solid var(--sb-border); background: var(--sb-surface); border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; }
-.sb-skel-row { display: grid; grid-template-columns: 76px 140px 160px 76px 72px 1fr; gap: 12px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--sb-border); }
+.sb-skel-row { display: grid; grid-template-columns: 76px 140px minmax(0, 1fr) 76px 72px minmax(0, 1fr); gap: 12px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--sb-border); }
 .sb-skel-line { height: 11px; border-radius: 3px; background: var(--sb-bar); }
 .sb-skel-line--strong { height: 13px; background: var(--sb-bar-strong); }
 .sb-skel-cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .sb-skel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.sb-skel-row > *, .sb-skel-cols .sb-skel-line, .sb-skel-grid .sb-skel-line { max-width: 100%; }
+@media (max-width: 560px) {
+  .sb-skel-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sb-skel-cols, .sb-skel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-boot-dot, .sb-skel, .s-page-skeleton .sb-skel, .sb-boot .sb-skel { animation: none; }
+}
 `;
 
-export function renderSkeletonMarkup(variant: ScoutSkeletonVariant): string {
+export function renderSkeletonMarkup(variant: ScoutSkeletonVariant, rail = defaultScoutRail(variant)): string {
+  const wrapper = `class="sb-skel s-surface-rail" data-rail="${rail}" role="status"`;
   switch (variant) {
     case "feed":
-      return `<div class="sb-skel" role="status" aria-label="Loading Feed">
+      return `<div ${wrapper} aria-label="Loading Feed">
         <div class="sb-skel-toolbar">
           <div class="sb-skel-line sb-skel-line--strong" style="width:64px"></div>
           <div style="flex:1"></div>
@@ -90,7 +124,7 @@ export function renderSkeletonMarkup(variant: ScoutSkeletonVariant): string {
       </div>`;
 
     case "sessions":
-      return `<div class="sb-skel sb-skel--wide" role="status" aria-label="Loading Sessions">
+      return `<div ${wrapper} aria-label="Loading Sessions">
         <div class="sb-skel-toolbar">
           <div class="sb-skel-chip" style="width:190px"></div>
           <div class="sb-skel-chip" style="width:48px"></div>
@@ -111,7 +145,7 @@ export function renderSkeletonMarkup(variant: ScoutSkeletonVariant): string {
       </div>`;
 
     case "search":
-      return `<div class="sb-skel" role="status" aria-label="Loading Search">
+      return `<div ${wrapper} aria-label="Loading Search">
         <div class="sb-skel-toolbar">
           <div class="sb-skel-chip" style="flex:1;height:34px"></div>
           <div class="sb-skel-chip" style="width:78px;height:34px"></div>
@@ -124,7 +158,7 @@ export function renderSkeletonMarkup(variant: ScoutSkeletonVariant): string {
       </div>`;
 
     case "board":
-      return `<div class="sb-skel sb-skel--wide" role="status" aria-label="Loading Board">
+      return `<div ${wrapper} aria-label="Loading Board">
         <div class="sb-skel-cols">
           ${[0, 1, 2, 3].map(() => `<div>
             <div class="sb-skel-line sb-skel-line--strong" style="width:80px;margin-bottom:12px"></div>
@@ -135,7 +169,7 @@ export function renderSkeletonMarkup(variant: ScoutSkeletonVariant): string {
       </div>`;
 
     case "chat":
-      return `<div class="sb-skel sb-skel--wide" role="status" aria-label="Loading Chat" style="display:grid;grid-template-columns:220px 1fr;gap:16px">
+      return `<div ${wrapper} aria-label="Loading Chat" style="display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:16px">
         <div class="sb-skel-card" style="height:360px">
           <div class="sb-skel-line sb-skel-line--strong" style="width:90px;margin-bottom:14px"></div>
           ${[0, 1, 2, 3].map(() => `<div class="sb-skel-line" style="width:85%;margin-bottom:12px"></div>`).join("")}
@@ -151,7 +185,7 @@ export function renderSkeletonMarkup(variant: ScoutSkeletonVariant): string {
       </div>`;
 
     case "canvas":
-      return `<div class="sb-skel sb-skel--wide" role="status" aria-label="Loading Studio">
+      return `<div ${wrapper} aria-label="Loading Studio">
         <div class="sb-skel-grid">
           ${[0, 1, 2].map(() => `<div class="sb-skel-card">
             <div class="sb-skel-chip" style="height:150px;width:100%;margin-bottom:10px"></div>
@@ -167,14 +201,15 @@ export function renderBootShellHtml(options: {
   product: string;
   variant: ScoutSkeletonVariant;
   statusLabel?: string;
+  rail?: ScoutRail;
 }): string {
-  const title = `Scout ${options.product}`;
+  const title = options.product === "Scout" ? "Scout" : `Scout ${options.product}`;
   const status = options.statusLabel ?? "Reading local Scout state";
   return `<div class="sb-boot" data-scout-boot="${escapeHtml(options.variant)}">
     <header class="sb-boot-nav">
       <span class="sb-boot-brand">${SCOUT_MARK_SVG}<span>${escapeHtml(title)}</span></span>
       <span class="sb-boot-pill"><span class="sb-boot-dot"></span><span>${escapeHtml(status)}</span></span>
     </header>
-    <main>${renderSkeletonMarkup(options.variant)}</main>
+    <main>${renderSkeletonMarkup(options.variant, options.rail)}</main>
   </div>`;
 }
