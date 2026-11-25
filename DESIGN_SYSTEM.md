@@ -5,10 +5,11 @@ Use these building blocks instead of setting widths and creating controls per ap
 
 ## Mount a surface
 
-1. Import `scout-app/shell.css` and mount the app in `ScoutAppFrame`.
-2. Set the product noun, pages, and skeleton variant. Match the product and
-   variant in `defineScoutThinViteConfig`.
-3. Let the frame own horizontal padding and scrolling. Set `layout="hosted"`
+1. Import `scout-app/shell.css` and mount the app in `ScoutThinApp` (or `ScoutAppFrame` when providing custom navigation tabs).
+2. Set the product noun and skeleton variant (`product`, `variant`, optional `rail`). Match them in `defineScoutThinViteConfig`.
+3. `ScoutThinApp` polls `/api/status`, posts `/api/setup`, and routes `/sessions/:id` and `/c/:id` to the full-fidelity `StandaloneSessionDetail` and `StandaloneConversationExchange` views automatically.
+4. Pass `serverEntry` in `defineScoutThinViteConfig` to compile the app's `scout-app/thin-server` entry to `dist/thin-server.mjs` alongside `dist/index.html`, giving every `npx` app shared loopback security, port-probing, tab reuse, `setup`/`status` CLI commands, and local transcript + runtime record resolution.
+5. Let the frame own horizontal padding and scrolling. Set `layout="hosted"`
    on a Feed stream mounted in the frame. This does not set `embedded`, which
    independently controls the undo toast and read-only handoff.
 

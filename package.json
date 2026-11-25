@@ -8,6 +8,7 @@
     "./shell.css": "./packages/web/client/shell/shell.css",
     "./shell/boot-html": "./packages/web/client/shell/boot-html.ts",
     "./primitives": "./packages/web/client/primitives/index.ts",
+    "./thin-server": "./packages/web/thin-server/index.ts",
     "./vite": "./packages/web/vite-thin-app.ts",
     "./feed": "./packages/web/client/screens/feed/index.ts",
     "./board": "./packages/web/client/screens/work/content.tsx",
