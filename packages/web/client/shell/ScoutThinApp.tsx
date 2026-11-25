@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { navigateBrowser } from "../lib/browser-location.ts";
 import { defaultScoutRail, type ScoutRail, type ScoutSkeletonVariant } from "./boot-html.ts";
-import { ScoutAppFrame, type ScoutPageTab, type ScoutRuntimeBadge, type ScoutSetupCallout } from "./ScoutAppFrame.tsx";
+import {
+  ScoutAppFrame,
+  type ScoutPageTab,
+  type ScoutRuntimeBadge,
+  type ScoutSetupCallout,
+  type ScoutTopNavTab,
+} from "./ScoutAppFrame.tsx";
 import type { ScoutThinSettingsConfig } from "./ScoutThinSettingsPanel.tsx";
 import { StandaloneRecordRouter } from "./StandaloneRecordViews.tsx";
 
@@ -60,6 +66,7 @@ export interface ScoutThinAppProps<TStatus extends ScoutThinStatusBase = ScoutTh
   variant: ScoutSkeletonVariant;
   rail?: ScoutRail;
   pages?: readonly ScoutPageTab[];
+  topTabs?: readonly ScoutTopNavTab[];
   chrome?: "auto" | "sidebar" | "masthead";
   settings?: ScoutThinSettingsConfig | false;
   navigate?: (href: string) => void;
@@ -71,6 +78,11 @@ export interface ScoutThinAppProps<TStatus extends ScoutThinStatusBase = ScoutTh
     refreshStatus: () => void;
   }) => ScoutSetupCallout | null;
   headerActions?: ReactNode;
+  search?: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+  };
   children: ReactNode;
 }
 
@@ -85,12 +97,14 @@ export function ScoutThinApp<TStatus extends ScoutThinStatusBase = ScoutThinStat
   variant,
   rail = defaultScoutRail(variant),
   pages,
+  topTabs,
   chrome,
   settings,
   navigate = navigateBrowser,
   badge,
   setupCallout,
   headerActions,
+  search,
   children,
 }: ScoutThinAppProps<TStatus>) {
   const { status, installing, refreshStatus, runSetup } = useScoutThinHost<TStatus>();
@@ -111,12 +125,14 @@ export function ScoutThinApp<TStatus extends ScoutThinStatusBase = ScoutThinStat
       variant={variant}
       rail={rail}
       pages={pages}
+      topTabs={topTabs}
       chrome={chrome}
       settings={settings}
       navigate={navigate}
       status={resolvedBadge}
       setupCallout={resolvedCallout}
       headerActions={headerActions}
+      search={search}
     >
       <StandaloneRecordRouter product={product} rail={rail} navigate={navigate}>
         {children}
