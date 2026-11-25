@@ -14,7 +14,8 @@
     "./chat": "./packages/web/client/screens/chat/index.ts",
     "./sessions": "./packages/web/client/screens/sessions/index.ts",
     "./search": "./packages/web/client/screens/search/index.ts",
-    "./control": "./packages/web/client/screens/ops/index.ts"
+    "./control": "./packages/web/client/screens/ops/index.ts",
+    "./package.json": "./package.json"
   },
   "engines": {
     "bun": ">=1.4.4"
