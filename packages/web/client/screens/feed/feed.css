@@ -853,3 +853,9 @@ button.fd-noteTitle { cursor: pointer; }
 button.fd-noteTitle:hover { color: var(--fd-ink); }
 button.fd-noteTitle:focus-visible { outline: 1px solid var(--fd-ink); outline-offset: 2px; }
 .fd-noteWhy { flex: none; font-family: var(--hud-font-mono); font-size: 11px; }
+
+/* The posts that piled up, by who wrote them: up to three harness marks, overlapping, before the words. */
+.fd-newPosts { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 6px; }
+.fd-newFaces { display: inline-flex; align-items: center; }
+.fd-newFaces > * { box-shadow: 0 0 0 2px var(--scout-chrome-panel, var(--hud-bg, Canvas)); border-radius: var(--radius-sm); }
+.fd-newFaces > * + * { margin-left: -6px; }

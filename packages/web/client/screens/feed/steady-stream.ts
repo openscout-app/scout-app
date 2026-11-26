@@ -44,9 +44,25 @@ export function steadyDay(
   return { rows, folded: folded.filter((id) => !kept.has(id)) };
 }
 
-/** True when `next` holds a post id that `shown` does not: something new arrived. */
-export function hasNewPosts(shown: Iterable<string>, next: Iterable<string>): boolean {
-  const have = new Set(shown);
-  for (const id of next) if (!have.has(id)) return true;
-  return false;
+/**
+ * Posts in `next` that `shown` lacks, newest first: what has piled up while
+ * the stream held still. Accumulates: pass the latest state each time.
+ */
+export function arrivalsBetween<T extends { id: string; at: number }>(shown: ReadonlyMap<string, T>, next: ReadonlyMap<string, T>): T[] {
+  const out: T[] = [];
+  for (const [id, post] of next) if (!shown.has(id)) out.push(post);
+  return out.sort((a, b) => b.at - a.at);
+}
+
+/** Up to `max` posts by distinct agents, newest first: the faces on the New posts line. */
+export function distinctAgents<T extends { agent: { name: string } }>(posts: readonly T[], max = 3): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const post of posts) {
+    if (seen.has(post.agent.name)) continue;
+    seen.add(post.agent.name);
+    out.push(post);
+    if (out.length === max) break;
+  }
+  return out;
 }

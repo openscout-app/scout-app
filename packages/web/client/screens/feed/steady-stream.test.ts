@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { hasNewPosts, steadyDay, type DayRow } from "./steady-stream.ts";
+import { arrivalsBetween, distinctAgents, steadyDay, type DayRow } from "./steady-stream.ts";
 
 const view = (rows: readonly DayRow[]) => rows.map((r) => `${r.id}${r.note ? ":note" : ""}${r.arrived ? ":new" : ""}`);
 const none = () => false;
@@ -48,9 +48,18 @@ describe("steadyDay", () => {
   });
 });
 
-describe("hasNewPosts", () => {
-  test("only an id not shown counts", () => {
-    expect(hasNewPosts(["a", "b"], ["b", "a"])).toBe(false);
-    expect(hasNewPosts(["a"], ["a", "n"])).toBe(true);
+describe("arrivals", () => {
+  const post = (id: string, at: number, agent = id) => ({ id, at, agent: { name: agent } });
+  const map = (...posts: ReturnType<typeof post>[]) => new Map(posts.map((p) => [p.id, p]));
+
+  test("posts the shown stream lacks, newest first", () => {
+    const shown = map(post("a", 1));
+    const next = map(post("a", 1), post("b", 2), post("c", 3));
+    expect(arrivalsBetween(shown, next).map((p) => p.id)).toEqual(["c", "b"]);
+  });
+
+  test("one face per agent, at most three", () => {
+    const posts = [post("1", 5, "x"), post("2", 4, "x"), post("3", 3, "y"), post("4", 2, "z"), post("5", 1, "w")];
+    expect(distinctAgents(posts).map((p) => p.id)).toEqual(["1", "3", "4"]);
   });
 });

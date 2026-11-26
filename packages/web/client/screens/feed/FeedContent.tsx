@@ -35,7 +35,7 @@ import { feedCommand } from "./post-actions.ts";
 import { clock, G, Glyph, isNotModified, type Navigate } from "./post-parts.tsx";
 import { FeedItem, type ItemHandle, type Register } from "./FeedItem.tsx";
 import { dismissTarget, grow, type PostSize } from "./post-size.ts";
-import { hasNewPosts, steadyDay, type DayRow } from "./steady-stream.ts";
+import { arrivalsBetween, distinctAgents, steadyDay, type DayRow } from "./steady-stream.ts";
 import { useHandHold } from "./use-hand-hold.ts";
 
 /* Work finishing is a fleet event; the live net catches pull requests merging on GitHub. */
@@ -275,9 +275,18 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
   const hand = useHandHold();
   const heldNow = useRef(hand.held);
   heldNow.current = hand.held;
-  // The reading spot to keep across an applied refresh, and whether posts arrived above it.
+  // The reading spot to keep across an applied refresh, and the posts that piled up out of sight:
+  // waiting behind the hand, or landed above the reading spot.
   const spot = useRef<{ id: string; top: number } | null>(null);
-  const [newAbove, setNewAbove] = useState(false);
+  const [pile, setPile] = useState<FeedPostHead[]>([]);
+  const addToPile = useCallback((posts: readonly FeedPostHead[]) => {
+    if (!posts.length) return;
+    setPile((was) => {
+      const byId = new Map(was.map((p) => [p.id, p]));
+      for (const post of posts) byId.set(post.id, post);
+      return [...byId.values()].sort((a, b) => b.at - a.at);
+    });
+  }, []);
   // Posts out of the list for a moment: a Done or Drop under undo, a hide the Feed's last read still had.
   const pendingHides = usePendingHides();
   const held = new Set([...hiddenPosts(useHeldMoves()), ...pendingHides]);
@@ -396,9 +405,11 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
     const root = rootRef.current;
     const keep = root && shown.version >= 0 && shown.view === next.view ? readingSpot(root) : null;
     spot.current = keep;
-    if (keep && hasNewPosts(shown.posts.keys(), next.posts.keys())) setNewAbove(true);
+    // Landed above the reading spot: still out of sight. At the top: the reader sees them arrive.
+    if (keep) addToPile(arrivalsBetween(shown.posts, next.posts));
+    else setPile([]);
     setFeed(next);
-  }, []);
+  }, [addToPile]);
   const load = useCallback(async () => {
     try {
       const res = await api<FeedResponse>(feedPath(view, { since: versionRef.current }));
@@ -408,17 +419,18 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
       latest.current = next;
       const shown = shownRef.current;
       if (!heldNow.current || shown.version < 0 || shown.view !== next.view) apply(next);
+      else addToPile(arrivalsBetween(shown.posts, next.posts));
       setFailed(false);
     } catch (error) {
       // 304: nothing moved. A failed refresh keeps what is shown; only a first load that fails says so.
       if (!isNotModified(error)) setFailed(true);
     }
-  }, [view, apply]);
+  }, [view, apply, addToPile]);
 
   useEffect(() => {
     versionRef.current = -1;
     latest.current = null;
-    setNewAbove(false);
+    setPile([]);
     setFeed(emptyFeed(view));
     void load();
   }, [view, load]);
@@ -437,17 +449,20 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
     const delta = el.getBoundingClientRect().top - keep.top;
     if (delta) scrollerOf(el).scrollBy(0, delta);
   }, [feed]);
-  // The New posts line goes once the operator is back at the top.
+  // The New posts line goes once the operator is back at the top and nothing is still waiting.
+  const piled = pile.length > 0;
   useEffect(() => {
-    if (!newAbove || !rootRef.current) return;
+    if (!piled || !rootRef.current) return;
     const scroller = scrollerOf(rootRef.current);
     const target: EventTarget = scroller === document.scrollingElement || scroller === document.documentElement ? window : scroller;
-    const onScroll = () => { if (scrollTopOf(scroller) < AT_TOP) setNewAbove(false); };
+    const onScroll = () => { if (scrollTopOf(scroller) < AT_TOP && latest.current === shownRef.current) setPile([]); };
     target.addEventListener("scroll", onScroll, { passive: true });
     return () => target.removeEventListener("scroll", onScroll);
-  }, [newAbove]);
+  }, [piled]);
+  // Asked for: what waited applies now, and the stream goes to the top to show it.
   const toNewPosts = () => {
-    setNewAbove(false);
+    if (latest.current && latest.current !== shownRef.current) apply(latest.current);
+    setPile([]);
     if (!rootRef.current) return;
     const scroller = scrollerOf(rootRef.current);
     const behavior: ScrollBehavior = reducedMotion() ? "auto" : "smooth";
@@ -571,7 +586,14 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
   return (
     <div ref={rootRef} className="s-feed" data-embedded={embedded || undefined} data-layout={layout} data-lens={resultsOnly ? "results" : view} {...hand.bind}>
       <div className="fd-column">
-        {newAbove ? <button type="button" className="fd-newPosts" onClick={toNewPosts}>New posts</button> : null}
+        {pile.length ? (
+          <button type="button" className="fd-newPosts" onClick={toNewPosts}>
+            <span className="fd-newFaces" aria-hidden="true">
+              {distinctAgents(pile).map((post) => <Mark key={post.id} harness={post.agent.harness} compact />)}
+            </span>
+            New posts
+          </button>
+        ) : null}
         {showFilters ? (
           <div className="fd-bar">
             <div className="fd-filters" role="group" aria-label="View">
