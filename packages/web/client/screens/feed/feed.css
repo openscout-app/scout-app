@@ -803,3 +803,53 @@
   .fd-mediaVisual, .fd-mediaVisual:hover { transform: none; transition: none; }
   .fd-post, .fd-s, .fd-foldIcon, .fd-filter { transition: none; }
 }
+
+/* The stream keeps its places (steady-stream.ts). Posts that arrived above the
+   operator's reading spot wait behind one quiet line at the top; it scrolls
+   there and goes. A shown post that left keeps one line where it sat. */
+.fd-newPosts {
+  position: sticky;
+  top: 8px;
+  z-index: 3;
+  display: block;
+  margin: 0 auto 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--scout-line-strong, var(--scout-line));
+  border-radius: var(--radius-sm);
+  background: var(--scout-chrome-panel, var(--hud-bg, Canvas));
+  color: var(--fd-soft);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.fd-newPosts:hover { color: var(--fd-ink); }
+.fd-newPosts:focus-visible { outline: 1px solid var(--fd-ink); outline-offset: 1px; }
+
+.fd-note {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--scout-line);
+  font-size: 12px;
+  color: var(--fd-faint);
+}
+.fd-noteTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fd-soft);
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+button.fd-noteTitle { cursor: pointer; }
+button.fd-noteTitle:hover { color: var(--fd-ink); }
+button.fd-noteTitle:focus-visible { outline: 1px solid var(--fd-ink); outline-offset: 2px; }
+.fd-noteWhy { flex: none; font-family: var(--hud-font-mono); font-size: 11px; }

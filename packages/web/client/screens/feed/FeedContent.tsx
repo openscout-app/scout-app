@@ -35,6 +35,8 @@ import { feedCommand } from "./post-actions.ts";
 import { clock, G, Glyph, isNotModified, type Navigate } from "./post-parts.tsx";
 import { FeedItem, type ItemHandle, type Register } from "./FeedItem.tsx";
 import { dismissTarget, grow, type PostSize } from "./post-size.ts";
+import { hasNewPosts, steadyDay, type DayRow } from "./steady-stream.ts";
+import { useHandHold } from "./use-hand-hold.ts";
 
 /* Work finishing is a fleet event; the live net catches pull requests merging on GitHub. */
 /* A stream left open beside another app keeps taking new posts: it refreshes while visible, focused or not. */
@@ -164,6 +166,45 @@ function scrollerOf(el: Element): Element {
   return document.scrollingElement ?? document.documentElement;
 }
 
+/** Above this scroll, the operator is reading the newest posts; below it, a refresh keeps their spot. */
+const AT_TOP = 48;
+const ARRIVE_EASE = "cubic-bezier(0.2, 0, 0, 1)";
+
+function scrollTopOf(scroller: Element): number {
+  return scroller === document.scrollingElement || scroller === document.documentElement ? window.scrollY : scroller.scrollTop;
+}
+
+/** The first post on screen and where it sits, when the operator has scrolled into the stream; null at the top. */
+function readingSpot(root: HTMLElement): { id: string; top: number } | null {
+  if (typeof getComputedStyle !== "function") return null;
+  if (scrollTopOf(scrollerOf(root)) < AT_TOP) return null;
+  for (const el of root.querySelectorAll<HTMLElement>(".fd-post[data-post-id]")) {
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom > 64 && rect.top < window.innerHeight) return { id: el.dataset.postId!, top: rect.top };
+  }
+  return null;
+}
+
+function reducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+}
+
+/** Where a shown post was, once it left the stream: its title, and a way back to it while it still exists. */
+function MovedNote({ id, head, stream }: { id: string; head: FeedPostHead; stream: StreamState }) {
+  const live = stream.headOf(id);
+  if (live && stream.sizeOf(id, "s") === "l") return <Item post={live} base="s" stream={stream} />;
+  return (
+    <p className="fd-note">
+      {live ? (
+        <button type="button" className="fd-noteTitle" onClick={(event) => stream.setSize(id, "l", event.currentTarget)}>{head.title}</button>
+      ) : (
+        <span className="fd-noteTitle">{head.title}</span>
+      )}
+      <span className="fd-noteWhy">{live ? "Moved" : "No longer in the Feed"}</span>
+    </p>
+  );
+}
+
 /* ── the page ──────────────────────────────────────────────────────────── */
 
 /** The stream alone, with its own sources read: the Mac app's Feed row. */
@@ -226,11 +267,25 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
   const [failed, setFailed] = useState(false);
   const [paging, setPaging] = useState(false);
   const versionRef = useRef(-1);
+  // What the server sent last; `feed` is what is shown. They differ while the operator's hand holds the stream.
+  const latest = useRef<FeedState | null>(null);
+  const shownRef = useRef(feed);
+  shownRef.current = feed;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const hand = useHandHold();
+  const heldNow = useRef(hand.held);
+  heldNow.current = hand.held;
+  // The reading spot to keep across an applied refresh, and whether posts arrived above it.
+  const spot = useRef<{ id: string; top: number } | null>(null);
+  const [newAbove, setNewAbove] = useState(false);
   // Posts out of the list for a moment: a Done or Drop under undo, a hide the Feed's last read still had.
   const pendingHides = usePendingHides();
   const held = new Set([...hiddenPosts(useHeldMoves()), ...pendingHides]);
   const hidden = exclude?.size ? new Set([...held, ...exclude]) : held;
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const steady = useRef<{ lens: string; painted: boolean; days: Map<string, { input: string; out: ReturnType<typeof steadyDay> }>; animated: Set<string> }>({ lens: "", painted: false, days: new Map(), animated: new Set() });
+  // The last head each shown post had, so a note can still name it after it left.
+  const notedHeads = useRef(new Map<string, FeedPostHead>());
   const handles = useRef(new Map<string, ItemHandle>());
   const register = useCallback<Register>((id, handle) => {
     if (handle) handles.current.set(id, handle);
@@ -334,25 +389,71 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
     return () => document.removeEventListener("keydown", onKey);
   }, [focusedId, setSize, dismiss, readOnly]);
 
+  // A refresh applies at once unless the hand is on the stream; a reader scrolled down keeps their spot.
+  const apply = useCallback((next: FeedState) => {
+    const shown = shownRef.current;
+    if (shown === next) return;
+    const root = rootRef.current;
+    const keep = root && shown.version >= 0 && shown.view === next.view ? readingSpot(root) : null;
+    spot.current = keep;
+    if (keep && hasNewPosts(shown.posts.keys(), next.posts.keys())) setNewAbove(true);
+    setFeed(next);
+  }, []);
   const load = useCallback(async () => {
     try {
       const res = await api<FeedResponse>(feedPath(view, { since: versionRef.current }));
       versionRef.current = res.version;
-      setFeed((state) => (state.view === res.view ? mergeFeed(state, res) : mergeFeed(emptyFeed(res.view), res)));
+      const base = latest.current;
+      const next = base && base.view === res.view ? mergeFeed(base, res) : mergeFeed(emptyFeed(res.view), res);
+      latest.current = next;
+      const shown = shownRef.current;
+      if (!heldNow.current || shown.version < 0 || shown.view !== next.view) apply(next);
       setFailed(false);
     } catch (error) {
       // 304: nothing moved. A failed refresh keeps what is shown; only a first load that fails says so.
       if (!isNotModified(error)) setFailed(true);
     }
-  }, [view]);
+  }, [view, apply]);
 
   useEffect(() => {
     versionRef.current = -1;
+    latest.current = null;
+    setNewAbove(false);
     setFeed(emptyFeed(view));
     void load();
   }, [view, load]);
   useBrokerRefresh(() => void load(), FEED_REFRESH_POLICY, !readOnly);
   usePageRefresh(load);
+  // The hand lifted: what waited applies.
+  useEffect(() => {
+    if (!hand.held && latest.current && latest.current !== shownRef.current) apply(latest.current);
+  }, [hand.held, apply]);
+  useLayoutEffect(() => {
+    const keep = spot.current;
+    spot.current = null;
+    if (!keep || !rootRef.current) return;
+    const el = rootRef.current.querySelector(`.fd-post[data-post-id="${CSS.escape(keep.id)}"]`);
+    if (!el) return;
+    const delta = el.getBoundingClientRect().top - keep.top;
+    if (delta) scrollerOf(el).scrollBy(0, delta);
+  }, [feed]);
+  // The New posts line goes once the operator is back at the top.
+  useEffect(() => {
+    if (!newAbove || !rootRef.current) return;
+    const scroller = scrollerOf(rootRef.current);
+    const target: EventTarget = scroller === document.scrollingElement || scroller === document.documentElement ? window : scroller;
+    const onScroll = () => { if (scrollTopOf(scroller) < AT_TOP) setNewAbove(false); };
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => target.removeEventListener("scroll", onScroll);
+  }, [newAbove]);
+  const toNewPosts = () => {
+    setNewAbove(false);
+    if (!rootRef.current) return;
+    const scroller = scrollerOf(rootRef.current);
+    const behavior: ScrollBehavior = reducedMotion() ? "auto" : "smooth";
+    if (scroller === document.scrollingElement || scroller === document.documentElement) window.scrollTo({ top: 0, behavior });
+    else scroller.scrollTo({ top: 0, behavior });
+  };
   useEffect(() => {
     if (feed.view === "all" && feed.version >= 0) onFeed?.(feed);
   }, [feed, onFeed]);
@@ -362,7 +463,10 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
     setPaging(true);
     try {
       const res = await api<FeedResponse>(feedPath(view, { cursor: feed.cursor }));
-      setFeed((state) => appendPage(state, res));
+      // Asked for: the page applies now, with anything that waited.
+      const next = appendPage(latest.current ?? shownRef.current, res);
+      latest.current = next;
+      setFeed(next);
     } catch { /* the button stays */ }
     setPaging(false);
   };
@@ -409,24 +513,65 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
   }, [expand, feed]);
   const stream: StreamState = { navigate, focusedId, sizeOf: (id, base) => sizes.get(id) ?? base, setSize, register, headOf: (id) => feed.posts.get(id) };
 
+  // Each day keeps the places it was first shown in, for the visit (steady-stream.ts).
+  // Keyed by what is shown: a new view or lens, or a stream loading again, starts over.
+  const lens = `${feed.view}:${resultsOnly ? "results" : "all"}`;
+  if (steady.current.lens !== lens || (!loaded && steady.current.days.size > 0)) steady.current = { lens, painted: false, days: new Map(), animated: new Set() };
+  const memory = steady.current;
+  const steadyRows = (dayKey: string, featured: readonly FeedPostHead[], folded: readonly FeedPostHead[]): { rows: DayRow[]; folded: FeedPostHead[] } => {
+    const featuredIds = featured.map((p) => p.id);
+    const foldedIds = folded.map((p) => p.id);
+    const input = `${featuredIds.join(",")}/${foldedIds.join(",")}`;
+    const entry = memory.days.get(dayKey);
+    let out = entry?.input === input ? entry.out : null;
+    if (!out) {
+      out = steadyDay(entry?.out.rows.map((r) => r.id), featuredIds, foldedIds, { first: !memory.painted, mine: (id) => held.has(id) });
+      memory.days.set(dayKey, { input, out });
+    }
+    const byId = new Map(folded.map((p) => [p.id, p]));
+    return { rows: out.rows, folded: out.folded.map((id) => byId.get(id)!).filter(Boolean) };
+  };
+  const arrivals: string[] = [];
+
   const visibleDays = days.map((key) => {
     const day = feedDay.get(key) ?? { day: key, ids: [], folded: [] };
     const extra = (bySourceDay.get(key) ?? []).filter((p) => !dayHidden.has(p.kind === "outside" ? p.thread.id : p.event.id));
     const { shown, folded } = refillDay(day.ids, day.folded, dayHidden, (id) => feed.posts.get(id));
     const partitioned = partitionDayPosts(shown, folded);
-    if (!resultsOnly) return { day, extra, ...partitioned };
-    return {
-      day,
-      extra: [] as SourcePost[],
-      github: partitioned.github,
-      featured: partitioned.featured.filter(isVisualOrShippedResult),
-      folded: partitioned.folded.filter(isVisualOrShippedResult),
-    };
-  }).filter(({ extra, github, featured, folded }) => extra.length > 0 || github.rows.length > 0 || featured.length > 0 || folded.length > 0);
+    const lensed = resultsOnly
+      ? { extra: [] as SourcePost[], featured: partitioned.featured.filter(isVisualOrShippedResult), folded: partitioned.folded.filter(isVisualOrShippedResult) }
+      : { extra, featured: partitioned.featured, folded: partitioned.folded };
+    const kept = steadyRows(key, lensed.featured, lensed.folded);
+    for (const row of kept.rows) if (row.arrived && !row.note) arrivals.push(row.id);
+    return { day, extra: lensed.extra, github: partitioned.github, rows: kept.rows, folded: kept.folded };
+  }).filter(({ extra, github, rows, folded }) => extra.length > 0 || github.rows.length > 0 || rows.length > 0 || folded.length > 0);
+
+  // Posts new to a day grow in where the operator can see them; above a kept reading spot they just land.
+  useLayoutEffect(() => {
+    const memo = steady.current;
+    if (!loaded) return;
+    if (!memo.painted) { memo.painted = true; return; }
+    const fresh = arrivals.filter((id) => !memo.animated.has(id));
+    if (!fresh.length) return;
+    const root = rootRef.current;
+    const still = reducedMotion() || !root || typeof getComputedStyle !== "function" || scrollTopOf(scrollerOf(root)) >= AT_TOP;
+    for (const id of fresh) {
+      memo.animated.add(id);
+      if (still) continue;
+      const el = root!.querySelector<HTMLElement>(`.fd-post[data-post-id="${CSS.escape(id)}"]`);
+      if (!el?.animate) continue;
+      const height = el.getBoundingClientRect().height;
+      el.animate(
+        [{ height: "0px", opacity: 0, overflow: "hidden" }, { height: `${height}px`, opacity: 1, overflow: "hidden" }],
+        { duration: 380, easing: ARRIVE_EASE },
+      );
+    }
+  });
 
   return (
-    <div className="s-feed" data-embedded={embedded || undefined} data-layout={layout} data-lens={resultsOnly ? "results" : view}>
+    <div ref={rootRef} className="s-feed" data-embedded={embedded || undefined} data-layout={layout} data-lens={resultsOnly ? "results" : view} {...hand.bind}>
       <div className="fd-column">
+        {newAbove ? <button type="button" className="fd-newPosts" onClick={toNewPosts}>New posts</button> : null}
         {showFilters ? (
           <div className="fd-bar">
             <div className="fd-filters" role="group" aria-label="View">
@@ -490,7 +635,7 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
           </p>
         ) : null}
 
-        {visibleDays.map(({ day, extra, github, featured, folded }, dayIndex) => {
+        {visibleDays.map(({ day, extra, github, rows, folded }, dayIndex) => {
           const label = dayLabel(day.day, now);
           const openGithubPosts = new Map(github.rows
             .filter(({ post }) => stream.sizeOf(post.id, "s") === "l")
@@ -508,8 +653,15 @@ function FeedStreamView({ navigate, sources, exclude, embedded = false, layout =
                   <Item post={post} base="s" stream={stream} />
                 </div>
               ))}
-              <div className={resultsOnly && featured.length > 1 ? "fd-showcaseGrid" : undefined}>
-                {featured.map((post) => {
+              <div className={resultsOnly && rows.length > 1 ? "fd-showcaseGrid" : undefined}>
+                {rows.map((row) => {
+                  if (row.note) {
+                    const head = notedHeads.current.get(row.id) ?? feed.posts.get(row.id);
+                    return head ? <MovedNote key={`note:${row.id}`} id={row.id} head={head} stream={stream} /> : null;
+                  }
+                  const post = feed.posts.get(row.id);
+                  if (!post) return null;
+                  notedHeads.current.set(post.id, post);
                   counted += 1;
                   const here = slotsAfter(counted);
                   return (
